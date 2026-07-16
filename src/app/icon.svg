@@ -1,23 +1,18 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0b1a3a"/>
-      <stop offset="1" stop-color="#071022"/>
+    <linearGradient id="gray" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c3c8cf"/>
+      <stop offset="1" stop-color="#7b818a"/>
     </linearGradient>
-    <linearGradient id="frame" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7dd3fc"/>
-      <stop offset="1" stop-color="#2563eb"/>
-    </linearGradient>
-    <linearGradient id="silver" x1="20" y1="30" x2="70" y2="100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f8fafc"/>
-      <stop offset="1" stop-color="#94a3b8"/>
-    </linearGradient>
-    <linearGradient id="blue" x1="60" y1="30" x2="115" y2="100" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#60a5fa"/>
-      <stop offset="1" stop-color="#1d4ed8"/>
+    <linearGradient id="blue" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3d8bf5"/>
+      <stop offset="1" stop-color="#1252cc"/>
     </linearGradient>
   </defs>
-  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
-  <path d="M42 18 H110 V110 H18 V42 Z" stroke="url(#frame)" stroke-width="5" stroke-linejoin="miter"/>
-  <text x="63" y="84" text-anchor="middle" font-family="'Arial Black', system-ui, sans-serif" font-size="48" font-weight="900" font-style="italic" letter-spacing="-2"><tspan fill="url(#silver)">F</tspan><tspan fill="url(#blue)">G</tspan></text>
+  <rect width="128" height="128" rx="24" fill="#0b0e14"/>
+  <g transform="translate(4,4)">
+    <path fill="url(#gray)" d="M8 8 L55 8 L49 22 L26 22 L22 38 L40 38 L35 50 L17 50 L8 112 Z"/>
+    <path fill="url(#blue)" d="M61 8 L112 8 L112 22 L55 22 Z"/>
+    <path fill="url(#blue)" d="M47 38 L112 38 L112 92 L24 92 L30 78 L98 78 L98 50 L42 50 Z"/>
+  </g>
 </svg>
