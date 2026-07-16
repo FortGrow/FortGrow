@@ -3,7 +3,8 @@
 import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Lock, Mail, Rocket } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
+import { FgMark, FgWordmark } from "@/components/brand/logo";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -45,10 +46,10 @@ function LoginForm() {
       className="w-full max-w-sm"
     >
       <div className="mb-8 flex flex-col items-center text-center">
-        <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-grow-500 shadow-glow">
-          <Rocket size={26} className="text-ink-950" />
-        </span>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">FortGrow CRM</h1>
+        <FgMark size={72} className="mb-4 drop-shadow-[0_0_18px_rgba(56,189,248,0.35)]" />
+        <h1 className="text-2xl tracking-tight">
+          <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+        </h1>
         <p className="mt-1 text-sm text-slate-500">Acesse sua conta para continuar</p>
       </div>
 
