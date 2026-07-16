@@ -19,7 +19,12 @@ export async function AppShell({
   areaLabel: string;
   children: React.ReactNode;
 }) {
-  const unread = await prisma.notification.count({ where: { userId: session.sub, read: false } });
+  const [unread, me] = await Promise.all([
+    prisma.notification.count({ where: { userId: session.sub, read: false } }),
+    prisma.user.findUnique({ where: { id: session.sub }, select: { avatarUrl: true, name: true } }),
+  ]);
+  const profileHref = session.role === "CLIENTE" ? "/portal/perfil" : "/admin/perfil";
+  const displayName = me?.name ?? session.name;
 
   return (
     <div className="flex min-h-screen">
@@ -37,13 +42,20 @@ export async function AppShell({
         <NavLinks items={items} />
         <div className="border-t border-line p-3">
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-brand-300">
-              {initials(session.name)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-200">{session.name}</p>
-              <p className="truncate text-[11px] text-slate-500">{session.role.replaceAll("_", " ")}</p>
-            </div>
+            <Link href={profileHref} title="Meu perfil" className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80">
+              {me?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={me.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-line" />
+              ) : (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-brand-300">
+                  {initials(displayName)}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-200">{displayName}</p>
+                <p className="truncate text-[11px] text-slate-500">{session.role.replaceAll("_", " ")} · editar perfil</p>
+              </div>
+            </Link>
             <form action="/api/auth/logout" method="POST">
               <button title="Sair" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-ink-700 hover:text-danger">
                 <LogOut size={15} />
