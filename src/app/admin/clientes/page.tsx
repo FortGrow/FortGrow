@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Td } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { brl, fullDate } from "@/lib/utils";
+import { NewClientForm } from "./new-client-form";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,9 @@ export default async function ClientesPage() {
 
   return (
     <>
-      <PageHeader title="Clientes" subtitle={`${clients.length} contas na carteira`} />
+      <PageHeader title="Clientes" subtitle={`${clients.length} contas na carteira`}>
+        <NewClientForm />
+      </PageHeader>
       <DataTable headers={["Empresa", "Plano", "Valor mensal", "Início", "Responsável", "Projetos", "Contratos", "Status", ""]}>
         {clients.map((c) => (
           <tr key={c.id} className="transition hover:bg-ink-800/50">

@@ -4,6 +4,7 @@ import { DataTable, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { brl, num, pct } from "@/lib/utils";
 import { kpis, sumTotals } from "@/lib/metrics";
+import { NewCampaignForm, CampaignToggle } from "./campaign-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +21,17 @@ const CHANNEL_LABEL: Record<string, string> = {
 
 export default async function CampanhasPage() {
   const since = new Date(Date.now() - 30 * 86400000);
-  const [campaigns, metrics] = await Promise.all([
+  const [campaigns, metrics, clients] = await Promise.all([
     prisma.campaign.findMany({
       orderBy: [{ active: "desc" }, { createdAt: "desc" }],
       include: { client: { select: { companyName: true, id: true } } },
     }),
     prisma.metricSnapshot.findMany({ where: { date: { gte: since } } }),
+    prisma.client.findMany({
+      where: { status: { in: ["ATIVO", "ONBOARDING"] } },
+      select: { id: true, companyName: true },
+      orderBy: { companyName: "asc" },
+    }),
   ]);
 
   // KPIs de 30 dias por cliente+canal para enriquecer a listagem
@@ -39,8 +45,10 @@ export default async function CampanhasPage() {
 
   return (
     <>
-      <PageHeader title="Campanhas" subtitle="Performance consolidada dos últimos 30 dias por campanha" />
-      <DataTable headers={["Campanha", "Cliente", "Canal", "Orçamento", "Invest. 30d", "Leads 30d", "CTR", "ROAS", "Status"]}>
+      <PageHeader title="Campanhas" subtitle="Performance consolidada dos últimos 30 dias por campanha">
+        <NewCampaignForm clients={clients.map((c) => ({ id: c.id, name: c.companyName }))} />
+      </PageHeader>
+      <DataTable headers={["Campanha", "Cliente", "Canal", "Orçamento", "Invest. 30d", "Leads 30d", "CTR", "ROAS", "Status", ""]}>
         {campaigns.map((c) => {
           const t = byKey.get(`${c.client.id}:${c.channel}`);
           return (
@@ -55,6 +63,9 @@ export default async function CampanhasPage() {
               <Td>{t ? `${kpis.roas(t).toFixed(2)}x` : "—"}</Td>
               <Td>
                 <Badge tone={c.active ? "grow" : "slate"}>{c.active ? "ATIVA" : "PAUSADA"}</Badge>
+              </Td>
+              <Td>
+                <CampaignToggle id={c.id} active={c.active} />
               </Td>
             </tr>
           );

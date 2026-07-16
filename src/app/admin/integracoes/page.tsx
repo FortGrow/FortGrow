@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
-import { Badge } from "@/components/ui/badge";
+import { IntegrationCard } from "./integration-card";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +48,9 @@ export default async function IntegracoesPage() {
       {groups.map((g) => (
         <div key={g} className="mb-6">
           <h2 className="mb-3 text-sm font-bold text-slate-300">{g}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {CATALOG.filter((c) => c.group === g).map((c) => (
-              <div key={c.provider} className="card flex items-center justify-between gap-2 p-4">
-                <p className="text-sm font-semibold text-slate-200">{c.name}</p>
-                <Badge tone={connected.has(c.provider) ? "grow" : "slate"}>
-                  {connected.has(c.provider) ? "Conectado" : "Conectar"}
-                </Badge>
-              </div>
+              <IntegrationCard key={c.provider} provider={c.provider} name={c.name} connected={connected.has(c.provider)} />
             ))}
           </div>
         </div>

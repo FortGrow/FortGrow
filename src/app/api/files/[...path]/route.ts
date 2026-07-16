@@ -31,7 +31,8 @@ export async function GET(_req: NextRequest, { params }: { params: { path: strin
     return NextResponse.json({ error: "Caminho inválido." }, { status: 400 });
   }
 
-  if (session.role === "CLIENTE" && session.clientId !== clientId) {
+  // "avatars" é um espaço comum: qualquer usuário autenticado pode ver fotos de perfil
+  if (clientId !== "avatars" && session.role === "CLIENTE" && session.clientId !== clientId) {
     return NextResponse.json({ error: "Sem permissão." }, { status: 403 });
   }
 

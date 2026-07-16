@@ -5,6 +5,7 @@ import { DataTable, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { MODULES, ROLE_DEFAULTS, type ModuleKey } from "@/lib/rbac";
 import { initials } from "@/lib/utils";
+import { NewUserForm } from "./new-user-form";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,11 @@ export default async function EquipePage() {
     include: { client: { select: { companyName: true } } },
   });
 
+  const allClients = await prisma.client.findMany({
+    select: { id: true, companyName: true },
+    orderBy: { companyName: "asc" },
+  });
+
   const modulesOf = (u: (typeof users)[number]): string[] => {
     if (u.role === "ADMIN") return ["Acesso total"];
     const keys = (u.permissions.length ? u.permissions : ROLE_DEFAULTS[u.role] ?? []) as ModuleKey[];
@@ -32,7 +38,11 @@ export default async function EquipePage() {
       <PageHeader
         title="Equipe & Permissões"
         subtitle={`${users.length} colaboradores · ${clientUsers.length} acessos de cliente`}
-      />
+      >
+        {session.role === "ADMIN" && (
+          <NewUserForm clients={allClients.map((c) => ({ id: c.id, name: c.companyName }))} />
+        )}
+      </PageHeader>
 
       <h2 className="mb-3 text-sm font-bold text-slate-300">Colaboradores</h2>
       <DataTable headers={["Colaborador", "Papel", "Módulos liberados", "2FA", "Status"]} className="mb-8">
