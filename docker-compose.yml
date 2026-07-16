@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fortgrow
+      POSTGRES_PASSWORD: fortgrow
+      POSTGRES_DB: fortgrow
+    ports:
+      - "5432:5432"
+    volumes:
+      - fortgrow_pgdata:/var/lib/postgresql/data
+
+volumes:
+  fortgrow_pgdata:

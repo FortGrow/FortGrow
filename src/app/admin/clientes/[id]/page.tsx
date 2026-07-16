@@ -1,0 +1,146 @@
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { DataTable, Td } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/badge";
+import { TrendChart } from "@/components/charts/trend-chart";
+import { brl, fullDate, num } from "@/lib/utils";
+import { kpis, sumTotals } from "@/lib/metrics";
+
+export const dynamic = "force-dynamic";
+
+export default async function ClienteDetalhe({ params }: { params: { id: string } }) {
+  const client = await prisma.client.findUnique({
+    where: { id: params.id },
+    include: {
+      accountManager: { select: { name: true } },
+      consultant: { select: { name: true } },
+      services: { include: { service: true } },
+      contracts: true,
+      projects: { orderBy: { createdAt: "desc" } },
+      invoices: { orderBy: { dueDate: "desc" }, take: 12 },
+      documents: { orderBy: { createdAt: "desc" }, take: 10 },
+      metrics: { where: { date: { gte: new Date(Date.now() - 90 * 86400000) } } },
+    },
+  });
+  if (!client) notFound();
+
+  const totals = sumTotals(client.metrics as never[]);
+  const byWeek = new Map<string, { leads: number; conversions: number }>();
+  for (const m of client.metrics) {
+    const week = new Date(m.date);
+    week.setDate(week.getDate() - week.getDay());
+    const key = week.toISOString().slice(0, 10);
+    const cur = byWeek.get(key) ?? { leads: 0, conversions: 0 };
+    cur.leads += m.leads;
+    cur.conversions += m.conversions;
+    byWeek.set(key, cur);
+  }
+  const trend = [...byWeek.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => ({ label: new Date(k).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }), ...v }));
+
+  return (
+    <>
+      <PageHeader
+        title={client.companyName}
+        subtitle={`${client.plan ?? "Sem plano"} · ${brl(client.monthlyValue)}/mês · desde ${fullDate(client.contractStart)}`}
+      >
+        <StatusBadge status={client.status} />
+      </PageHeader>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Leads (90d)" value={num(totals.leads)} accent="brand" />
+        <StatCard label="Conversões (90d)" value={num(totals.conversions)} accent="grow" />
+        <StatCard label="Investimento (90d)" value={brl(totals.spend)} accent="warn" />
+        <StatCard label="ROAS (90d)" value={`${kpis.roas(totals).toFixed(2)}x`} accent="violet" />
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <div className="card p-5 lg:col-span-2">
+          <h2 className="mb-4 text-sm font-bold text-slate-300">Leads e conversões · últimas 12 semanas</h2>
+          <TrendChart
+            data={trend}
+            series={[
+              { key: "leads", label: "Leads" },
+              { key: "conversions", label: "Conversões" },
+            ]}
+          />
+        </div>
+        <div className="card space-y-3 p-5 text-sm">
+          <h2 className="text-sm font-bold text-slate-300">Ficha da conta</h2>
+          {[
+            ["CNPJ", client.cnpj],
+            ["Segmento", client.segment],
+            ["Cidade", client.city ? `${client.city}/${client.state ?? ""}` : null],
+            ["Site", client.website],
+            ["Instagram", client.instagram],
+            ["E-mail", client.email],
+            ["Telefone", client.phone],
+            ["Responsável da conta", client.accountManager?.name],
+            ["Consultor", client.consultant?.name],
+            ["Tempo de contrato", client.contractMonths ? `${client.contractMonths} meses` : null],
+            ["Status do projeto", client.projectStatus],
+          ].map(([k, v]) => (
+            <div key={k as string} className="flex justify-between gap-4 border-b border-line/60 pb-2 last:border-0">
+              <span className="text-slate-500">{k}</span>
+              <span className="text-right font-medium text-slate-300">{v ?? "—"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-slate-300">Serviços contratados</h2>
+          <DataTable headers={["Serviço", "Responsável", "Prazo", "Status"]}>
+            {client.services.map((s) => (
+              <tr key={s.id}>
+                <Td className="font-medium text-slate-200">{s.service.name}</Td>
+                <Td>{s.responsible ?? "—"}</Td>
+                <Td className="text-slate-500">{fullDate(s.deadline)}</Td>
+                <Td><StatusBadge status={s.status} /></Td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-slate-300">Faturas recentes</h2>
+          <DataTable headers={["Descrição", "Valor", "Vencimento", "Status"]}>
+            {client.invoices.map((i) => (
+              <tr key={i.id}>
+                <Td className="font-medium text-slate-200">{i.description}</Td>
+                <Td>{brl(i.amount)}</Td>
+                <Td className="text-slate-500">{fullDate(i.dueDate)}</Td>
+                <Td><StatusBadge status={i.status} /></Td>
+              </tr>
+            ))}
+          </DataTable>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-bold text-slate-300">Projetos</h2>
+        <DataTable headers={["Projeto", "Prioridade", "Prazo", "Progresso", "Status"]}>
+          {client.projects.map((p) => (
+            <tr key={p.id}>
+              <Td className="font-medium text-slate-200">{p.name}</Td>
+              <Td><StatusBadge status={p.priority} /></Td>
+              <Td className="text-slate-500">{fullDate(p.deadline)}</Td>
+              <Td>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-24 overflow-hidden rounded-full bg-ink-700">
+                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${p.progress}%` }} />
+                  </div>
+                  <span className="text-xs text-slate-500">{p.progress}%</span>
+                </div>
+              </Td>
+              <Td><StatusBadge status={p.status} /></Td>
+            </tr>
+          ))}
+        </DataTable>
+      </div>
+    </>
+  );
+}
