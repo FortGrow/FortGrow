@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Bell, LogOut, Rocket } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
+import { FgMark, FgWordmark } from "@/components/brand/logo";
 import type { SessionPayload } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
@@ -25,11 +26,11 @@ export async function AppShell({
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-ink-900/80 backdrop-blur lg:flex">
         <div className="flex items-center gap-2.5 px-5 py-5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-grow-500 shadow-glow">
-            <Rocket size={18} className="text-ink-950" />
-          </span>
+          <FgMark size={38} />
           <div>
-            <p className="text-sm font-bold tracking-tight text-slate-100">FortGrow CRM</p>
+            <p className="text-sm">
+              <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+            </p>
             <p className="text-[11px] text-slate-500">{areaLabel}</p>
           </div>
         </div>
