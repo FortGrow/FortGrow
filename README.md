@@ -58,7 +58,8 @@ npm run dev            # http://localhost:3000
 - **Faturamento** — recebimentos, despesas, fluxo de caixa e cálculo automático de ROI, ROAS, CAC, LTV, margem e payback.
 - **Relatórios** — exportação CSV (Excel) de leads, clientes, financeiro e tarefas.
 - **Chamados** — atendimento com chat e mudança de status.
-- **Automações** — gatilhos de e-mail/WhatsApp/notificação (vencimentos, renovações, tarefas).
+- **Inteligência (IA)** — insights automáticos de desempenho (quedas de leads, CPL em alta, ROAS, gargalos de conversão), previsão de faturamento por regressão e score de risco de churn por cliente; resumos executivos via OpenAI quando `OPENAI_API_KEY` está configurada.
+- **Automações** — gatilhos de vencimento de fatura, renovação de contrato e tarefa atrasada, com execução sob demanda na UI ou via cron (`npm run automations:run`); marca faturas vencidas e notifica os envolvidos sem duplicar avisos.
 - **Integrações** — catálogo de conexões (Google Ads, Meta Ads, GA4, Search Console, Stripe, Asaas, WhatsApp, OpenAI…).
 - **Equipe & Permissões** — papéis (Admin, Financeiro, Comercial, Gestor, Social Media, Designer, Tráfego, Consultor) com módulos liberados por usuário.
 
@@ -68,7 +69,8 @@ Cada cliente enxerga **somente os dados da própria empresa** (isolamento por `c
 - **Resultados** — leads, conversões, CAC, ROI, ROAS, CPL, CPA, CTR, impressões, alcance, metas mensal/anual, comparativos e filtros por período (7/30/90/365 dias).
 - **Google Ads · Meta Ads · Instagram · SEO** — dashboards por canal.
 - **Financeiro** — mensalidades, histórico de pagamentos, notas fiscais e contratos.
-- **Documentos** — contratos, briefings, criativos, relatórios, apresentações, vídeos.
+- **Documentos** — contratos, briefings, criativos, relatórios, apresentações, vídeos (upload feito pela equipe na ficha do cliente; download servido com isolamento por tenant).
+- **Insights do período** — análises automáticas de desempenho geradas pelo módulo de IA no dashboard de resultados.
 - **Chamados** — abertura de tickets com prioridade e chat com a equipe.
 
 ## Segurança
@@ -94,7 +96,6 @@ src/app/portal/    # portal do cliente
 ## Roadmap (fundações já preparadas)
 
 - Sincronização real das integrações (tabela `Integration` + `MetricSnapshot` por canal/dia).
-- Worker de automações (tabela `Automation` com gatilhos e canais).
-- Módulo de IA (insights, forecast e previsão de churn via OpenAI/Claude).
-- Upload de arquivos para storage (Supabase Storage/S3) na área de documentos.
+- Envio efetivo de e-mail/WhatsApp nas automações (hoje registram notificações internas).
+- Storage externo para uploads (Supabase Storage/S3) — hoje em disco local (`uploads/`), servidos por `/api/files` com controle de acesso.
 - 2FA (campo `twoFactor` já presente no modelo de usuário).

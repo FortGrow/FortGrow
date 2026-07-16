@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   type LucideIcon,
   BarChart3,
+  Brain,
   Briefcase,
   Building2,
   CalendarCheck2,
@@ -38,6 +39,7 @@ const ICONS: Record<string, LucideIcon> = {
   projetos: Target,
   tarefas: CalendarCheck2,
   campanhas: Megaphone,
+  ia: Brain,
   financeiro: Wallet,
   relatorios: BarChart3,
   chamados: Headphones,

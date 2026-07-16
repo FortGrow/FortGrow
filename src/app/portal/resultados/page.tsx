@@ -7,7 +7,9 @@ import { TrendChart } from "@/components/charts/trend-chart";
 import { BarsChart } from "@/components/charts/bars-chart";
 import { loadMetrics, bucketize, totalsOf, parseDays } from "@/lib/portal-data";
 import { kpis } from "@/lib/metrics";
+import { analyzeClient } from "@/lib/ai/insights";
 import { brl, num, pct } from "@/lib/utils";
+import { AlertTriangle, CheckCircle2, Flame, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export default async function ResultadosPage({ searchParams }: { searchParams: {
   const days = parseDays(searchParams.days);
   const clientId = session.clientId!;
 
-  const [rows, prevRows, goals] = await Promise.all([
+  const [rows, prevRows, goals, intelligence] = await Promise.all([
     loadMetrics(clientId, days),
     prisma.metricSnapshot.findMany({
       where: {
@@ -25,6 +27,7 @@ export default async function ResultadosPage({ searchParams }: { searchParams: {
       },
     }),
     prisma.goal.findMany({ where: { clientId, year: new Date().getFullYear() } }),
+    analyzeClient(clientId),
   ]);
 
   const t = totalsOf(rows);
@@ -82,6 +85,33 @@ export default async function ResultadosPage({ searchParams }: { searchParams: {
           />
         </div>
       </div>
+
+      {intelligence && intelligence.insights.length > 0 && (
+        <div className="card mt-6 p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-300">
+            <Sparkles size={15} className="text-violet" /> Insights do período (últimos 30 dias)
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {intelligence.insights.map((ins, i) => {
+              const style =
+                ins.severity === "positivo"
+                  ? { icon: <CheckCircle2 size={15} />, tone: "text-grow-400 bg-grow-500/10" }
+                  : ins.severity === "critico"
+                    ? { icon: <Flame size={15} />, tone: "text-danger bg-danger/10" }
+                    : { icon: <AlertTriangle size={15} />, tone: "text-warn bg-warn/10" };
+              return (
+                <div key={i} className="flex items-start gap-3 rounded-xl border border-line px-4 py-3">
+                  <span className={`mt-0.5 rounded-lg p-1.5 ${style.tone}`}>{style.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">{ins.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{ins.detail}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {(monthlyGoal || yearlyGoal) && (
         <div className="mt-4 grid gap-4 sm:grid-cols-2">

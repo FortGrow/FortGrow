@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Mail, MessageCircle, Bell, Sparkles } from "lucide-react";
+import { RunAutomationsButton } from "./run-button";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +29,10 @@ export default async function AutomacoesPage() {
     <>
       <PageHeader
         title="Automações"
-        subtitle="Gatilhos de e-mail, WhatsApp e notificações — executados pelo worker de automação"
-      />
+        subtitle="Gatilhos de e-mail, WhatsApp e notificações — execute sob demanda ou agende via cron (npm run automations:run)"
+      >
+        <RunAutomationsButton />
+      </PageHeader>
       <div className="grid gap-3 sm:grid-cols-2">
         {automations.map((a) => (
           <div key={a.id} className="card flex items-center gap-4 p-5">

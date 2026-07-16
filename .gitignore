@@ -21,4 +21,4 @@ npm-debug.log*
 *.tsbuildinfo
 
 # uploads locais
-/public/uploads
+/uploads

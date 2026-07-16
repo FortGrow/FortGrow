@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { brl, fullDate, num } from "@/lib/utils";
 import { kpis, sumTotals } from "@/lib/metrics";
+import { UploadDocForm } from "./upload-doc-form";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,26 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             ))}
           </DataTable>
         </div>
+      </div>
+
+      <div className="card mt-6 p-5">
+        <h2 className="mb-4 text-sm font-bold text-slate-300">Enviar documento para o portal do cliente</h2>
+        <UploadDocForm clientId={client.id} />
+        {client.documents.length > 0 && (
+          <div className="mt-4 divide-y divide-line/60 border-t border-line pt-2">
+            {client.documents.map((d) => (
+              <div key={d.id} className="flex items-center justify-between gap-4 py-2.5 text-sm">
+                <a href={d.url} target="_blank" rel="noreferrer" className="truncate font-medium text-brand-400 hover:text-brand-300">
+                  {d.name}
+                </a>
+                <span className="shrink-0 text-xs text-slate-500">
+                  {d.type.replaceAll("_", " ")} · {fullDate(d.createdAt)}
+                  {d.uploadedBy ? ` · ${d.uploadedBy}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-6">
