@@ -15,6 +15,14 @@ Interface dark premium, responsiva, com microanimações, pesquisa global (⌘K)
 | Auth | JWT (jose) em cookie httpOnly + bcrypt + RBAC por módulo |
 | API | REST (route handlers) com validação Zod |
 
+## Deploy na nuvem
+
+Guia completo em **[DEPLOY.md](./DEPLOY.md)** — três opções prontas:
+
+1. **Render (1 clique)**: [render.com/deploy?repo=https://github.com/FortGrow/FortGrow](https://render.com/deploy?repo=https://github.com/FortGrow/FortGrow) — o blueprint `render.yaml` provisiona app + PostgreSQL + disco de uploads automaticamente.
+2. **Vercel + Supabase** — melhor para produção Next.js.
+3. **Docker em qualquer VPS** — `Dockerfile` multi-stage incluído.
+
 ## Rodando localmente
 
 ```bash
