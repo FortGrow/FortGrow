@@ -5,6 +5,7 @@ import { DataTable, Td } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { brl, fullDate } from "@/lib/utils";
 import { NewClientForm } from "./new-client-form";
+import { DeleteClientButton } from "./delete-client-button";
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +46,12 @@ export default async function ClientesPage() {
             <Td>{c._count.contracts}</Td>
             <Td><StatusBadge status={c.status} /></Td>
             <Td>
-              <Link href={`/admin/clientes/${c.id}`} className="text-xs font-semibold text-brand-400 hover:text-brand-300">
-                Abrir →
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link href={`/admin/clientes/${c.id}`} className="text-xs font-semibold text-brand-400 hover:text-brand-300">
+                  Abrir →
+                </Link>
+                <DeleteClientButton clientId={c.id} companyName={c.companyName} />
+              </div>
             </Td>
           </tr>
         ))}

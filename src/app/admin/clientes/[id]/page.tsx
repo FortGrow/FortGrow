@@ -8,6 +8,8 @@ import { TrendChart } from "@/components/charts/trend-chart";
 import { brl, fullDate, num } from "@/lib/utils";
 import { kpis, sumTotals } from "@/lib/metrics";
 import { UploadDocForm } from "./upload-doc-form";
+import { PortalAccessPanel } from "./portal-access";
+import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,11 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       invoices: { orderBy: { dueDate: "desc" }, take: 12 },
       documents: { orderBy: { createdAt: "desc" }, take: 10 },
       metrics: { where: { date: { gte: new Date(Date.now() - 90 * 86400000) } } },
+      users: {
+        where: { role: "CLIENTE" },
+        select: { id: true, name: true, email: true, active: true },
+        orderBy: { name: "asc" },
+      },
     },
   });
   if (!client) notFound();
@@ -53,7 +60,12 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         }
       >
         <StatusBadge status={client.status} />
+        <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
+
+      <div className="mb-6">
+        <PortalAccessPanel clientId={client.id} users={client.users} />
+      </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Leads (90d)" value={num(totals.leads)} accent="brand" />
