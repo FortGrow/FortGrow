@@ -1,0 +1,237 @@
+/* ============================================================
+   FortGrow — Carrossel "Alcance x Faturamento"
+   Identidade: fundo navy escuro, azul elétrico, tipografia
+   condensada em caixa alta (Anton) + Montserrat no corpo.
+   Formato: 1080 x 1440 (3:4)
+   ============================================================ */
+
+@import url("./assets/fonts/fonts.css");
+
+:root {
+  --bg-0: #030710;
+  --bg-1: #061021;
+  --bg-2: #0a1a38;
+  --blue: #1e6bf0;
+  --blue-bright: #3d86ff;
+  --blue-soft: #7fb0ff;
+  --ink: #ffffff;
+  --muted: #c7d4ea;
+  --muted-2: #8fa3c4;
+  --card-bg: rgba(10, 22, 48, 0.55);
+  --card-line: rgba(96, 148, 255, 0.28);
+  --hairline: rgba(148, 180, 235, 0.22);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { background: #000; }
+
+.slide {
+  position: relative;
+  width: 1080px;
+  height: 1440px;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 620px at 85% -6%, rgba(30, 107, 240, 0.30), transparent 62%),
+    radial-gradient(760px 560px at -12% 16%, rgba(23, 78, 176, 0.22), transparent 60%),
+    radial-gradient(1100px 900px at 50% 118%, rgba(12, 42, 96, 0.35), transparent 65%),
+    linear-gradient(160deg, var(--bg-1) 0%, var(--bg-0) 55%, #020509 100%);
+  font-family: "Montserrat", sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- decoração de fundo compartilhada ---- */
+
+.bg-watermark {
+  position: absolute;
+  top: 90px;
+  right: -240px;
+  width: 760px;
+  opacity: 0.05;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
+.bg-grid-light {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 46%, rgba(90, 140, 240, 0.05) 50%, transparent 54%),
+    linear-gradient(115deg, transparent 66%, rgba(90, 140, 240, 0.04) 70%, transparent 74%);
+  pointer-events: none;
+}
+
+.flare {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+  pointer-events: none;
+}
+.flare.a { top: 64px; left: 300px; width: 8px; height: 8px; background: rgba(190, 215, 255, 0.85); box-shadow: 0 0 26px 8px rgba(120, 170, 255, 0.55); }
+.flare.b { top: 150px; left: 520px; width: 5px; height: 5px; background: rgba(190, 215, 255, 0.7); box-shadow: 0 0 20px 6px rgba(120, 170, 255, 0.4); }
+.flare.c { top: 96px; right: 250px; width: 6px; height: 6px; background: rgba(190, 215, 255, 0.75); box-shadow: 0 0 22px 7px rgba(120, 170, 255, 0.45); }
+
+/* ---- cabeçalho ---- */
+
+.topbar {
+  position: absolute;
+  top: 56px;
+  left: 72px;
+  right: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 30;
+}
+
+.wordmark { display: flex; align-items: center; gap: 16px; }
+.wordmark img { width: 46px; height: 46px; filter: brightness(0) invert(1); }
+.wordmark span {
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: 3px;
+}
+.wordmark b { color: var(--ink); font-weight: 800; }
+.wordmark i { color: var(--blue-bright); font-style: normal; font-weight: 800; }
+
+.badge {
+  width: 86px;
+  height: 86px;
+  border-radius: 20px;
+  background: #f4f7fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.badge img { width: 56px; height: 56px; filter: brightness(0) saturate(100%); opacity: 0.92; }
+
+/* ---- tipografia ---- */
+
+.h1 {
+  font-family: "Anton", sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1.06;
+  letter-spacing: 1px;
+}
+
+.h1 .blue { color: var(--blue-bright); }
+
+.chip {
+  display: inline-block;
+  background: var(--blue);
+  color: var(--ink);
+  padding: 2px 22px 6px;
+  border-radius: 4px;
+  box-shadow: 0 14px 40px rgba(30, 107, 240, 0.45);
+}
+
+.brush {
+  height: 10px;
+  width: 460px;
+  margin-top: 34px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(228, 238, 252, 0.95), rgba(228, 238, 252, 0.25) 80%, transparent);
+  transform: rotate(-1.2deg);
+}
+
+.body-lg {
+  font-size: 33px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--muted);
+}
+.body-lg .blue { color: var(--blue-bright); font-weight: 600; }
+.body-lg .strong { color: var(--ink); font-weight: 700; }
+
+.kicker {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--blue-soft);
+}
+
+/* ---- cartões e listas ---- */
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-line);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.icon-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 34px 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.icon-row:last-child { border-bottom: none; }
+
+.icon-row .ico {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(220, 232, 250, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-row .ico svg { width: 42px; height: 42px; }
+
+.icon-row .txt {
+  font-size: 30px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.icon-row .txt .blue { color: var(--blue-bright); font-weight: 800; }
+
+.alert-bar {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  padding: 40px 46px;
+}
+.alert-bar .divider { width: 2px; align-self: stretch; background: var(--hairline); }
+.alert-bar .txt { font-size: 31px; line-height: 1.45; font-weight: 500; color: var(--muted); }
+.alert-bar .txt .blue { color: var(--blue-bright); font-weight: 600; }
+.alert-bar .txt .strong { color: var(--ink); font-weight: 700; }
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 31px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.check-item svg { flex: 0 0 auto; }
+
+/* ---- rodapé ---- */
+
+.foot-ico {
+  position: absolute;
+  left: 76px;
+  bottom: 64px;
+  opacity: 0.9;
+  z-index: 25;
+}
+
+.credit {
+  position: absolute;
+  right: 76px;
+  bottom: 46px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: rgba(199, 212, 234, 0.55);
+  z-index: 30;
+}

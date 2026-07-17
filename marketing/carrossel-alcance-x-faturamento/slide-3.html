@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FortGrow — Carrossel Alcance x Faturamento — Slide 3</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .content { position: absolute; inset: 0; padding: 210px 84px 100px; z-index: 20; }
+  .content .h1 { font-size: 100px; }
+
+  .versus {
+    margin-top: 96px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+  }
+  .vs-col { flex: 1; border-radius: 20px; position: relative; }
+
+  .vs-col .tag {
+    position: absolute;
+    top: -24px;
+    left: 40px;
+    z-index: 5;
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 26px;
+    border-radius: 4px;
+  }
+
+  .vs-col.gray {
+    background: linear-gradient(170deg, #14181f, #0a0d12);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    margin-right: 34px;
+  }
+  .vs-col.gray .tag { background: #e8ebf1; color: #10141b; }
+
+  .vs-col.blue-c {
+    background: linear-gradient(170deg, #0c1f45, #071228);
+    border: 1px solid var(--card-line);
+    box-shadow: 0 24px 70px rgba(30, 107, 240, 0.22);
+  }
+  .vs-col.blue-c .tag { background: var(--blue); color: #fff; }
+
+  .vs-inner { padding: 76px 44px 48px; }
+
+  .vs-big {
+    font-family: "Anton", sans-serif;
+    font-size: 62px;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .vs-col.gray .vs-big { color: #9aa3b2; }
+  .vs-col.blue-c .vs-big { color: #fff; }
+
+  .vs-desc { margin-top: 28px; font-size: 29px; line-height: 1.45; font-weight: 500; }
+  .vs-col.gray .vs-desc { color: #79828f; }
+  .vs-col.blue-c .vs-desc { color: var(--muted); }
+  .vs-col.blue-c .vs-desc .blue { color: var(--blue-bright); font-weight: 700; }
+
+  .vs-result {
+    margin-top: 42px;
+    display: inline-block;
+    font-family: "Anton", sans-serif;
+    font-size: 46px;
+    text-transform: uppercase;
+    padding: 10px 30px 14px;
+    border-radius: 10px;
+  }
+  .vs-col.gray .vs-result { background: #2a2f38; color: #cfd5de; }
+  .vs-col.blue-c .vs-result { background: var(--blue); color: #fff; box-shadow: 0 16px 44px rgba(30, 107, 240, 0.5); }
+
+  .vs-badge {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-6deg);
+    z-index: 10;
+    font-family: "Anton", sans-serif;
+    font-size: 58px;
+    color: #fff;
+    text-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
+  }
+  .vs-badge::before,
+  .vs-badge::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 3px;
+    height: 46px;
+    background: rgba(230, 238, 250, 0.85);
+    transform: translateX(-50%) rotate(18deg);
+  }
+  .vs-badge::before { top: -62px; }
+  .vs-badge::after { bottom: -62px; }
+
+  .bottom-pill {
+    position: absolute;
+    left: 84px;
+    right: 84px;
+    bottom: 96px;
+    border-radius: 999px;
+    padding: 38px 30px;
+    text-align: center;
+    font-family: "Anton", sans-serif;
+    font-size: 44px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .bottom-pill .blue { color: var(--blue-bright); }
+</style>
+</head>
+<body>
+<div class="slide">
+  <img class="bg-watermark" src="./assets/fg-mark.png" alt="">
+  <div class="bg-grid-light"></div>
+  <div class="flare a"></div>
+  <div class="flare c"></div>
+
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="./assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="h1">
+      O PROBLEMA<br>
+      <span class="chip">NÃO É</span> A FALTA<br>
+      DE ALCANCE.
+    </div>
+    <div class="brush"></div>
+
+    <div class="versus">
+      <div class="vs-col gray">
+        <div class="tag">Muitas empresas</div>
+        <div class="vs-inner">
+          <div class="vs-big">Conseguem<br>atenção.</div>
+          <div class="vs-desc">Alcançam milhares de pessoas todos os dias.</div>
+          <div class="vs-result">Atenção.</div>
+        </div>
+      </div>
+
+      <div class="vs-badge">VS</div>
+
+      <div class="vs-col blue-c">
+        <div class="tag">Poucas empresas</div>
+        <div class="vs-inner">
+          <div class="vs-big">Transformam<br>em clientes.</div>
+          <div class="vs-desc">Convertem essa atenção em <span class="blue">clientes reais</span>.</div>
+          <div class="vs-result">Clientes.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-pill card">
+    A diferença está na <span class="blue">estratégia.</span>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FortGrow — Carrossel Alcance x Faturamento — Slide 5</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .slide {
+    background:
+      radial-gradient(1000px 700px at 50% -10%, rgba(30, 107, 240, 0.34), transparent 62%),
+      radial-gradient(760px 560px at -12% 40%, rgba(23, 78, 176, 0.2), transparent 60%),
+      radial-gradient(760px 560px at 112% 40%, rgba(23, 78, 176, 0.2), transparent 60%),
+      radial-gradient(1100px 900px at 50% 120%, rgba(12, 42, 96, 0.4), transparent 65%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 55%, #020509 100%);
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    padding: 250px 96px 110px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .content .h1 { font-size: 96px; }
+  .content .h1 .dim { color: #93a5c4; }
+
+  .rule {
+    width: 150px;
+    height: 4px;
+    background: var(--blue-bright);
+    margin: 56px auto 48px;
+  }
+
+  .sub {
+    font-size: 34px;
+    line-height: 1.55;
+    font-weight: 500;
+    color: var(--muted);
+    max-width: 800px;
+  }
+  .sub .blue { color: var(--blue-bright); font-weight: 600; }
+  .sub .strong { color: var(--ink); font-weight: 700; }
+
+  .brand-block {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+  }
+  .brand-block img { width: 150px; }
+  .brand-block .name {
+    font-family: "Anton", sans-serif;
+    font-size: 72px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+  }
+  .brand-block .name i { font-style: normal; color: var(--blue-bright); }
+
+  .tagline-pill {
+    margin-top: 8px;
+    border-radius: 999px;
+    padding: 26px 60px;
+    font-size: 31px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .tagline-pill .blue { color: var(--blue-bright); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <img class="bg-watermark" src="./assets/fg-mark.png" alt="" style="left:-240px; right:auto;">
+  <div class="bg-grid-light"></div>
+  <div class="flare a"></div>
+  <div class="flare b"></div>
+  <div class="flare c"></div>
+
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="./assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="h1">
+      VOCÊ QUER MAIS<br>
+      <span class="dim">VISUALIZAÇÕES…</span><br>
+      OU MAIS <span class="chip">CLIENTES?</span>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="sub">
+      Antes de buscar alcance, construa uma <span class="blue">estratégia</span>
+      que transforme atenção em <span class="strong">faturamento</span>.
+    </div>
+
+    <div class="brand-block">
+      <img src="./assets/fg-mark.png" alt="FortGrow">
+      <div class="name">FORT<i>GROW</i></div>
+      <div class="tagline-pill card">
+        Antes da venda, vem a <span class="blue">estruturação.</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

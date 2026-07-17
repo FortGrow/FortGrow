@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FortGrow — Carrossel Alcance x Faturamento — Slide 1</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .photo-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 660px;
+    z-index: 5;
+  }
+  .photo-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 46% 12%;
+    filter: saturate(0.82) contrast(1.06) brightness(0.92);
+  }
+  /* funde a foto no fundo navy, como no slide do Neymar */
+  .photo-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(3, 7, 16, 0.55) 0%, transparent 22%, transparent 55%, rgba(3, 7, 16, 0.9) 88%, #030710 100%),
+      linear-gradient(0deg, #030710 0%, rgba(3, 7, 16, 0.35) 20%, transparent 45%),
+      linear-gradient(180deg, rgba(3, 7, 16, 0.85) 0%, transparent 26%),
+      linear-gradient(160deg, rgba(6, 16, 33, 0.15), rgba(30, 107, 240, 0.12));
+  }
+
+  .title-block {
+    position: absolute;
+    z-index: 20;
+    left: 432px;
+    right: 60px;
+    top: 372px;
+  }
+  .title-block .h1 { font-size: 112px; text-align: left; }
+  .title-block .h1 .l2 { font-size: 80px; }
+  .title-block .rule {
+    width: 150px;
+    height: 4px;
+    background: var(--blue-bright);
+    margin: 44px 0 40px;
+  }
+  .title-block .sub {
+    font-size: 32px;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--muted);
+    max-width: 520px;
+  }
+  .title-block .sub .blue { color: var(--blue-bright); font-weight: 700; }
+  .title-block .sub .strong { color: var(--ink); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <img class="bg-watermark" src="./assets/fg-mark.png" alt="">
+  <div class="bg-grid-light"></div>
+  <div class="flare c"></div>
+
+  <div class="topbar">
+    <div class="wordmark">
+      <img src="./assets/fg-mark.png" alt="">
+      <span><b>FORT</b><i>GROW</i></span>
+    </div>
+    <div class="badge"><img src="./assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="photo-wrap">
+    <img src="./assets/zuck-f8-2019.jpg" alt="">
+  </div>
+
+  <div class="title-block">
+    <div class="h1">
+      MILHÕES DE<br>USUÁRIOS.<br>
+      <span class="l2">ISSO <span class="blue">NÃO PAGA<br>BOLETOS.</span></span>
+    </div>
+    <div class="rule"></div>
+    <div class="sub">
+      Curtidas e visualizações chamam atenção.<br>
+      <span class="blue">Estratégia gera faturamento.</span>
+    </div>
+  </div>
+
+  <div class="foot-ico">
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#3d86ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  </div>
+
+  <div class="credit">Foto: Anthony Quintano — CC BY 2.0 (Wikimedia Commons)</div>
+</div>
+</body>
+</html>
