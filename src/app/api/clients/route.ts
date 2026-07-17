@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
+import { getSession } from "@/lib/auth";
 
 const createSchema = z.object({
   companyName: z.string().min(2),
@@ -57,4 +58,39 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ client }, { status: 201 });
+}
+
+const deleteSchema = z.object({ id: z.string().min(1) });
+
+/**
+ * Exclui um cliente e tudo que pertence a ele (serviços, contratos,
+ * projetos, faturas, documentos, chamados, métricas e acessos ao portal).
+ * Somente administradores.
+ */
+export async function DELETE(req: NextRequest) {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Somente administradores podem excluir clientes." }, { status: 403 });
+  }
+
+  const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const client = await prisma.client.findUnique({
+    where: { id: parsed.data.id },
+    select: { id: true, companyName: true },
+  });
+  if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
+
+  await prisma.$transaction([
+    // Remove os acessos ao portal deste cliente
+    prisma.user.deleteMany({ where: { clientId: client.id, role: "CLIENTE" } }),
+    // O restante cai em cascata pelas FKs do schema
+    prisma.client.delete({ where: { id: client.id } }),
+    prisma.activityLog.create({
+      data: { userId: session.sub, action: "client.delete", entity: "Client", entityId: client.id },
+    }),
+  ]);
+
+  return NextResponse.json({ ok: true, deleted: client.companyName });
 }
