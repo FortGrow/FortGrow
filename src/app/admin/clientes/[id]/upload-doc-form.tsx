@@ -10,6 +10,7 @@ const TYPES = [
   ["CRIATIVO", "Criativo"],
   ["RELATORIO", "Relatório"],
   ["APRESENTACAO", "Apresentação"],
+  ["PLANEJAMENTO", "Planejamento (calendário)"],
   ["NOTA_FISCAL", "Nota fiscal"],
   ["VIDEO", "Vídeo"],
   ["IMAGEM", "Imagem"],

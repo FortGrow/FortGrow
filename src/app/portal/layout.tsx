@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const ITEMS: NavItem[] = [
   { href: "/portal", label: "Visão geral", icon: "visao" },
   { href: "/portal/resultados", label: "Resultados", icon: "resultados" },
+  { href: "/portal/calendario", label: "Calendário", icon: "calendario" },
   { href: "/portal/google-ads", label: "Google Ads", icon: "google-ads" },
   { href: "/portal/meta-ads", label: "Meta Ads", icon: "meta-ads" },
   { href: "/portal/instagram", label: "Instagram", icon: "instagram" },

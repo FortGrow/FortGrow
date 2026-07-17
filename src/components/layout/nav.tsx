@@ -49,6 +49,7 @@ const ICONS: Record<string, LucideIcon> = {
   // portal
   visao: LayoutDashboard,
   resultados: TrendingUp,
+  calendario: CalendarCheck2,
   "google-ads": Target,
   "meta-ads": Megaphone,
   instagram: Instagram,

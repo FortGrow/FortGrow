@@ -3,21 +3,33 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Td } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { brl, fullDate } from "@/lib/utils";
+import { PlansPanel } from "./plans-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function ServicosPage() {
-  const [services, clientServices] = await Promise.all([
+  const [services, clientServices, plans] = await Promise.all([
     prisma.service.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { clients: true } } } }),
     prisma.clientService.findMany({
       orderBy: { createdAt: "desc" },
       include: { client: { select: { companyName: true } }, service: { select: { name: true } } },
     }),
+    prisma.plan.findMany({ where: { active: true }, orderBy: { price: "asc" } }),
   ]);
 
   return (
     <>
-      <PageHeader title="Serviços" subtitle="Catálogo da agência e serviços em execução por cliente" />
+      <PageHeader title="Serviços & Planos" subtitle="Pacotes comerciais, catálogo da agência e serviços em execução" />
+
+      <PlansPanel
+        plans={plans.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          description: p.description,
+          deliverables: (p.deliverables as string[]) ?? [],
+        }))}
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {services.map((s) => (

@@ -10,18 +10,21 @@ import { DeleteClientButton } from "./delete-client-button";
 export const dynamic = "force-dynamic";
 
 export default async function ClientesPage() {
-  const clients = await prisma.client.findMany({
-    orderBy: { companyName: "asc" },
-    include: {
-      accountManager: { select: { name: true } },
-      _count: { select: { projects: true, contracts: true } },
-    },
-  });
+  const [clients, plans] = await Promise.all([
+    prisma.client.findMany({
+      orderBy: { companyName: "asc" },
+      include: {
+        accountManager: { select: { name: true } },
+        _count: { select: { projects: true, contracts: true } },
+      },
+    }),
+    prisma.plan.findMany({ where: { active: true }, orderBy: { price: "asc" } }),
+  ]);
 
   return (
     <>
       <PageHeader title="Clientes" subtitle={`${clients.length} contas na carteira`}>
-        <NewClientForm />
+        <NewClientForm plans={plans.map((p) => ({ name: p.name, price: Number(p.price) }))} />
       </PageHeader>
       <DataTable headers={["Empresa", "Plano", "Cobrança", "Início", "Responsável", "Projetos", "Contratos", "Status", ""]}>
         {clients.map((c) => (

@@ -10,6 +10,7 @@ import { kpis, sumTotals } from "@/lib/metrics";
 import { UploadDocForm } from "./upload-doc-form";
 import { PortalAccessPanel } from "./portal-access";
 import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integration";
+import { ContentCalendarPanel } from "./content-calendar";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,11 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         where: { role: "CLIENTE" },
         select: { id: true, name: true, email: true, active: true },
         orderBy: { name: "asc" },
+      },
+      contentPosts: {
+        where: { date: { gte: new Date(Date.now() - 30 * 86400000) } },
+        orderBy: { date: "asc" },
+        take: 60,
       },
     },
   });
@@ -67,6 +73,18 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       <div className="mb-6 space-y-4">
         <PortalAccessPanel clientId={client.id} users={client.users} />
         <CampaignIntegrationPanel clientId={client.id} accounts={(client.adAccounts as AdAccounts) ?? {}} />
+        <ContentCalendarPanel
+          clientId={client.id}
+          posts={client.contentPosts.map((p) => ({
+            id: p.id,
+            date: p.date.toISOString(),
+            title: p.title,
+            format: p.format,
+            script: p.script,
+            expectedMetrics: p.expectedMetrics,
+            status: p.status,
+          }))}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
