@@ -26,7 +26,9 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-line bg-ink-850/80 shadow-card backdrop-blur;
+    /* Sem backdrop-blur: backdrop-filter cria um containing block e
+       aprisionaria modais position:fixed renderizados dentro do card */
+    @apply rounded-2xl border border-line bg-ink-850 shadow-card;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-ink-900 px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-500 outline-none transition focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20;

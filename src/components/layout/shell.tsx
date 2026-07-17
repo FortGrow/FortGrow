@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
 import { NavLinks, type NavItem } from "./nav";
 import { GlobalSearch } from "./global-search";
+import { MobileMenu } from "./mobile-menu";
 
 /** Shell compartilhado entre área administrativa e portal do cliente. */
 export async function AppShell({
@@ -68,6 +69,14 @@ export async function AppShell({
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-ink-950/70 px-4 py-3 backdrop-blur sm:px-6">
+          <MobileMenu
+            items={items}
+            areaLabel={areaLabel}
+            profileHref={profileHref}
+            name={displayName}
+            role={session.role}
+            avatarUrl={me?.avatarUrl ?? null}
+          />
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2">
             <Link

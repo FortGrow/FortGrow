@@ -73,7 +73,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Somente administradores podem excluir clientes." }, { status: 403 });
   }
 
-  const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
+  // id via querystring (?id=...) — corpos de DELETE podem ser descartados por proxies
+  const bodyId = (await req.json().catch(() => null))?.id;
+  const parsed = deleteSchema.safeParse({ id: req.nextUrl.searchParams.get("id") ?? bodyId });
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   const client = await prisma.client.findUnique({

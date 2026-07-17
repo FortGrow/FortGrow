@@ -37,11 +37,7 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
   async function disconnect() {
     setLoading(true);
     try {
-      await fetch("/api/integrations", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
-      });
+      await fetch(`/api/integrations?provider=${encodeURIComponent(provider)}`, { method: "DELETE" });
       router.refresh();
     } finally {
       setLoading(false);
@@ -73,7 +69,7 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
           <form onSubmit={connect} className="card w-full max-w-md animate-fade-up p-6">
             <h2 className="mb-1 text-lg font-bold text-slate-100">Conectar {name}</h2>
             <p className="mb-4 text-sm text-slate-500">

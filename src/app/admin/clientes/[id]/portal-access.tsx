@@ -48,11 +48,7 @@ export function PortalAccessPanel({ clientId, users }: { clientId: string; users
   async function onRemove(id: string) {
     setRemoving(id);
     try {
-      await fetch("/api/users", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
+      await fetch(`/api/users?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       router.refresh();
     } finally {
       setRemoving(null);
@@ -110,7 +106,7 @@ export function PortalAccessPanel({ clientId, users }: { clientId: string; users
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
           <form onSubmit={onCreate} className="card w-full max-w-md animate-fade-up p-6">
             <h2 className="mb-4 text-lg font-bold text-slate-100">Criar acesso ao portal</h2>
             <div className="space-y-4">

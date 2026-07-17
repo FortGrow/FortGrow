@@ -16,11 +16,7 @@ export function DeleteClientButton({ clientId, companyName }: { clientId: string
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/clients", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: clientId }),
-      });
+      const res = await fetch(`/api/clients?id=${encodeURIComponent(clientId)}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Não foi possível excluir.");
@@ -45,7 +41,7 @@ export function DeleteClientButton({ clientId, companyName }: { clientId: string
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
           <div className="card w-full max-w-md animate-fade-up p-6">
             <div className="mb-3 flex items-center gap-3">
               <span className="rounded-xl bg-danger/10 p-2.5 text-danger">

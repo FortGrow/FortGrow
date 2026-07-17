@@ -37,7 +37,11 @@ export async function DELETE(req: NextRequest) {
   const session = await requireStaff("integracoes");
   if (isResponse(session)) return session;
 
-  const parsed = disconnectSchema.safeParse(await req.json().catch(() => null));
+  // provider via querystring — corpos de DELETE podem ser descartados por proxies
+  const bodyProvider = (await req.json().catch(() => null))?.provider;
+  const parsed = disconnectSchema.safeParse({
+    provider: req.nextUrl.searchParams.get("provider") ?? bodyProvider,
+  });
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   await prisma.integration.upsert({

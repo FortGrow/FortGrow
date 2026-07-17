@@ -38,7 +38,7 @@ export function NewTaskForm({ users }: { users: { id: string; name: string }[] }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-100">Nova tarefa</h2>
         <div className="space-y-4">
