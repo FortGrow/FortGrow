@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 const FIELDS: { name: string; label: string; type?: string }[] = [
   { name: "companyName", label: "Empresa *" },
@@ -58,7 +59,7 @@ export function NewClientForm() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 backdrop-blur-sm sm:items-center">
+    <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-2xl animate-fade-up p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-100">Novo cliente</h2>
 
@@ -162,6 +163,6 @@ export function NewClientForm() {
           </button>
         </div>
       </form>
-    </div>
+    </Overlay>
   );
 }

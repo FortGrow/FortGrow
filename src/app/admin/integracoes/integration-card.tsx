@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plug, Unplug } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Overlay } from "@/components/ui/overlay";
 
 export function IntegrationCard({ provider, name, connected }: { provider: string; name: string; connected: boolean }) {
   const [open, setOpen] = useState(false);
@@ -69,7 +70,7 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+        <Overlay>
           <form onSubmit={connect} className="card w-full max-w-md animate-fade-up p-6">
             <h2 className="mb-1 text-lg font-bold text-slate-100">Conectar {name}</h2>
             <p className="mb-4 text-sm text-slate-500">
@@ -94,7 +95,7 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
               </button>
             </div>
           </form>
-        </div>
+        </Overlay>
       )}
     </>
   );

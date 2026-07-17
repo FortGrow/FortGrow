@@ -9,6 +9,7 @@ import { brl, fullDate, num } from "@/lib/utils";
 import { kpis, sumTotals } from "@/lib/metrics";
 import { UploadDocForm } from "./upload-doc-form";
 import { PortalAccessPanel } from "./portal-access";
+import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integration";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
@@ -63,8 +64,9 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-4">
         <PortalAccessPanel clientId={client.id} users={client.users} />
+        <CampaignIntegrationPanel clientId={client.id} accounts={(client.adAccounts as AdAccounts) ?? {}} />
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -72,6 +74,10 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         <StatCard label="Conversões (90d)" value={num(totals.conversions)} accent="grow" />
         <StatCard label="Investimento (90d)" value={brl(totals.spend)} accent="warn" />
         <StatCard label="ROAS (90d)" value={`${kpis.roas(totals).toFixed(2)}x`} accent="violet" />
+        <StatCard label="Valor por lead" value={brl(kpis.valuePerLead(totals))} hint="receita / leads" accent="grow" />
+        <StatCard label="Ticket médio" value={brl(kpis.avgTicket(totals))} hint="receita / vendas" accent="brand" />
+        <StatCard label="Custo por venda" value={brl(kpis.costPerSale(totals))} hint="investimento / vendas" accent="warn" />
+        <StatCard label="Receita (90d)" value={brl(totals.revenue)} accent="grow" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">

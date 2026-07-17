@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 /** Exclusão de cliente com confirmação digitada — remove tudo da conta. */
 export function DeleteClientButton({ clientId, companyName }: { clientId: string; companyName: string }) {
@@ -41,7 +42,7 @@ export function DeleteClientButton({ clientId, companyName }: { clientId: string
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+        <Overlay>
           <div className="card w-full max-w-md animate-fade-up p-6">
             <div className="mb-3 flex items-center gap-3">
               <span className="rounded-xl bg-danger/10 p-2.5 text-danger">
@@ -77,7 +78,7 @@ export function DeleteClientButton({ clientId, companyName }: { clientId: string
               </button>
             </div>
           </div>
-        </div>
+        </Overlay>
       )}
     </>
   );

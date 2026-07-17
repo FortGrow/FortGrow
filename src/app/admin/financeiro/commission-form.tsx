@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Percent } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 export type CommissionClient = {
   id: string;
@@ -84,7 +85,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+    <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-1 text-lg font-bold text-slate-100">Lançar faturamento por comissão</h2>
         <p className="mb-4 text-sm text-slate-500">
@@ -176,6 +177,6 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
           </button>
         </div>
       </form>
-    </div>
+    </Overlay>
   );
 }

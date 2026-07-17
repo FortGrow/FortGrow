@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, Trash2, UserPlus } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 export type PortalUser = { id: string; name: string; email: string; active: boolean };
 
@@ -106,7 +107,7 @@ export function PortalAccessPanel({ clientId, users }: { clientId: string; users
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+        <Overlay>
           <form onSubmit={onCreate} className="card w-full max-w-md animate-fade-up p-6">
             <h2 className="mb-4 text-lg font-bold text-slate-100">Criar acesso ao portal</h2>
             <div className="space-y-4">
@@ -132,7 +133,7 @@ export function PortalAccessPanel({ clientId, users }: { clientId: string; users
               </button>
             </div>
           </form>
-        </div>
+        </Overlay>
       )}
     </div>
   );

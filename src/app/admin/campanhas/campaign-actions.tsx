@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Pause, Play, Plus } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 const CHANNELS = [
   ["GOOGLE_ADS", "Google Ads"],
@@ -53,7 +54,7 @@ export function NewCampaignForm({ clients }: { clients: { id: string; name: stri
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+    <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-100">Nova campanha</h2>
         <div className="space-y-4">
@@ -97,7 +98,7 @@ export function NewCampaignForm({ clients }: { clients: { id: string; name: stri
           </button>
         </div>
       </form>
-    </div>
+    </Overlay>
   );
 }
 
