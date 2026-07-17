@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" fill="none">
+  <defs>
+    <filter id="cglow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#6ba0ff" stroke-width="1.6"/>
+    </marker>
+  </defs>
+
+  <!-- linha de crescimento desfocada atravessando o quadro -->
+  <g filter="url(#cglow)" opacity=".55">
+    <polyline points="120,1010 330,850 470,930 660,700 800,760 1010,470"
+      stroke="#bcd4ff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <polyline points="120,1010 330,850 470,930 660,700 800,760 1010,470"
+    stroke="#e6efff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
+
+  <!-- prancheta tática: X, O e setas -->
+  <g stroke="#5b93ff" stroke-width="4" stroke-linecap="round" opacity=".8">
+    <path d="M 905 205 L 955 255 M 955 205 L 905 255"/>
+    <path d="M 1010 640 L 1052 682 M 1052 640 L 1010 682"/>
+    <path d="M 860 1105 L 902 1147 M 902 1105 L 860 1147"/>
+    <circle cx="1015" cy="335" r="30"/>
+    <circle cx="905" cy="905" r="26"/>
+    <path d="M 880 420 C 940 470, 1000 460, 1042 520" stroke-dasharray="2 20" marker-end="url(#arrow)"/>
+    <path d="M 990 760 C 930 820, 940 900, 1000 960" stroke-dasharray="2 20" marker-end="url(#arrow)"/>
+    <path d="M 830 1240 C 900 1210, 980 1250, 1035 1200" stroke-dasharray="2 20" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- traços finos de apoio -->
+  <g stroke="#3f6fd0" stroke-width="2" opacity=".5">
+    <path d="M 840 320 L 1080 320"/>
+    <path d="M 900 1030 L 1080 1030"/>
+    <circle cx="960" cy="530" r="56" stroke-dasharray="6 14"/>
+  </g>
+</svg>
