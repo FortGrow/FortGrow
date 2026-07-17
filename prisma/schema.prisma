@@ -72,6 +72,11 @@ enum ClientStatus {
   ONBOARDING
 }
 
+enum BillingType {
+  FIXO
+  COMISSAO
+}
+
 model Client {
   id             String       @id @default(cuid())
   companyName    String
@@ -87,7 +92,12 @@ model Client {
   phone          String?
   status         ClientStatus @default(ATIVO)
   plan           String?
+  billingType    BillingType  @default(FIXO)
   monthlyValue   Decimal      @default(0) @db.Decimal(12, 2)
+  /// Contratos por comissão: % que o cliente fatura sobre o volume vendido (ex.: 3%)
+  commissionBase  Decimal     @default(0) @db.Decimal(6, 3)
+  /// Contratos por comissão: % da FortGrow sobre a comissão do cliente (ex.: 10%)
+  commissionShare Decimal     @default(0) @db.Decimal(6, 3)
   contractStart  DateTime?
   contractMonths Int?
   projectStatus  String?      @default("Em andamento")

@@ -28,7 +28,12 @@ export default async function PortalHome() {
 
   const info: [string, React.ReactNode][] = [
     ["Plano contratado", client.plan ?? "—"],
-    ["Valor mensal", brl(client.monthlyValue)],
+    [
+      client.billingType === "COMISSAO" ? "Modelo de cobrança" : "Valor mensal",
+      client.billingType === "COMISSAO"
+        ? `Comissão (${Number(client.commissionShare)}% sobre ${Number(client.commissionBase)}% do volume)`
+        : brl(client.monthlyValue),
+    ],
     ["Data de início", fullDate(client.contractStart)],
     ["Tempo de contrato", client.contractMonths ? `${client.contractMonths} meses` : "—"],
     ["Vigência até", fullDate(contractEnd)],
