@@ -7,7 +7,10 @@ const createSchema = z.object({
   companyName: z.string().min(2),
   segment: z.string().max(80).optional(),
   plan: z.string().max(80).optional(),
+  billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
   monthlyValue: z.coerce.number().min(0).optional(),
+  commissionBase: z.coerce.number().min(0).max(100).optional(),
+  commissionShare: z.coerce.number().min(0).max(100).optional(),
   contractMonths: z.coerce.number().int().min(1).max(120).optional(),
   contractStart: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
@@ -26,12 +29,23 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { email, contractStart, monthlyValue, ...rest } = parsed.data;
+  const { email, contractStart, monthlyValue, billingType, commissionBase, commissionShare, ...rest } = parsed.data;
+
+  if (billingType === "COMISSAO" && (!commissionBase || !commissionShare)) {
+    return NextResponse.json(
+      { error: "Contratos por comissão precisam da base de comissão do cliente e do percentual da FortGrow." },
+      { status: 400 }
+    );
+  }
+
   const client = await prisma.client.create({
     data: {
       ...rest,
       email: email || null,
-      monthlyValue: monthlyValue ?? 0,
+      billingType: billingType ?? "FIXO",
+      monthlyValue: billingType === "COMISSAO" ? 0 : monthlyValue ?? 0,
+      commissionBase: billingType === "COMISSAO" ? commissionBase! : 0,
+      commissionShare: billingType === "COMISSAO" ? commissionShare! : 0,
       contractStart: contractStart ? new Date(contractStart) : new Date(),
       status: "ONBOARDING",
       accountManagerId: session.sub,

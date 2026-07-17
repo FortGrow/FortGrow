@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { BarsChart } from "@/components/charts/bars-chart";
 import { brl, fullDate } from "@/lib/utils";
 import { ltv, paybackMonths } from "@/lib/metrics";
+import { CommissionForm } from "./commission-form";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,12 @@ export default async function FinanceiroPage() {
     prisma.client.findMany({ where: { status: "ATIVO" }, select: { monthlyValue: true, contractMonths: true } }),
     prisma.metricSnapshot.aggregate({ where: { date: { gte: yearStart } }, _sum: { spend: true, conversions: true } }),
   ]);
+
+  const commissionClients = await prisma.client.findMany({
+    where: { billingType: "COMISSAO", status: { in: ["ATIVO", "ONBOARDING"] } },
+    select: { id: true, companyName: true, commissionBase: true, commissionShare: true },
+    orderBy: { companyName: "asc" },
+  });
 
   const received = invoices.filter((i) => i.status === "PAGO").reduce((s, i) => s + Number(i.amount), 0);
   const pending = invoices.filter((i) => i.status === "EM_ABERTO").reduce((s, i) => s + Number(i.amount), 0);
@@ -57,7 +64,16 @@ export default async function FinanceiroPage() {
 
   return (
     <>
-      <PageHeader title="Faturamento" subtitle={`Ano fiscal ${now.getFullYear()} · valores calculados automaticamente`} />
+      <PageHeader title="Faturamento" subtitle={`Ano fiscal ${now.getFullYear()} · valores calculados automaticamente`}>
+        <CommissionForm
+          clients={commissionClients.map((c) => ({
+            id: c.id,
+            name: c.companyName,
+            base: Number(c.commissionBase),
+            share: Number(c.commissionShare),
+          }))}
+        />
+      </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Recebido" value={brl(received)} accent="grow" />

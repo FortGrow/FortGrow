@@ -46,7 +46,11 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     <>
       <PageHeader
         title={client.companyName}
-        subtitle={`${client.plan ?? "Sem plano"} · ${brl(client.monthlyValue)}/mês · desde ${fullDate(client.contractStart)}`}
+        subtitle={
+          client.billingType === "COMISSAO"
+            ? `${client.plan ?? "Contrato por comissão"} · comissão ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% FortGrow · desde ${fullDate(client.contractStart)}`
+            : `${client.plan ?? "Sem plano"} · ${brl(client.monthlyValue)}/mês · desde ${fullDate(client.contractStart)}`
+        }
       >
         <StatusBadge status={client.status} />
       </PageHeader>
@@ -72,6 +76,12 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         <div className="card space-y-3 p-5 text-sm">
           <h2 className="text-sm font-bold text-slate-300">Ficha da conta</h2>
           {[
+            [
+              "Modelo de cobrança",
+              client.billingType === "COMISSAO"
+                ? `Comissão: cliente fatura ${Number(client.commissionBase)}% do volume · FortGrow recebe ${Number(client.commissionShare)}% disso`
+                : `Fixo: ${brl(client.monthlyValue)}/mês`,
+            ],
             ["CNPJ", client.cnpj],
             ["Segmento", client.segment],
             ["Cidade", client.city ? `${client.city}/${client.state ?? ""}` : null],

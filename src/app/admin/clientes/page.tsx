@@ -22,7 +22,7 @@ export default async function ClientesPage() {
       <PageHeader title="Clientes" subtitle={`${clients.length} contas na carteira`}>
         <NewClientForm />
       </PageHeader>
-      <DataTable headers={["Empresa", "Plano", "Valor mensal", "Início", "Responsável", "Projetos", "Contratos", "Status", ""]}>
+      <DataTable headers={["Empresa", "Plano", "Cobrança", "Início", "Responsável", "Projetos", "Contratos", "Status", ""]}>
         {clients.map((c) => (
           <tr key={c.id} className="transition hover:bg-ink-800/50">
             <Td className="font-semibold text-slate-200">
@@ -30,7 +30,15 @@ export default async function ClientesPage() {
               {c.segment && <span className="ml-2 text-xs text-slate-500">{c.segment}</span>}
             </Td>
             <Td>{c.plan ?? "—"}</Td>
-            <Td>{brl(c.monthlyValue)}</Td>
+            <Td>
+              {c.billingType === "COMISSAO" ? (
+                <span className="text-xs font-semibold text-violet">
+                  Comissão {Number(c.commissionBase)}% × {Number(c.commissionShare)}%
+                </span>
+              ) : (
+                `${brl(c.monthlyValue)}/mês`
+              )}
+            </Td>
             <Td className="text-slate-500">{fullDate(c.contractStart)}</Td>
             <Td>{c.accountManager?.name ?? "—"}</Td>
             <Td>{c._count.projects}</Td>
