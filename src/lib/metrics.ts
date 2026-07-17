@@ -57,6 +57,12 @@ export const kpis = {
   roas: (t: ChannelTotals) => safe(t.revenue, t.spend),
   roi: (t: ChannelTotals) => safe(t.revenue - t.spend, t.spend) * 100,
   convRate: (t: ChannelTotals) => safe(t.conversions, t.leads) * 100,
+  /** Valor por lead = receita gerada / leads captados. */
+  valuePerLead: (t: ChannelTotals) => safe(t.revenue, t.leads),
+  /** Ticket médio = receita / conversões (vendas). */
+  avgTicket: (t: ChannelTotals) => safe(t.revenue, t.conversions),
+  /** Custo por venda = investimento / conversões (mesmo que CPA). */
+  costPerSale: (t: ChannelTotals) => safe(t.spend, t.conversions),
 };
 
 /** LTV = ticket médio mensal × tempo médio de contrato (meses). */

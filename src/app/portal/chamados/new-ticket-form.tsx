@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 export function NewTicketForm() {
   const [open, setOpen] = useState(false);
@@ -41,7 +42,7 @@ export function NewTicketForm() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+    <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-100">Novo chamado</h2>
         <div className="space-y-4">
@@ -70,6 +71,6 @@ export function NewTicketForm() {
           </button>
         </div>
       </form>
-    </div>
+    </Overlay>
   );
 }

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus } from "lucide-react";
+import { Overlay } from "@/components/ui/overlay";
 
 const ROLES = [
   ["ADMIN", "Administrador"],
@@ -55,7 +56,7 @@ export function NewUserForm({ clients }: { clients: { id: string; name: string }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
+    <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-100">Novo usuário</h2>
         <div className="space-y-4">
@@ -101,6 +102,6 @@ export function NewUserForm({ clients }: { clients: { id: string; name: string }
           </button>
         </div>
       </form>
-    </div>
+    </Overlay>
   );
 }

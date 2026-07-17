@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { IntegrationCard } from "./integration-card";
+import { SyncButton } from "./sync-button";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +44,10 @@ export default async function IntegracoesPage() {
     <>
       <PageHeader
         title="Integrações"
-        subtitle="Conecte as plataformas para sincronizar métricas, cobranças e comunicação"
-      />
+        subtitle="Conecte as plataformas e vincule as contas na ficha de cada cliente — a sincronização alimenta os dashboards automaticamente"
+      >
+        <SyncButton />
+      </PageHeader>
       {groups.map((g) => (
         <div key={g} className="mb-6">
           <h2 className="mb-3 text-sm font-bold text-slate-300">{g}</h2>

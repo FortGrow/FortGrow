@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "automations:run": "tsx scripts/run-automations.ts",
+    "sync:run": "tsx scripts/run-sync.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

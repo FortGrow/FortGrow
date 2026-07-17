@@ -96,3 +96,37 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ ok: true, deleted: client.companyName });
 }
+
+const accountsSchema = z.object({
+  id: z.string().min(1),
+  adAccounts: z.object({
+    googleAdsId: z.string().max(60).optional(),
+    metaAdsId: z.string().max(60).optional(),
+    instagram: z.string().max(80).optional(),
+    ga4PropertyId: z.string().max(60).optional(),
+  }),
+});
+
+/** Vincula as contas de anúncio do cliente (integração de campanhas). */
+export async function PATCH(req: NextRequest) {
+  const session = await requireStaff("clientes");
+  if (isResponse(session)) return session;
+
+  const parsed = accountsSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const clean = Object.fromEntries(
+    Object.entries(parsed.data.adAccounts).filter(([, v]) => String(v ?? "").trim() !== "")
+  );
+
+  const client = await prisma.client.update({
+    where: { id: parsed.data.id },
+    data: { adAccounts: clean },
+  });
+
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "client.link_accounts", entity: "Client", entityId: client.id },
+  });
+
+  return NextResponse.json({ ok: true, adAccounts: client.adAccounts });
+}

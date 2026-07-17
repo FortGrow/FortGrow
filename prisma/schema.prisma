@@ -102,6 +102,9 @@ model Client {
   contractMonths Int?
   projectStatus  String?      @default("Em andamento")
 
+  /// Contas de anúncio vinculadas: { googleAdsId, metaAdsId, instagram, ga4PropertyId }
+  adAccounts     Json         @default("{}")
+
   accountManagerId String?
   accountManager   User?   @relation("accountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
   consultantId     String?
