@@ -9,7 +9,6 @@ const FIELDS: { name: string; label: string; type?: string }[] = [
   { name: "companyName", label: "Empresa *" },
   { name: "cnpj", label: "CNPJ" },
   { name: "segment", label: "Segmento" },
-  { name: "plan", label: "Plano / descrição do contrato" },
   { name: "contractMonths", label: "Tempo de contrato (meses)", type: "number" },
   { name: "contractStart", label: "Início do contrato", type: "date" },
   { name: "email", label: "E-mail", type: "email" },
@@ -19,12 +18,22 @@ const FIELDS: { name: string; label: string; type?: string }[] = [
   { name: "city", label: "Cidade" },
 ];
 
-export function NewClientForm() {
+export type PlanOption = { name: string; price: number };
+
+export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
   const [open, setOpen] = useState(false);
   const [billingType, setBillingType] = useState<"FIXO" | "COMISSAO">("FIXO");
+  const [planChoice, setPlanChoice] = useState("");
+  const [monthly, setMonthly] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  function selectPlan(name: string) {
+    setPlanChoice(name);
+    const plan = plans.find((p) => p.name === name);
+    if (plan && plan.price > 0) setMonthly(String(plan.price));
+  }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -89,10 +98,39 @@ export function NewClientForm() {
           </div>
           <input type="hidden" name="billingType" value={billingType} />
 
+          <div className="mt-4">
+            <label className="label" htmlFor="nc-plan">Plano FortGrow</label>
+            <select id="nc-plan" value={planChoice} onChange={(e) => selectPlan(e.target.value)} className="input">
+              <option value="">Selecione um plano…</option>
+              {plans.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+              <option value="__custom">Personalizado (digitar)</option>
+            </select>
+            {planChoice === "__custom" ? (
+              <input name="plan" className="input mt-2" placeholder="Descreva o plano/contrato" />
+            ) : (
+              <input type="hidden" name="plan" value={planChoice} />
+            )}
+            <p className="mt-1 text-xs text-slate-600">
+              Cadastre e edite seus pacotes em <span className="font-semibold text-slate-400">Serviços &amp; Planos</span>.
+            </p>
+          </div>
+
           {billingType === "FIXO" ? (
             <div className="mt-4">
               <label className="label" htmlFor="nc-monthlyValue">Valor mensal (R$) *</label>
-              <input id="nc-monthlyValue" name="monthlyValue" type="number" min="0" step="0.01" required className="input" />
+              <input
+                id="nc-monthlyValue"
+                name="monthlyValue"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                value={monthly}
+                onChange={(e) => setMonthly(e.target.value)}
+                className="input"
+              />
             </div>
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">

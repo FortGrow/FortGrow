@@ -13,6 +13,7 @@ const TYPE_META: Record<string, { label: string; icon: React.ReactNode; tone: st
   RELATORIO: { label: "Relatórios", icon: <FileBarChart size={16} />, tone: "text-brand-400 bg-brand-500/10" },
   APRESENTACAO: { label: "Apresentações", icon: <Presentation size={16} />, tone: "text-warn bg-warn/10" },
   NOTA_FISCAL: { label: "Notas fiscais", icon: <FileText size={16} />, tone: "text-grow-400 bg-grow-500/10" },
+  PLANEJAMENTO: { label: "Planejamentos", icon: <FileBarChart size={16} />, tone: "text-violet bg-violet/10" },
   VIDEO: { label: "Vídeos", icon: <Film size={16} />, tone: "text-danger bg-danger/10" },
   IMAGEM: { label: "Imagens", icon: <ImageIcon size={16} />, tone: "text-violet bg-violet/10" },
   OUTRO: { label: "Outros", icon: <File size={16} />, tone: "text-slate-400 bg-slate-500/10" },

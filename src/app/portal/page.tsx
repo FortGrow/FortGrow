@@ -21,6 +21,11 @@ export default async function PortalHome() {
   });
   if (!client) return null;
 
+  const plan = client.plan
+    ? await prisma.plan.findUnique({ where: { name: client.plan } })
+    : null;
+  const deliverables = (plan?.deliverables as string[] | undefined) ?? [];
+
   const contractEnd =
     client.contractStart && client.contractMonths
       ? new Date(new Date(client.contractStart).setMonth(client.contractStart.getMonth() + client.contractMonths))
@@ -76,6 +81,18 @@ export default async function PortalHome() {
         </div>
 
         <div className="card p-6">
+          {deliverables.length > 0 && (
+            <div className="mb-5">
+              <h2 className="mb-3 text-sm font-bold text-slate-300">Entregas do seu plano · {client.plan}</h2>
+              <ul className="space-y-1.5">
+                {deliverables.map((d, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-400">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-grow-500" /> {d}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <h2 className="mb-4 text-sm font-bold text-slate-300">Serviços em execução</h2>
           <div className="space-y-3">
             {client.services.length === 0 && <p className="text-sm text-slate-500">Nenhum serviço ativo no momento.</p>}

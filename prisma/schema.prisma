@@ -122,6 +122,7 @@ model Client {
   metrics    MetricSnapshot[]
   goals      Goal[]
   leads      Lead[]
+  contentPosts ContentPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -434,9 +435,38 @@ enum DocumentType {
   RELATORIO
   APRESENTACAO
   NOTA_FISCAL
+  PLANEJAMENTO
   VIDEO
   IMAGEM
   OUTRO
+}
+
+// ─────────────────────────────── Calendário de postagens ───────────────────────────────
+
+model ContentPost {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  date            DateTime
+  title           String
+  format          String?  // Reels | Carrossel | Story | Feed | Live | Vídeo | Outro
+  script          String?  // roteiro da postagem
+  expectedMetrics String?  // métricas esperadas (alcance, engajamento, leads…)
+  status          String   @default("PLANEJADO") // PLANEJADO | APROVADO | PUBLICADO
+  createdAt       DateTime @default(now())
+
+  @@index([clientId, date])
+}
+
+/// Planos/pacotes comerciais da FortGrow (personalizáveis pelo admin)
+model Plan {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  price        Decimal  @default(0) @db.Decimal(12, 2)
+  description  String?
+  deliverables Json     @default("[]") // lista de entregas do pacote
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
 }
 
 model Document {

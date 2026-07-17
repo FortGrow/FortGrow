@@ -6,7 +6,7 @@ import { requireStaff, isResponse } from "@/lib/api-guard";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const DOC_TYPES = new Set([
-  "CONTRATO", "BRIEFING", "CRIATIVO", "RELATORIO", "APRESENTACAO", "NOTA_FISCAL", "VIDEO", "IMAGEM", "OUTRO",
+  "CONTRATO", "BRIEFING", "CRIATIVO", "RELATORIO", "APRESENTACAO", "NOTA_FISCAL", "PLANEJAMENTO", "VIDEO", "IMAGEM", "OUTRO",
 ]);
 
 function sanitize(name: string) {
