@@ -138,6 +138,7 @@ model Client {
   leads      Lead[]
   contentPosts ContentPost[]
   staffCommissions StaffCommission[]
+  performanceEntries PerformanceEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -730,6 +731,23 @@ model SyncLog {
 }
 
 /// Configurações gerais do sistema (chave → valor)
+/// Dashboard de performance por cliente: lançamentos manuais (estilo planilha).
+/// KPIs (CAC, CPL, ticket médio, valor por lead) são derivados — nunca armazenados.
+model PerformanceEntry {
+  id         String   @id @default(cuid())
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  date       DateTime
+  investment Decimal  @default(0) @db.Decimal(12, 2)
+  leads      Int      @default(0)
+  sales      Int      @default(0)
+  revenue    Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([clientId, date])
+}
+
 model Setting {
   key       String   @id
   value     Json

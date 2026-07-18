@@ -7,12 +7,15 @@ export function StatCard({
   hint,
   delta,
   accent = "brand",
+  lowerIsBetter = false,
 }: {
   label: string;
   value: string;
   hint?: string;
   delta?: number;
   accent?: "brand" | "grow" | "warn" | "danger" | "violet";
+  /** Métricas de custo (CAC, CPL…): queda é boa notícia — inverte a cor da variação. */
+  lowerIsBetter?: boolean;
 }) {
   const accentBar = {
     brand: "bg-brand-500",
@@ -32,7 +35,7 @@ export function StatCard({
           <span
             className={cn(
               "inline-flex items-center gap-1 font-semibold",
-              delta >= 0 ? "text-grow-400" : "text-danger"
+              (lowerIsBetter ? delta <= 0 : delta >= 0) ? "text-grow-400" : "text-danger"
             )}
           >
             {delta >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
