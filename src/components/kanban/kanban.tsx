@@ -11,6 +11,8 @@ export type KanbanCard = {
   meta?: string;
   badge?: string;
   badgeTone?: string;
+  /// Chave da paleta de cores do cartão (CARD_COLORS)
+  color?: string | null;
 };
 
 export type KanbanColumn = {
@@ -29,14 +31,42 @@ const TONES: Record<string, string> = {
   violet: "bg-violet/10 text-violet",
 };
 
+/** Paleta de cores dos cartões — tons validados para o tema escuro. */
+export const CARD_COLORS: Record<string, string> = {
+  azul: "#0284c7",
+  verde: "#059669",
+  roxo: "#8b5cf6",
+  laranja: "#d97706",
+  rosa: "#ec4899",
+  vermelho: "#dc2626",
+  ciano: "#06b6d4",
+  amarelo: "#eab308",
+};
+
+function cardStyle(color?: string | null): React.CSSProperties | undefined {
+  const hex = color ? CARD_COLORS[color] : undefined;
+  if (!hex) return undefined;
+  return { borderColor: `${hex}66`, background: `${hex}14`, borderLeft: `3px solid ${hex}` };
+}
+
 /**
  * Quadro Kanban com drag & drop nativo.
  * Ao soltar um cartão, envia PATCH para `endpoint` com { id, stage }.
+ * Com `colorable`, cada cartão ganha uma paleta de cores (PATCH { id, color }).
  */
-export function KanbanBoard({ columns, endpoint }: { columns: KanbanColumn[]; endpoint: string }) {
+export function KanbanBoard({
+  columns,
+  endpoint,
+  colorable = false,
+}: {
+  columns: KanbanColumn[];
+  endpoint: string;
+  colorable?: boolean;
+}) {
   const [board, setBoard] = useState(columns);
   const [dragging, setDragging] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
+  const [paletteFor, setPaletteFor] = useState<string | null>(null);
   const router = useRouter();
 
   async function moveCard(cardId: string, toCol: string) {
@@ -57,6 +87,23 @@ export function KanbanBoard({ columns, endpoint }: { columns: KanbanColumn[]; en
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: cardId, stage: toCol }),
+    });
+    if (!res.ok) router.refresh();
+  }
+
+  async function paintCard(cardId: string, color: string | null) {
+    setPaletteFor(null);
+    // Atualização otimista
+    setBoard((prev) =>
+      prev.map((col) => ({
+        ...col,
+        cards: col.cards.map((k) => (k.id === cardId ? { ...k, color } : k)),
+      }))
+    );
+    const res = await fetch(endpoint, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: cardId, color: color ?? "" }),
     });
     if (!res.ok) router.refresh();
   }
@@ -102,12 +149,49 @@ export function KanbanBoard({ columns, endpoint }: { columns: KanbanColumn[]; en
                   setDragging(card.id);
                 }}
                 onDragEnd={() => setDragging(null)}
+                style={cardStyle(card.color)}
                 className={cn(
-                  "cursor-grab rounded-xl border border-line bg-ink-850 p-3.5 shadow-card transition hover:border-line-strong active:cursor-grabbing",
+                  "group cursor-grab rounded-xl border border-line bg-ink-850 p-3.5 shadow-card transition hover:border-line-strong active:cursor-grabbing",
                   dragging === card.id && "opacity-50"
                 )}
               >
-                <p className="text-sm font-semibold text-slate-200">{card.title}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-200">{card.title}</p>
+                  {colorable && (
+                    <button
+                      type="button"
+                      title="Cor do cartão"
+                      onClick={() => setPaletteFor((p) => (p === card.id ? null : card.id))}
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-line transition group-hover:scale-110"
+                      style={{ backgroundColor: card.color ? CARD_COLORS[card.color] ?? "#334155" : "#334155" }}
+                    />
+                  )}
+                </div>
+                {colorable && paletteFor === card.id && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-ink-900/80 p-2">
+                    {Object.entries(CARD_COLORS).map(([key, hex]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        title={key}
+                        onClick={() => paintCard(card.id, key)}
+                        className={cn(
+                          "h-4 w-4 rounded-full transition hover:scale-125",
+                          card.color === key && "ring-2 ring-white/70"
+                        )}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      title="Sem cor"
+                      onClick={() => paintCard(card.id, null)}
+                      className="flex h-4 w-4 items-center justify-center rounded-full bg-ink-700 text-[9px] font-bold text-slate-400 transition hover:scale-125"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
                 {card.subtitle && <p className="mt-0.5 text-xs text-slate-500">{card.subtitle}</p>}
                 <div className="mt-2.5 flex items-center justify-between">
                   {card.badge ? (

@@ -38,6 +38,7 @@ export default async function TarefasPage() {
         meta: t.dueDate ? `até ${shortDate(t.dueDate)}` : undefined,
         badge: t.priority,
         badgeTone: t.priority === "URGENTE" ? "danger" : t.priority === "ALTA" ? "warn" : "slate",
+        color: t.color,
       })),
   }));
 
