@@ -3,7 +3,8 @@
 import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Loader2, Lock, Mail, TrendingUp } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Loader2, Lock, Mail, Megaphone, Search, ShoppingCart, Target, TrendingUp } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 
 /** Mini dashboard flutuante decorativo (gráficos de crescimento em SVG puro). */
@@ -50,6 +51,48 @@ function FloatCard({
         <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     </motion.div>
+  );
+}
+
+/** Notificações de venda simuladas, aparecendo em ciclo (prova de resultado). */
+const SALES = [
+  { icon: "💰", title: "Venda realizada", detail: "R$ 4.750 · Plano Performance", time: "agora mesmo" },
+  { icon: "🛒", title: "Novo pedido no e-commerce", detail: "R$ 1.290 · via tráfego pago", time: "há 2 min" },
+  { icon: "📞", title: "Lead qualificado agendou reunião", detail: "origem: Meta Ads", time: "há 5 min" },
+  { icon: "💰", title: "Venda realizada", detail: "R$ 12.400 · contrato anual", time: "há 9 min" },
+];
+
+function SalesToasts({ className }: { className: string }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % SALES.length), 3400);
+    return () => clearInterval(t);
+  }, []);
+  const sale = SALES[idx];
+  return (
+    <div className={`pointer-events-none absolute w-64 ${className}`} style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, y: 14, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.97 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex items-center gap-3 rounded-2xl border border-grow-500/25 bg-ink-900/80 p-3.5 shadow-2xl ring-1 ring-grow-500/10 backdrop-blur-md"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-grow-500/15 text-lg">
+            {sale.icon}
+          </span>
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 truncate text-xs font-bold text-white">
+              {sale.title} <BadgeCheck size={12} className="shrink-0 text-grow-400" />
+            </p>
+            <p className="truncate text-[11px] text-slate-400">{sale.detail}</p>
+            <p className="text-[10px] text-slate-600">{sale.time}</p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -143,13 +186,31 @@ function Backdrop() {
         />
         <FloatCard
           className="left-[30%] top-[7%]"
-          title="ROAS"
+          title="Tráfego pago · ROAS"
           value="5.2x"
           delta="18%"
           color="#34d399"
           path="M0,25 C18,24 30,20 45,17 C62,13 80,10 100,5"
           delay={0.75}
         />
+        {/* Posicionamento (SEO/Google) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 1.15, ease: [0.22, 1, 0.36, 1] }}
+          className="pointer-events-none absolute left-[34%] top-[21%] flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 shadow-2xl backdrop-blur-md"
+          style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+            <Search size={15} />
+          </span>
+          <div>
+            <p className="text-xs font-bold text-white">Posicionamento</p>
+            <p className="text-[10px] text-slate-400">Top 3 no Google · marca fortalecida</p>
+          </div>
+        </motion.div>
+        {/* Notificações de venda em tempo real (simuladas) */}
+        <SalesToasts className="left-[27%] top-[68%]" />
         <FloatCard
           className="left-[9%] top-[72%]"
           title="Receita gerada"
@@ -304,11 +365,11 @@ export default function LoginPage() {
             transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-6 max-w-xl text-[2.6rem] font-extrabold leading-[1.12] tracking-tight text-white xl:text-5xl"
           >
-            Transformando estratégia em{" "}
+            Estruturamos o{" "}
             <span className="bg-gradient-to-r from-brand-400 via-sky-300 to-grow-400 bg-clip-text text-transparent">
-              crescimento real
-            </span>
-            .
+              marketing
+            </span>{" "}
+            que faz sua empresa vender.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -316,9 +377,30 @@ export default function LoginPage() {
             transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="mt-5 max-w-md text-base leading-relaxed text-slate-400"
           >
-            FortGrow — onde dados viram resultados. Gestão de clientes, campanhas,
-            faturamento e performance em um só lugar.
+            A FortGrow constrói sua máquina de crescimento de ponta a ponta —
+            do posicionamento da marca ao tráfego pago que vira venda.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-7 flex flex-wrap gap-2"
+          >
+            {[
+              { icon: <Search size={12} />, label: "Posicionamento" },
+              { icon: <Megaphone size={12} />, label: "Tráfego pago" },
+              { icon: <Target size={12} />, label: "Geração de leads" },
+              { icon: <ShoppingCart size={12} />, label: "Vendas" },
+              { icon: <TrendingUp size={12} />, label: "Dados & performance" },
+            ].map((c) => (
+              <span
+                key={c.label}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold text-slate-300 backdrop-blur-sm"
+              >
+                <span className="text-brand-300">{c.icon}</span> {c.label}
+              </span>
+            ))}
+          </motion.div>
         </div>
 
         {/* Lado do formulário */}
