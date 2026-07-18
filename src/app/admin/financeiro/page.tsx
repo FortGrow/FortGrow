@@ -11,7 +11,9 @@ import { ltv, paybackMonths } from "@/lib/metrics";
 import { commissionReport, costReport } from "@/lib/commissions";
 import { currentMrr, generateSubscriptionCharges } from "@/lib/billing";
 import { parsePeriod, MONTHS_PT, MONTHS_SHORT } from "@/lib/period";
+import { getTaxPercent } from "@/lib/settings";
 import { CommissionForm } from "./commission-form";
+import { TaxPercentForm } from "./tax-form";
 import { MarkPaidButton, NewChargeForm } from "./charge-actions";
 import { DonutChart } from "@/components/charts/donut-chart";
 import Link from "next/link";
@@ -62,13 +64,14 @@ export default async function FinanceiroPage({
       prisma.expense.findMany({ where: { status: { not: "CANCELADO" } }, orderBy: { date: "desc" }, take: 10 }),
     ]);
 
-  const [mrrInfo, allActiveClients] = await Promise.all([
+  const [mrrInfo, allActiveClients, taxPercent] = await Promise.all([
     currentMrr(),
     prisma.client.findMany({
       where: { archivedAt: null, status: { in: ["ATIVO", "ONBOARDING"] } },
       select: { id: true, companyName: true },
       orderBy: { companyName: "asc" },
     }),
+    getTaxPercent(),
   ]);
 
   // ── Receita ────────────────────────────────────────────────────────
@@ -99,8 +102,10 @@ export default async function FinanceiroPage({
   const monthCosts = costs.monthly;
   const yearCosts = costs.yearly;
   const monthCommissions = commissions.monthTotal;
+  const monthTax = monthRevenue * (taxPercent / 100);
+  const yearTax = yearRevenue * (taxPercent / 100);
   const grossProfit = monthRevenue - monthCosts;
-  const netProfit = grossProfit - monthCommissions;
+  const netProfit = grossProfit - monthCommissions - monthTax;
   const margin = monthRevenue > 0 ? (netProfit / monthRevenue) * 100 : 0;
 
   // ── Unidade econômica (ano) ────────────────────────────────────────
@@ -120,7 +125,8 @@ export default async function FinanceiroPage({
     receita: Math.round(revenueByMonth[i]),
     custos: Math.round(costs.byMonth[i]),
     comissoes: Math.round(commissions.byMonth[i]),
-    lucro: Math.round(revenueByMonth[i] - costs.byMonth[i] - commissions.byMonth[i]),
+    impostos: Math.round(revenueByMonth[i] * (taxPercent / 100)),
+    lucro: Math.round(revenueByMonth[i] * (1 - taxPercent / 100) - costs.byMonth[i] - commissions.byMonth[i]),
   }));
   const comparison = MONTHS_SHORT.map((label, i) => ({ label, receita: Math.round(revenueByMonth[i]) }));
 
@@ -200,9 +206,18 @@ export default async function FinanceiroPage({
 
       {/* Resultado 360° do mês */}
       <div className="card mt-4 p-5">
-        <h2 className="mb-4 text-sm font-bold text-slate-300">Resultado de {MONTHS_PT[m]} — visão 360°</h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-300">Resultado de {MONTHS_PT[m]} — visão 360°</h2>
+          <TaxPercentForm current={taxPercent} />
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
           <StatCard label="Receita do mês" value={brl(monthRevenue)} accent="grow" />
+          <StatCard
+            label={`Impostos (${taxPercent}%)`}
+            value={brl(monthTax)}
+            hint={`ano: ${brl(yearTax)}`}
+            accent="danger"
+          />
           <StatCard label="Custos do mês" value={brl(monthCosts)} hint={`ano: ${brl(yearCosts)}`} accent="warn" />
           <StatCard label="Comissões do mês" value={brl(monthCommissions)} hint={`ano: ${brl(commissions.yearTotal)}`} accent="violet" />
           <StatCard
@@ -222,6 +237,7 @@ export default async function FinanceiroPage({
             data={evolution}
             series={[
               { key: "receita", label: "Receita" },
+              { key: "impostos", label: "Impostos" },
               { key: "custos", label: "Custos" },
               { key: "comissoes", label: "Comissões" },
               { key: "lucro", label: "Lucro" },
