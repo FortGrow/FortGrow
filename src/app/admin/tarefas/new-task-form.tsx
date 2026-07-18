@@ -4,10 +4,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { CARD_COLORS } from "@/components/kanban/kanban";
 
 export function NewTaskForm({ users }: { users: { id: string; name: string }[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [color, setColor] = useState("");
   const router = useRouter();
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -73,6 +75,23 @@ export function NewTaskForm({ users }: { users: { id: string; name: string }[] }
             <div>
               <label className="label" htmlFor="dueDate">Prazo</label>
               <input id="dueDate" name="dueDate" type="date" className="input" />
+            </div>
+          </div>
+          <div>
+            <label className="label">Cor do cartão (opcional)</label>
+            <input type="hidden" name="color" value={color} />
+            <div className="flex flex-wrap items-center gap-2">
+              {Object.entries(CARD_COLORS).map(([key, hex]) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={key}
+                  onClick={() => setColor((c) => (c === key ? "" : key))}
+                  className={`h-6 w-6 rounded-full transition hover:scale-110 ${color === key ? "ring-2 ring-white/80 ring-offset-2 ring-offset-ink-900" : ""}`}
+                  style={{ backgroundColor: hex }}
+                />
+              ))}
+              <span className="text-xs text-slate-500">{color ? color : "sem cor"}</span>
             </div>
           </div>
         </div>
