@@ -236,7 +236,9 @@ export async function runSync(options: { clientId?: string; onlyIfStale?: boolea
     result.clientsProcessed++;
 
     if (!token) {
-      result.details.push(`${client.companyName}: Meta Ads vinculado, mas a integração não está conectada.`);
+      result.details.push(
+        `${client.companyName}: Meta Ads vinculado, mas o token não está conectado — abra Integrações → Meta Ads, gere o Access Token e conecte.`
+      );
       result.errors++;
       continue;
     }

@@ -12,10 +12,13 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const [okMsg, setOkMsg] = useState<string | null>(null);
+
   async function connect(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setOkMsg(null);
     const form = new FormData(e.currentTarget);
     try {
       const res = await fetch("/api/integrations", {
@@ -23,13 +26,14 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, apiKey: form.get("apiKey"), accountId: form.get("accountId") || undefined }),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Não foi possível conectar.");
         return;
       }
-      setOpen(false);
+      setOkMsg(data.validatedAs ? `Token validado (${data.validatedAs}) — conectado!` : "Conectado!");
       router.refresh();
+      setTimeout(() => { setOpen(false); setOkMsg(null); }, 1200);
     } finally {
       setLoading(false);
     }
@@ -73,10 +77,23 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
         <Overlay>
           <form onSubmit={connect} className="card w-full max-w-md animate-fade-up p-6">
             <h2 className="mb-1 text-lg font-bold text-slate-100">Conectar {name}</h2>
-            <p className="mb-4 text-sm text-slate-500">
-              Informe a credencial de API da plataforma. Ela fica armazenada com segurança e será usada para sincronizar
-              métricas e campanhas.
-            </p>
+            {provider === "meta_ads" ? (
+              <div className="mb-4 rounded-xl border border-line bg-ink-900/50 p-3 text-xs leading-relaxed text-slate-400">
+                <p className="mb-1 font-semibold text-slate-300">Como gerar o Access Token (uma vez só):</p>
+                <ol className="list-decimal space-y-0.5 pl-4">
+                  <li>Acesse <span className="font-semibold text-brand-400">business.facebook.com</span> → Configurações do negócio</li>
+                  <li>Usuários → <span className="font-semibold text-slate-300">Usuários do sistema</span> → Adicionar (papel Administrador)</li>
+                  <li>Atribua as contas de anúncio dos clientes a esse usuário</li>
+                  <li>Gerar token → marque <span className="font-semibold text-slate-300">ads_read</span> → copie e cole aqui</li>
+                </ol>
+                <p className="mt-1.5 text-slate-500">O token é validado na hora e fica criptografado. Depois, o ID de cada conta (act_...) vai na ficha do cliente.</p>
+              </div>
+            ) : (
+              <p className="mb-4 text-sm text-slate-500">
+                Informe a credencial de API da plataforma. Ela fica armazenada com segurança e será usada para sincronizar
+                métricas e campanhas.
+              </p>
+            )}
             <div className="space-y-4">
               <div>
                 <label className="label" htmlFor={`key-${provider}`}>Token / API Key *</label>
@@ -88,6 +105,7 @@ export function IntegrationCard({ provider, name, connected }: { provider: strin
               </div>
             </div>
             {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
+            {okMsg && <p className="mt-3 text-sm font-medium text-grow-400">{okMsg}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
               <button type="submit" disabled={loading} className="btn-primary">
