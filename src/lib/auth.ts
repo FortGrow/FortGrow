@@ -13,6 +13,8 @@ export type SessionPayload = {
   permissions: string[];
   /** Matriz granular por módulo, flags "ved" (v=ver, e=editar, d=excluir). */
   perms?: Record<string, string>;
+  /** Versão do token — divergência com o banco revoga a sessão imediatamente. */
+  tv?: number;
 };
 
 function secretKey() {

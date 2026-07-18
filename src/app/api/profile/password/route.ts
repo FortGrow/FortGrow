@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, isResponse } from "@/lib/api-guard";
+import { createSessionToken, sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth";
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -27,11 +28,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Senha atual incorreta." }, { status: 400 });
   }
 
-  await prisma.user.update({
+  // Troca a senha e invalida todas as outras sessões (tokenVersion++)
+  const updated = await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 10) },
+    data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 10), tokenVersion: { increment: 1 } },
   });
   await prisma.activityLog.create({ data: { userId: user.id, action: "profile.password_change" } });
 
-  return NextResponse.json({ ok: true });
+  // Reemite o cookie desta sessão com a nova versão — o usuário continua logado aqui
+  const token = await createSessionToken({
+    sub: updated.id,
+    name: updated.name,
+    email: updated.email,
+    role: updated.role,
+    clientId: updated.clientId,
+    permissions: updated.permissions,
+    perms: (updated.permissionsMatrix as Record<string, string>) ?? {},
+    tv: updated.tokenVersion,
+  });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+  return res;
 }

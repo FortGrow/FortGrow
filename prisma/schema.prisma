@@ -38,6 +38,8 @@ model User {
   permissions  String[] @default([])
   /// Permissões granulares por módulo: { "crm": "ved", "financeiro": "v" } (v=ver, e=editar, d=excluir)
   permissionsMatrix Json @default("{}")
+  /// Incrementado a cada mudança de permissões/senha — invalida tokens antigos imediatamente
+  tokenVersion Int @default(0)
   // Usuários CLIENTE pertencem a um cliente e só enxergam os dados dele
   clientId     String?
   client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -105,6 +107,8 @@ model Client {
   contractMonths Int?
   projectStatus  String?      @default("Em andamento")
   notes          String?
+  /// Lixeira: cliente arquivado (restaurável por 30 dias antes da exclusão definitiva)
+  archivedAt     DateTime?
 
   /// Contas de anúncio vinculadas: { googleAdsId, metaAdsId, instagram, ga4PropertyId }
   adAccounts     Json         @default("{}")
@@ -595,4 +599,12 @@ model ActivityLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+/// Templates de permissão nomeados (ex.: "Vendedor Jr", "Gestor de contas")
+model PermissionTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  matrix    Json     @default("{}")
+  createdAt DateTime @default(now())
 }

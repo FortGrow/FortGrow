@@ -32,6 +32,7 @@ export async function PATCH(req: NextRequest) {
     clientId: user.clientId,
     permissions: user.permissions,
     perms: (user.permissionsMatrix as Record<string, string>) ?? {},
+    tv: user.tokenVersion,
   });
   const res = NextResponse.json({ ok: true, name: user.name });
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());

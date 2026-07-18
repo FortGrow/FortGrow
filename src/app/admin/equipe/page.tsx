@@ -23,10 +23,19 @@ export default async function EquipePage() {
     include: { client: { select: { companyName: true } } },
   });
 
-  const allClients = await prisma.client.findMany({
-    select: { id: true, companyName: true },
-    orderBy: { companyName: "asc" },
-  });
+  const [allClients, permTemplates] = await Promise.all([
+    prisma.client.findMany({
+      where: { archivedAt: null },
+      select: { id: true, companyName: true },
+      orderBy: { companyName: "asc" },
+    }),
+    prisma.permissionTemplate.findMany({ orderBy: { name: "asc" } }),
+  ]);
+  const templatesDto = permTemplates.map((t) => ({
+    id: t.id,
+    name: t.name,
+    matrix: (t.matrix as Record<string, string>) ?? {},
+  }));
 
   const modulesOf = (u: (typeof users)[number]): string[] => {
     if (u.role === "ADMIN") return ["Acesso total"];
@@ -86,6 +95,7 @@ export default async function EquipePage() {
                     userId={u.id}
                     userName={u.name}
                     matrix={(u.permissionsMatrix as Record<string, string>) ?? {}}
+                    templates={templatesDto}
                   />
                 )}
               </div>

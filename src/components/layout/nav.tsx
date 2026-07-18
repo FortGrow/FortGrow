@@ -21,6 +21,7 @@ import {
   LifeBuoy,
   Megaphone,
   PlugZap,
+  ScrollText,
   Search,
   Settings2,
   Sparkles,
@@ -52,6 +53,7 @@ const ICONS: Record<string, LucideIcon> = {
   automacoes: Sparkles,
   integracoes: PlugZap,
   equipe: Users,
+  auditoria: ScrollText,
   // portal
   visao: LayoutDashboard,
   resultados: TrendingUp,
