@@ -83,7 +83,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         title={client.companyName}
         subtitle={
           client.billingType === "COMISSAO"
-            ? `${client.plan ?? "Contrato por comissão"} · comissão ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% FortGrow · desde ${fullDate(client.contractStart)}`
+            ? `${client.plan ?? "Contrato por comissão"} · comissão ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% FortGrow${Number(client.monthlyValue) > 0 ? ` + ${brl(client.monthlyValue)}/mês` : ""} · desde ${fullDate(client.contractStart)}`
             : `${client.plan ?? "Sem plano"} · ${brl(client.monthlyValue)}/mês · desde ${fullDate(client.contractStart)}`
         }
       >
@@ -175,7 +175,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             [
               "Modelo de cobrança",
               client.billingType === "COMISSAO"
-                ? `Comissão: cliente fatura ${Number(client.commissionBase)}% do volume · FortGrow recebe ${Number(client.commissionShare)}% disso`
+                ? `Comissão: cliente fatura ${Number(client.commissionBase)}% do volume · FortGrow recebe ${Number(client.commissionShare)}% disso${Number(client.monthlyValue) > 0 ? ` · + mensalidade ${brl(client.monthlyValue)}/mês` : ""}`
                 : `Fixo: ${brl(client.monthlyValue)}/mês`,
             ],
             ["CNPJ", client.cnpj],
