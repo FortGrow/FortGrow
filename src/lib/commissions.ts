@@ -23,6 +23,8 @@ export type CollaboratorReport = {
   rows: CommissionRow[];
   monthTotal: number;
   yearTotal: number;
+  /// Comissão do colaborador por mês do ano (1–12), para gráficos individuais
+  byMonth: number[];
 };
 
 export type CommissionSummary = {
@@ -78,21 +80,25 @@ export async function commissionReport(year: number, month: number): Promise<Com
 
   for (const a of assignments) {
     let yearTotal = 0;
+    const userMonths = Array(12).fill(0);
     for (let i = 0; i < 12; i++) {
       const c = commissionFor(a, i);
       yearTotal += c;
       byMonth[i] += c;
+      userMonths[i] = c;
     }
     const monthCommission = commissionFor(a, m);
     const rev = revenue.get(a.clientId)?.[m] ?? 0;
 
-    const rep = byUser.get(a.userId) ?? {
+    const rep: CollaboratorReport = byUser.get(a.userId) ?? {
       userId: a.userId,
       userName: a.user.name,
       rows: [],
       monthTotal: 0,
       yearTotal: 0,
+      byMonth: Array(12).fill(0),
     };
+    for (let i = 0; i < 12; i++) rep.byMonth[i] += userMonths[i];
     rep.rows.push({
       clientId: a.clientId,
       clientName: a.client.companyName,
