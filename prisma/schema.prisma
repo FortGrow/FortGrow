@@ -727,6 +727,13 @@ model SyncLog {
   @@index([provider, startedAt])
 }
 
+/// Configurações gerais do sistema (chave → valor)
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 model Integration {
   id        String   @id @default(cuid())
   provider  String   @unique // google_ads | meta_ads | ga4 | search_console | instagram | stripe | asaas | whatsapp | ...

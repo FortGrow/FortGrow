@@ -58,6 +58,7 @@ const ACTION_LABELS: Record<string, string> = {
   "staff_commission.set": "Configurou comissão de colaborador",
   "integration.connect": "Conectou integração",
   "integration.disconnect": "Desconectou integração",
+  "settings.tax": "Alterou o percentual de imposto",
   "automations.run": "Rodou as automações",
   "sync.run": "Sincronizou campanhas (Meta Ads)",
 };
