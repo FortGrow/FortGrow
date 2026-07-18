@@ -181,18 +181,45 @@ const SALES = [
   { icon: "💰", title: "Venda realizada", detail: "R$ 12.400 · contrato anual", time: "há 9 min" },
 ];
 
-function SalesToasts({ className }: { className: string }) {
+/**
+ * Pontos seguros da tela para as notificações "pipocarem" — escolhidos para
+ * nunca cobrir a frase, os chips, os dashboards nem o formulário de login.
+ */
+const TOAST_SPOTS: { top: string; left: string }[] = [
+  { top: "8%", left: "44%" },
+  { top: "6%", left: "66%" },
+  { top: "80%", left: "68%" },
+  { top: "78%", left: "40%" },
+  { top: "38%", left: "46%" },
+  { top: "60%", left: "45%" },
+  { top: "86%", left: "12%" },
+];
+
+function SalesToasts() {
   const [idx, setIdx] = useState(0);
+  const [spot, setSpot] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % SALES.length), 3400);
+    const t = setInterval(() => {
+      setIdx((i) => (i + 1) % SALES.length);
+      // sorteia uma posição diferente da atual
+      setSpot((prev) => {
+        let next = prev;
+        while (next === prev) next = Math.floor(Math.random() * TOAST_SPOTS.length);
+        return next;
+      });
+    }, 3400);
     return () => clearInterval(t);
   }, []);
   const sale = SALES[idx];
+  const pos = TOAST_SPOTS[spot];
   return (
-    <div className={`pointer-events-none absolute w-64 ${className}`} style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}>
+    <div
+      className="pointer-events-none absolute w-64"
+      style={{ top: pos.top, left: pos.left, transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}
+    >
       <AnimatePresence mode="wait">
         <motion.div
-          key={idx}
+          key={`${idx}-${spot}`}
           initial={{ opacity: 0, y: 14, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.97 }}
@@ -343,7 +370,7 @@ function Backdrop() {
           </div>
         </motion.div>
         {/* Notificações de venda em tempo real (simuladas) */}
-        <SalesToasts className="left-[27%] top-[68%]" />
+        <SalesToasts />
         <FloatCard
           className="left-[9%] top-[72%]"
           title="Receita gerada"
