@@ -58,10 +58,13 @@ export function KanbanBoard({
   columns,
   endpoint,
   colorable = false,
+  onEdit,
 }: {
   columns: KanbanColumn[];
   endpoint: string;
   colorable?: boolean;
+  /// Quando definido, cada cartão ganha um botão de edição (lápis)
+  onEdit?: (cardId: string) => void;
 }) {
   const [board, setBoard] = useState(columns);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -157,15 +160,29 @@ export function KanbanBoard({
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-200">{card.title}</p>
-                  {colorable && (
-                    <button
-                      type="button"
-                      title="Cor do cartão"
-                      onClick={() => setPaletteFor((p) => (p === card.id ? null : card.id))}
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-line transition group-hover:scale-110"
-                      style={{ backgroundColor: card.color ? CARD_COLORS[card.color] ?? "#334155" : "#334155" }}
-                    />
-                  )}
+                  <span className="mt-0.5 flex shrink-0 items-center gap-1.5">
+                    {onEdit && (
+                      <button
+                        type="button"
+                        title="Editar tarefa"
+                        onClick={() => onEdit(card.id)}
+                        className="rounded p-0.5 text-slate-600 opacity-60 transition hover:bg-ink-700 hover:text-brand-300 group-hover:opacity-100"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                      </button>
+                    )}
+                    {colorable && (
+                      <button
+                        type="button"
+                        title="Cor do cartão"
+                        onClick={() => setPaletteFor((p) => (p === card.id ? null : card.id))}
+                        className="h-3.5 w-3.5 rounded-full ring-1 ring-inset ring-line transition group-hover:scale-110"
+                        style={{ backgroundColor: card.color ? CARD_COLORS[card.color] ?? "#334155" : "#334155" }}
+                      />
+                    )}
+                  </span>
                 </div>
                 {colorable && paletteFor === card.id && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-ink-900/80 p-2">

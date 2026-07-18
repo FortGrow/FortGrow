@@ -42,12 +42,23 @@ export default async function TarefasPage() {
       })),
   }));
 
+  const tasksDto = tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    priority: t.priority,
+    dueDate: t.dueDate?.toISOString() ?? null,
+    assigneeId: t.assigneeId,
+    color: t.color,
+    status: t.status,
+  }));
+
   return (
     <>
       <PageHeader title="Tarefas" subtitle="Delegue, acompanhe prazos e conclua · arraste para mudar o status">
         <NewTaskForm users={users} />
       </PageHeader>
-      <TaskBoard columns={columns} />
+      <TaskBoard columns={columns} tasks={tasksDto} users={users} />
     </>
   );
 }
