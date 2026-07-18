@@ -21,6 +21,13 @@ export type UnifiedLead = EditableLead & {
 };
 
 const POTENTIALS = ["Baixo", "Médio", "Alto"] as const;
+
+/** Prospecção: a cor do card vem do potencial de fechamento (vermelho/azul/verde). */
+const POTENTIAL_COLORS: Record<string, string> = {
+  Baixo: "#dc2626",
+  "Médio": "#0284c7",
+  Alto: "#059669",
+};
 const PERIODS = [
   { dias: 0, label: "Tudo" },
   { dias: 7, label: "7 dias" },
@@ -46,8 +53,11 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
   const STATUSES = mode === "prospeccao" ? PROSPECT_STATUSES : FUNNEL_STAGES;
   const statusOf = (l: UnifiedLead) => (mode === "prospeccao" ? l.prospectStatus : l.stage);
   const statusField = mode === "prospeccao" ? "prospectStatus" : "stage";
-  const styleOf = (l: UnifiedLead) =>
-    STATUSES.find((s) => s.key === statusOf(l)) ?? STATUSES[0];
+  /* Cor do card: prospecção = potencial de fechamento; CRM = etapa do funil */
+  const cardColor = (l: UnifiedLead) =>
+    mode === "prospeccao"
+      ? POTENTIAL_COLORS[l.potential ?? "Médio"] ?? POTENTIAL_COLORS["Médio"]
+      : (STATUSES.find((s) => s.key === statusOf(l)) ?? STATUSES[0]).color;
 
   /* Autosave com debounce (textos/datas/valores); selects salvam na hora */
   const pending = useRef<Map<string, Record<string, unknown>>>(new Map());
@@ -162,12 +172,12 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((l) => {
-            const st = styleOf(l);
+            const color = cardColor(l);
             return (
               <div
                 key={l.id}
                 className="group relative overflow-hidden rounded-2xl p-4 text-white shadow-lg ring-1 ring-white/10 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl"
-                style={{ background: cardGradient(st.color) }}
+                style={{ background: cardGradient(color) }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
