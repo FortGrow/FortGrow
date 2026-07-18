@@ -52,7 +52,7 @@ const ACTION_LABELS: Record<string, string> = {
   "integration.connect": "Conectou integração",
   "integration.disconnect": "Desconectou integração",
   "automations.run": "Rodou as automações",
-  "sync.run": "Sincronizou dados de campanha",
+  "sync.run": "Sincronizou campanhas (Meta Ads)",
 };
 
 function labelFor(action: string): string {

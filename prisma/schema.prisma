@@ -125,6 +125,7 @@ model Client {
   campaigns  Campaign[]
   invoices   Invoice[]
   subscriptions Subscription[]
+  adCampaigns   AdCampaign[]
   expenses   Expense[]
   documents  Document[]
   tickets    Ticket[]
@@ -606,6 +607,86 @@ model Automation {
   template  String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+/// Campanha sincronizada de uma plataforma de anúncios (Meta hoje; Google/TikTok no futuro)
+model AdCampaign {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  provider    String   @default("META") // META | GOOGLE | TIKTOK
+  accountId   String // act_XXXX
+  externalId  String
+  name        String
+  status      String?
+  objective   String?
+  dailyBudget Decimal  @default(0) @db.Decimal(12, 2)
+  syncedAt    DateTime @updatedAt
+  adSets      AdSet[]
+  insights    AdInsight[]
+
+  @@unique([provider, externalId])
+  @@index([clientId, provider])
+}
+
+/// Conjunto de anúncios de uma campanha sincronizada
+model AdSet {
+  id         String     @id @default(cuid())
+  campaignId String
+  campaign   AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  externalId String     @unique
+  name       String
+  status     String?
+  budget     Decimal    @default(0) @db.Decimal(12, 2)
+  /// Resumo do público (idades, gêneros, geolocalização)
+  audience   String?
+  ads        Ad[]
+}
+
+/// Anúncio individual (criativo) de um conjunto
+model Ad {
+  id            String  @id @default(cuid())
+  adSetId       String
+  adSet         AdSet   @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  externalId    String  @unique
+  name          String
+  status        String?
+  creativeTitle String?
+  creativeBody  String?
+  thumbnailUrl  String?
+}
+
+/// Métricas diárias por campanha sincronizada
+model AdInsight {
+  id          String     @id @default(cuid())
+  campaignId  String
+  campaign    AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  date        DateTime
+  impressions Int        @default(0)
+  reach       Int        @default(0)
+  clicks      Int        @default(0)
+  linkClicks  Int        @default(0)
+  leads       Int        @default(0)
+  conversions Int        @default(0)
+  spend       Decimal    @default(0) @db.Decimal(12, 2)
+  frequency   Float      @default(0)
+
+  @@unique([campaignId, date])
+  @@index([date])
+}
+
+/// Registro de execuções de sincronização (visível em Integrações)
+model SyncLog {
+  id         String    @id @default(cuid())
+  provider   String
+  scope      String    @default("all") // "all" ou clientId
+  status     String // OK | ERRO | PARCIAL
+  message    String?
+  items      Int       @default(0)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([provider, startedAt])
 }
 
 model Integration {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
+import { encryptSecret } from "@/lib/crypto";
 
 const connectSchema = z.object({
   provider: z.string().min(1).max(60),
@@ -18,10 +19,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Informe a credencial da plataforma." }, { status: 400 });
 
   const { provider, apiKey, accountId } = parsed.data;
+  // Token criptografado em repouso (AES-256-GCM)
+  const config = { apiKey: encryptSecret(apiKey), accountId: accountId ?? null };
   const integration = await prisma.integration.upsert({
     where: { provider },
-    create: { provider, connected: true, config: { apiKey, accountId: accountId ?? null } },
-    update: { connected: true, config: { apiKey, accountId: accountId ?? null } },
+    create: { provider, connected: true, config },
+    update: { connected: true, config },
   });
 
   await prisma.activityLog.create({
