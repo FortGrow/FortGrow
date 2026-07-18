@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { LEAD_SOURCES } from "@/lib/lead-taxonomy";
 
 const FIELDS: { name: string; label: string; type?: string; span?: boolean }[] = [
   { name: "companyName", label: "Empresa *" },
@@ -15,7 +16,6 @@ const FIELDS: { name: string; label: string; type?: string; span?: boolean }[] =
   { name: "facebook", label: "Facebook" },
   { name: "linkedin", label: "LinkedIn" },
   { name: "website", label: "Site" },
-  { name: "source", label: "Origem" },
   { name: "segment", label: "Segmento" },
   { name: "city", label: "Cidade" },
   { name: "state", label: "Estado" },
@@ -79,6 +79,19 @@ export function NewLeadForm() {
               />
             </div>
           ))}
+          <div>
+            <label className="label" htmlFor="source">Origem do lead</label>
+            <select id="source" name="source" className="input" defaultValue="OUTRO">
+              {LEAD_SOURCES.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="firstContactAt">Data do 1º contato</label>
+            <input id="firstContactAt" name="firstContactAt" type="date"
+              defaultValue={new Date().toISOString().slice(0, 10)} className="input" />
+          </div>
           <div>
             <label className="label" htmlFor="potential">Potencial</label>
             <select id="potential" name="potential" className="input" defaultValue="Médio">
