@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
+import { invalidResponse } from "@/lib/validation";
 
 const createSchema = z.object({
   companyName: z.string().min(1),
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  if (!parsed.success) return invalidResponse(parsed.error);
 
   const { email, estimatedValue, ...rest } = parsed.data;
   const lead = await prisma.lead.create({
@@ -82,7 +83,7 @@ export async function PATCH(req: NextRequest) {
   if (isResponse(session)) return session;
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  if (!parsed.success) return invalidResponse(parsed.error);
 
   const { id, stage, email, ...fields } = parsed.data;
   const data: Record<string, unknown> = {};
