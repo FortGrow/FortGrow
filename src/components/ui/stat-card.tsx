@@ -23,7 +23,7 @@ export function StatCard({
   }[accent];
 
   return (
-    <div className="card group relative overflow-hidden p-5 animate-fade-up">
+    <div data-tilt className="card group relative overflow-hidden p-5 animate-fade-up">
       <span className={cn("absolute left-0 top-4 h-8 w-1 rounded-r-full opacity-80", accentBar)} />
       <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-bold tracking-tight text-slate-100">{value}</p>

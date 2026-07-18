@@ -5,6 +5,7 @@ import type { SessionPayload } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
 import { NavLinks, type NavItem } from "./nav";
+import { FxLayer } from "./fx";
 import { GlobalSearch } from "./global-search";
 import { MobileMenu } from "./mobile-menu";
 
@@ -28,7 +29,8 @@ export async function AppShell({
   const displayName = me?.name ?? session.name;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="relative flex min-h-screen">
+      <FxLayer />
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-ink-900/80 backdrop-blur lg:flex">
         <div className="flex items-center gap-2.5 px-5 py-5">
@@ -92,7 +94,7 @@ export async function AppShell({
             </Link>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">{children}</main>
+        <main className="animate-page mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">{children}</main>
       </div>
     </div>
   );
