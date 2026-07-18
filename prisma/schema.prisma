@@ -40,6 +40,8 @@ model User {
   permissionsMatrix Json @default("{}")
   /// Incrementado a cada mudança de permissões/senha — invalida tokens antigos imediatamente
   tokenVersion Int @default(0)
+  /// Escopo de clientes do colaborador: TODOS | COMISSIONADOS (só os clientes onde recebe comissão)
+  clientScope  String @default("TODOS")
   // Usuários CLIENTE pertencem a um cliente e só enxergam os dados dele
   clientId     String?
   client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)

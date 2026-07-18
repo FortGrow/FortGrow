@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+import { allowedClientIds, clientScopeWhere } from "@/lib/client-scope";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Td } from "@/components/ui/table";
 import { fullDate } from "@/lib/utils";
@@ -10,9 +12,13 @@ import { TrashActions } from "./trash-actions";
 export const dynamic = "force-dynamic";
 
 export default async function ClientesPage() {
+  const session = (await getSession())!;
+  const scope = await allowedClientIds(session);
+  const restricted = scope !== null;
+
   const [clients, archived, plans] = await Promise.all([
     prisma.client.findMany({
-      where: { archivedAt: null },
+      where: { archivedAt: null, ...clientScopeWhere(scope) },
       orderBy: { companyName: "asc" },
       include: {
         accountManager: { select: { name: true } },
@@ -20,7 +26,7 @@ export default async function ClientesPage() {
       },
     }),
     prisma.client.findMany({
-      where: { archivedAt: { not: null } },
+      where: { archivedAt: { not: null }, ...clientScopeWhere(scope) },
       orderBy: { archivedAt: "desc" },
       select: { id: true, companyName: true, segment: true, plan: true, archivedAt: true },
     }),
@@ -31,8 +37,11 @@ export default async function ClientesPage() {
 
   return (
     <>
-      <PageHeader title="Clientes" subtitle={`${clients.length} contas na carteira`}>
-        <NewClientForm plans={plans.map((p) => ({ name: p.name, price: Number(p.price) }))} />
+      <PageHeader
+        title="Clientes"
+        subtitle={restricted ? `${clients.length} cliente(s) vinculados a você por comissão` : `${clients.length} contas na carteira`}
+      >
+        {!restricted && <NewClientForm plans={plans.map((p) => ({ name: p.name, price: Number(p.price) }))} />}
       </PageHeader>
       <ClientsBoard
         clients={clients.map((c) => ({

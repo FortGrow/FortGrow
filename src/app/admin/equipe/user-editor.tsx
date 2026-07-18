@@ -26,7 +26,7 @@ export function UserEditor({
   user,
   clients,
 }: {
-  user: { id: string; name: string; role: string; clientId: string | null; active: boolean };
+  user: { id: string; name: string; role: string; clientId: string | null; active: boolean; clientScope?: string };
   clients: { id: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
@@ -48,6 +48,7 @@ export function UserEditor({
       active: form.get("active") === "1",
     };
     if (role === "CLIENTE") payload.clientId = form.get("clientId");
+    if (role !== "CLIENTE") payload.clientScope = form.get("clientScope");
     const password = String(form.get("password") ?? "").trim();
     if (password) payload.password = password;
     try {
@@ -106,6 +107,19 @@ export function UserEditor({
                   </select>
                 </div>
               </div>
+              {role !== "CLIENTE" && (
+                <div>
+                  <label className="label" htmlFor={`ue-scope-${user.id}`}>Acesso a clientes</label>
+                  <select id={`ue-scope-${user.id}`} name="clientScope" defaultValue={user.clientScope ?? "TODOS"} className="input">
+                    <option value="TODOS">Todos os clientes</option>
+                    <option value="COMISSIONADOS">Somente os clientes comissionados dele</option>
+                  </select>
+                  <p className="mt-1 text-xs text-slate-600">
+                    "Somente comissionados": vê apenas os clientes onde recebe comissão — lista, perfil, busca e relatórios
+                    (bloqueado também por URL/API).
+                  </p>
+                </div>
+              )}
               {role === "CLIENTE" && (
                 <div>
                   <label className="label" htmlFor={`ue-client-${user.id}`}>Empresa (portal) *</label>

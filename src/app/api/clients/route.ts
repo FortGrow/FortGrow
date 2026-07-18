@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { getSession } from "@/lib/auth";
 import { emptyToNull, invalidResponse, normalizeInstagram } from "@/lib/validation";
+import { allowedClientIds, canSeeClient } from "@/lib/client-scope";
 
 const createSchema = z.object({
   companyName: z.string().min(2),
@@ -27,6 +28,9 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const session = await requireStaff("clientes", "edit");
   if (isResponse(session)) return session;
+  if ((await allowedClientIds(session)) !== null) {
+    return NextResponse.json({ error: "Acesso negado: seu acesso é restrito aos clientes comissionados." }, { status: 403 });
+  }
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
@@ -77,6 +81,10 @@ export async function DELETE(req: NextRequest) {
   const bodyId = (await req.json().catch(() => null))?.id;
   const parsed = deleteSchema.safeParse({ id: req.nextUrl.searchParams.get("id") ?? bodyId });
   if (!parsed.success) return invalidResponse(parsed.error);
+
+  if (!canSeeClient(await allowedClientIds(session), parsed.data.id)) {
+    return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+  }
 
   const purge = req.nextUrl.searchParams.get("purge") === "1";
   const client = await prisma.client.findUnique({
@@ -161,6 +169,10 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) return invalidResponse(parsed.error);
 
   const { id, adAccounts, email, contractStart, restore, ...fields } = parsed.data;
+
+  if (!canSeeClient(await allowedClientIds(session), id)) {
+    return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+  }
 
   const data: Record<string, unknown> = {};
   if (restore) {
