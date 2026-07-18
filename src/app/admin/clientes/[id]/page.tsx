@@ -71,13 +71,48 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     orderBy: { name: "asc" },
   });
 
-  const [paidAgg, pendingAgg] = await Promise.all([
+  const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries] = await Promise.all([
     prisma.invoice.aggregate({ where: { clientId: client.id, status: "PAGO" }, _sum: { amount: true } }),
     prisma.invoice.aggregate({
       where: { clientId: client.id, status: { in: ["EM_ABERTO", "ATRASADO"] } },
       _sum: { amount: true },
     }),
+    // Comissão gerada para a FortGrow: lançamentos de comissão deste cliente
+    prisma.invoice.aggregate({
+      where: { clientId: client.id, status: "PAGO", description: { startsWith: "Comissão" } },
+      _sum: { amount: true },
+    }),
+    prisma.invoice.aggregate({
+      where: { clientId: client.id, description: { startsWith: "Comissão" } },
+      _sum: { amount: true },
+    }),
+    // Resumo de performance: lançamentos manuais dos últimos 30 dias
+    prisma.performanceEntry.findMany({
+      where: { clientId: client.id, date: { gte: new Date(Date.now() - 30 * 86400000) } },
+    }),
   ]);
+
+  // KPIs do dashboard de Performance (30d): receita real usa a base de cálculo do cliente
+  const perf = perfEntries.reduce(
+    (t, e) => {
+      const conv = Number(e.convPercent ?? client.perfConvPercent);
+      const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
+      return {
+        investment: t.investment + Number(e.investment),
+        leads: t.leads + e.leads,
+        sales: t.sales + e.sales,
+        revenue: t.revenue + Number(e.revenue),
+        real: t.real + Number(e.revenue) * (conv / 100) * (comm / 100),
+      };
+    },
+    { investment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
+  );
+  const perfCac = perf.sales > 0 ? perf.investment / perf.sales : null;
+  const perfCpl = perf.leads > 0 ? perf.investment / perf.leads : null;
+  const perfRoi = perf.investment > 0 ? ((perf.real - perf.investment) / perf.investment) * 100 : null;
+  const hasPerf = perfEntries.length > 0;
+  const comissaoPaga = Number(comissaoPagaAgg._sum.amount ?? 0);
+  const comissaoTotal = Number(comissaoTotalAgg._sum.amount ?? 0);
 
   const totals = sumTotals(client.metrics as never[]);
   const byWeek = new Map<string, { leads: number; conversions: number }>();
@@ -139,6 +174,67 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         />
         <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
+
+      {/* Resumo do cliente: quanto gera para a FortGrow + performance recente */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-bold text-slate-300">Resumo do cliente</h2>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatCard
+            label="Gerado para a FortGrow"
+            value={brl(Number(paidAgg._sum.amount ?? 0))}
+            hint="faturas pagas (todo o histórico)"
+            accent="grow"
+          />
+          <StatCard
+            label="Em aberto"
+            value={brl(Number(pendingAgg._sum.amount ?? 0))}
+            hint="faturas a receber / atrasadas"
+            accent="warn"
+          />
+          <StatCard
+            label="Comissão FortGrow"
+            value={brl(comissaoPaga)}
+            hint={
+              comissaoTotal > 0
+                ? `recebida · ${brl(comissaoTotal)} em lançamentos`
+                : client.billingType === "COMISSAO"
+                  ? "nenhum lançamento de comissão ainda"
+                  : "cliente sem contrato por comissão"
+            }
+            accent="violet"
+          />
+          <StatCard
+            label="Receita real gerada (30d)"
+            value={hasPerf ? brl(perf.real) : "—"}
+            hint={hasPerf ? `bruta ${brl(perf.revenue)} × base de cálculo` : "sem lançamentos de performance"}
+            accent="grow"
+          />
+          <StatCard
+            label="CAC (30d)"
+            value={perfCac === null ? "—" : brl(perfCac)}
+            hint="investimento / vendas"
+            accent="brand"
+          />
+          <StatCard
+            label="CPL (30d)"
+            value={perfCpl === null ? "—" : brl(perfCpl)}
+            hint="investimento / leads"
+            accent="violet"
+          />
+          <StatCard
+            label="Investimento (30d)"
+            value={hasPerf ? brl(perf.investment) : "—"}
+            hint={hasPerf ? `${num(perf.leads)} leads · ${num(perf.sales)} vendas` : "sem lançamentos de performance"}
+            accent="warn"
+          />
+          <StatCard
+            label="ROI (30d)"
+            value={perfRoi === null ? "—" : `${perfRoi.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+            hint="(receita real − investimento) / investimento"
+            accent="violet"
+          />
+        </div>
+      </div>
 
       <div className="mb-6 space-y-4">
         <PortalAccessPanel clientId={client.id} users={client.users} />
