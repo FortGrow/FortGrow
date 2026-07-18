@@ -40,6 +40,43 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ training }, { status: 201 });
 }
 
+const updateSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(2).max(160).optional(),
+  description: z.string().max(1000).nullish(),
+  category: z.string().min(2).max(60).optional(),
+  videoUrl: z.string().url().optional(),
+  thumbnailUrl: z.string().url().nullish().or(z.literal("")),
+  duration: z.string().max(30).nullish(),
+  active: z.boolean().optional(),
+});
+
+/** Edita um treinamento publicado (conteúdo totalmente editável). */
+export async function PATCH(req: NextRequest) {
+  const session = await requireStaff("treinamentos", "edit");
+  if (isResponse(session)) return session;
+
+  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Dados inválidos — confira o link do vídeo." }, { status: 400 });
+  }
+
+  const { id, description, thumbnailUrl, duration, ...rest } = parsed.data;
+  const data: Record<string, unknown> = { ...rest };
+  if (description !== undefined) data.description = description || null;
+  if (thumbnailUrl !== undefined) data.thumbnailUrl = thumbnailUrl || null;
+  if (duration !== undefined) data.duration = duration || null;
+
+  const training = await prisma.training.update({ where: { id }, data }).catch(() => null);
+  if (!training) return NextResponse.json({ error: "Treinamento não encontrado." }, { status: 404 });
+
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "training.update", entity: "Training", entityId: id },
+  });
+
+  return NextResponse.json({ ok: true, training });
+}
+
 /** Remove um treinamento (id pela querystring). */
 export async function DELETE(req: NextRequest) {
   const session = await requireStaff("treinamentos", "delete");
