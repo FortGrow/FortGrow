@@ -185,14 +185,14 @@ const SALES = [
  * Pontos seguros da tela para as notificações "pipocarem" — escolhidos para
  * nunca cobrir a frase, os chips, os dashboards nem o formulário de login.
  */
+/* Posições seguras: faixas do topo e da base da tela — nunca sobre o título,
+   os chips ou o formulário (validado de 1280×720 a 1680×1000). */
 const TOAST_SPOTS: { top: string; left: string }[] = [
-  { top: "8%", left: "44%" },
-  { top: "6%", left: "66%" },
-  { top: "80%", left: "68%" },
-  { top: "78%", left: "40%" },
-  { top: "38%", left: "46%" },
-  { top: "60%", left: "45%" },
-  { top: "86%", left: "12%" },
+  { top: "4%", left: "22%" },
+  { top: "6%", left: "33%" },
+  { top: "6%", left: "60%" },
+  { top: "84%", left: "5%" },
+  { top: "84%", left: "22%" },
 ];
 
 function SalesToasts() {
@@ -336,7 +336,7 @@ function Backdrop() {
       {/* Dashboards flutuantes (só em telas grandes) */}
       <div className="hidden lg:block">
         <FloatCard
-          className="left-[7%] top-[16%]"
+          className="right-[4%] top-[5%]"
           title="Leads gerados"
           value="1.284"
           delta="32%"
@@ -345,7 +345,7 @@ function Backdrop() {
           delay={0.5}
         />
         <FloatCard
-          className="left-[30%] top-[7%]"
+          className="bottom-[7%] right-[5%]"
           title="Tráfego pago · ROAS"
           value="5.2x"
           delta="18%"
@@ -358,7 +358,7 @@ function Backdrop() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.15, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute left-[34%] top-[21%] flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 shadow-2xl backdrop-blur-md"
+          className="pointer-events-none absolute bottom-[5%] left-[45%] flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 shadow-2xl backdrop-blur-md"
           style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
@@ -372,7 +372,7 @@ function Backdrop() {
         {/* Notificações de venda em tempo real (simuladas) */}
         <SalesToasts />
         <FloatCard
-          className="left-[9%] top-[72%]"
+          className="left-[45%] top-[5%]"
           title="Receita gerada"
           value="R$ 2,4M"
           delta="47%"
