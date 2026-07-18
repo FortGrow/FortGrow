@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
-import { invalidResponse } from "@/lib/validation";
+import { invalidResponse, normalizeInstagram } from "@/lib/validation";
 
 const createSchema = z.object({
   companyName: z.string().min(1),
@@ -10,7 +10,7 @@ const createSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
-  instagram: z.string().optional(),
+  instagram: z.preprocess(normalizeInstagram, z.string().max(80).optional()),
   facebook: z.string().optional(),
   linkedin: z.string().optional(),
   website: z.string().optional(),
@@ -64,7 +64,7 @@ const patchSchema = z.object({
   email: z.string().email().nullish().or(z.literal("")),
   phone: z.string().max(30).nullish(),
   whatsapp: z.string().max(30).nullish(),
-  instagram: z.string().max(80).nullish(),
+  instagram: z.preprocess(normalizeInstagram, z.string().max(80).nullish()),
   facebook: z.string().max(120).nullish(),
   linkedin: z.string().max(120).nullish(),
   website: z.string().max(200).nullish(),

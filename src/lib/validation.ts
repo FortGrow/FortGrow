@@ -4,6 +4,20 @@ import type { ZodError } from "zod";
 /** Converte "" em null antes da coerção numérica (inputs vazios de formulário). */
 export const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
 
+/**
+ * Normaliza o Instagram: aceita URL completa (com ?igsh=... etc.), @usuario
+ * ou o nome puro, e guarda só o nome do perfil.
+ */
+export function normalizeInstagram(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const s = v.trim();
+  if (!s) return s;
+  const m = s.match(/instagram\.com\/@?([A-Za-z0-9._]+)/i);
+  if (m) return m[1];
+  if (/^https?:\/\/|instagram\.com/i.test(s)) return ""; // URL sem nome de perfil
+  return s.replace(/^@+/, "").split(/[?#/\s]/)[0];
+}
+
 /** Rótulos pt-BR dos campos para mensagens de validação. */
 const FIELD_LABELS: Record<string, string> = {
   companyName: "Empresa",

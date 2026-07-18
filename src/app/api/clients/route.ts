@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { getSession } from "@/lib/auth";
-import { emptyToNull, invalidResponse } from "@/lib/validation";
+import { emptyToNull, invalidResponse, normalizeInstagram } from "@/lib/validation";
 
 const createSchema = z.object({
   companyName: z.string().min(2),
@@ -21,7 +21,7 @@ const createSchema = z.object({
   city: z.string().max(80).optional(),
   state: z.string().max(2).optional(),
   website: z.string().max(200).optional(),
-  instagram: z.string().max(80).optional(),
+  instagram: z.preprocess(normalizeInstagram, z.string().max(80).optional()),
 });
 
 export async function POST(req: NextRequest) {
@@ -122,7 +122,7 @@ const updateSchema = z.object({
     .object({
       googleAdsId: z.string().max(60).optional(),
       metaAdsId: z.string().max(60).optional(),
-      instagram: z.string().max(80).optional(),
+      instagram: z.preprocess(normalizeInstagram, z.string().max(80).optional()),
       ga4PropertyId: z.string().max(60).optional(),
     })
     .optional(),
@@ -133,7 +133,7 @@ const updateSchema = z.object({
   city: nullableStr(80),
   state: nullableStr(2),
   website: nullableStr(200),
-  instagram: nullableStr(80),
+  instagram: z.preprocess(normalizeInstagram, nullableStr(80)),
   email: z.string().email().nullish().or(z.literal("")),
   phone: nullableStr(30),
   status: z.enum(["ATIVO", "PAUSADO", "INATIVO", "ONBOARDING"]).optional(),
