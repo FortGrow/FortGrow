@@ -156,6 +156,7 @@ const updateSchema = z.object({
   contractMonths: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(120).nullish()),
   projectStatus: nullableStr(80),
   operationType: nullableStr(120),
+  strategicNotes: nullableStr(2000),
   notes: nullableStr(2000),
   /// Restaura um cliente da lixeira
   restore: z.boolean().optional(),

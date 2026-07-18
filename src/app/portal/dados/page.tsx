@@ -53,6 +53,8 @@ export default async function PortalDadosPage() {
     },
   ];
 
+  const strategicNotes = client.strategicNotes;
+
   return (
     <>
       <PageHeader title="Dados do Cliente" subtitle="Cadastro, operação e contrato — separados do dashboard de performance" />
@@ -71,6 +73,12 @@ export default async function PortalDadosPage() {
           </div>
         ))}
       </div>
+      {strategicNotes && (
+        <div className="card mt-4 p-5">
+          <h2 className="mb-2 text-sm font-bold text-slate-200">Observações estratégicas</h2>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">{strategicNotes}</p>
+        </div>
+      )}
     </>
   );
 }

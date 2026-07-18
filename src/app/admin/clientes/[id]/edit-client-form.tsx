@@ -26,6 +26,7 @@ export type EditableClient = {
   contractMonths: number | null;
   projectStatus: string | null;
   operationType: string | null;
+  strategicNotes: string | null;
   notes: string | null;
 };
 
@@ -183,7 +184,11 @@ export function EditClientForm({ client }: { client: EditableClient }) {
                 </div>
               ))}
               <div className="sm:col-span-2">
-                <label className="label" htmlFor="ec-notes">Observações</label>
+                <label className="label" htmlFor="ec-strategicNotes">Observações estratégicas (visíveis ao cliente no portal)</label>
+                <textarea id="ec-strategicNotes" name="strategicNotes" rows={2} defaultValue={client.strategicNotes ?? ""} className="input" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="ec-notes">Observações internas (só a equipe vê)</label>
                 <textarea id="ec-notes" name="notes" rows={3} defaultValue={client.notes ?? ""} className="input" />
               </div>
             </div>

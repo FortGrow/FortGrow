@@ -133,6 +133,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             contractMonths: client.contractMonths,
             projectStatus: client.projectStatus,
             operationType: client.operationType,
+            strategicNotes: client.strategicNotes,
             notes: client.notes,
           }}
         />
