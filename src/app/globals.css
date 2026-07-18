@@ -6,13 +6,16 @@
   color-scheme: dark;
   --par-x: 0px;
   --par-y: 0px;
+  --par2-x: 0px;
+  --par2-y: 0px;
 }
 
 body {
   @apply bg-ink-950 text-slate-200 antialiased;
   background-image:
-    radial-gradient(1200px 600px at 80% -10%, rgba(56, 189, 248, 0.07), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(16, 185, 129, 0.05), transparent 60%);
+    radial-gradient(1200px 600px at 80% -10%, rgba(56, 189, 248, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(16, 185, 129, 0.06), transparent 60%),
+    radial-gradient(700px 500px at 50% 120%, rgba(139, 92, 246, 0.045), transparent 60%);
 }
 
 ::-webkit-scrollbar {
@@ -22,19 +25,34 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply rounded-full bg-ink-600;
 }
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ink-500;
+}
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
 @layer components {
+  /*
+   * Camadas de profundidade:
+   *  fundo (orbes + grade parallax) → conteúdo → .card → elementos elevados
+   * Glass real (backdrop-blur) é seguro: todos os modais renderizam em portal
+   * no <body>, fora de qualquer card — nada fica preso em containing block.
+   */
   .card {
-    /* Glass suave SEM backdrop-filter: backdrop-filter cria um containing
-       block e aprisionaria modais position:fixed renderizados dentro do card */
-    @apply relative rounded-2xl border border-line shadow-card;
+    @apply relative rounded-2xl border border-line;
     background:
-      linear-gradient(180deg, rgba(148, 163, 184, 0.045), transparent 34%),
-      theme("colors.ink.850");
+      linear-gradient(180deg, rgba(148, 163, 184, 0.05), transparent 36%),
+      rgba(20, 25, 38, 0.82);
+    box-shadow:
+      0 8px 24px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.035);
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  @media (min-width: 1024px) {
+    .card {
+      backdrop-filter: blur(12px) saturate(1.15);
+    }
   }
   .input {
     @apply w-full rounded-xl border border-line bg-ink-900 px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-500 outline-none transition focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20;
@@ -44,10 +62,14 @@ body {
     box-shadow: 0 4px 18px -6px rgba(2, 132, 199, 0.55);
   }
   .btn-primary:hover {
-    box-shadow: 0 6px 24px -6px rgba(2, 132, 199, 0.7);
+    box-shadow: 0 6px 26px -6px rgba(2, 132, 199, 0.75);
+    transform: translateY(-1px);
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-line-strong hover:bg-ink-800 active:scale-[0.97];
+  }
+  .btn-ghost:hover {
+    transform: translateY(-1px);
   }
   .label {
     @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500;
@@ -55,14 +77,24 @@ body {
 }
 
 @layer utilities {
-  /* Profundidade nos cards do conteúdo: levanta no hover (GPU: transform/shadow) */
+  /* Feedback imediato de clique em qualquer botão (GPU: transform) */
+  button {
+    transition-property: transform, background-color, color, border-color, box-shadow, opacity;
+    transition-duration: 0.25s;
+  }
+  button:active {
+    transform: scale(0.97);
+  }
+
+  /* Profundidade nos cards do conteúdo: flutuam no hover */
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     main .card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px) scale(1.012);
       box-shadow:
-        0 14px 34px -14px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(56, 189, 248, 0.07);
-      border-color: rgba(148, 163, 184, 0.22);
+        0 22px 44px -16px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(56, 189, 248, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border-color: rgba(148, 163, 184, 0.25);
     }
     /* Inclinação 3D controlada pelo FxLayer via CSS vars */
     main [data-tilt] {
@@ -102,7 +134,7 @@ body {
     }
   }
 
-  /* Orbes de fundo com parallax leve (movidas pelo FxLayer) */
+  /* Camadas de fundo com parallax (movidas pelo FxLayer) */
   .fx-orb {
     position: fixed;
     border-radius: 9999px;
@@ -113,11 +145,27 @@ body {
     transform: translate3d(var(--par-x), var(--par-y), 0);
     transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
+  .fx-grid {
+    position: fixed;
+    inset: -40px;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(rgba(148, 163, 184, 0.055) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(900px 600px at 65% 20%, black, transparent 75%);
+    transform: translate3d(var(--par2-x), var(--par2-y), 0);
+    transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .animate-page,
     .nav-preview {
       animation: none;
+    }
+    button,
+    main .card {
+      transition: none;
     }
   }
 }
