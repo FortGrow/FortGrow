@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Copy, Link2, Loader2, Trash2 } from "lucide-react";
+import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Copy, Link2, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { EVENT_TYPES, EVENT_STATUS_LABELS, RECURRENCE_LABELS } from "@/lib/agenda";
 import { CARD_COLORS } from "@/components/kanban/kanban";
@@ -276,7 +276,8 @@ export function AgendaCalendar({
   canDelete: boolean;
   icsUrl: string;
 }) {
-  const [view, setView] = useState<"mes" | "semana" | "dia">("mes");
+  const [view, setView] = useState<"cards" | "mes" | "semana" | "dia">("cards");
+  const [savingStatus, setSavingStatus] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => new Date());
   const [events, setEvents] = useState<EventDto[]>([]);
   const [filters, setFilters] = useState({ colaborador: "", tipo: "", cliente: "" });
@@ -328,6 +329,35 @@ export function AgendaCalendar({
     void load();
   }
 
+  async function setStatus(id: string, status: string) {
+    setSavingStatus(id);
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    try {
+      const res = await fetch("/api/events", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) void load();
+    } finally {
+      setSavingStatus(null);
+    }
+  }
+
+  // Mini painel (mesmo padrão da tela de Clientes)
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const weekEnd = new Date(now.getTime() + 7 * 86400000);
+    const upcoming = events
+      .filter((e) => new Date(e.end) >= now && e.status !== "CANCELADO")
+      .sort((a, b) => a.start.localeCompare(b.start));
+    const hoje = upcoming.filter((e) => sameDay(new Date(e.start), now)).length;
+    const semana = upcoming.filter((e) => new Date(e.start) <= weekEnd).length;
+    const pendentes = events.filter((e) => e.status === "PENDENTE" && new Date(e.end) >= now).length;
+    const next = upcoming[0] ?? null;
+    return { hoje, semana, pendentes, next, upcoming };
+  }, [events]);
+
   function quickCreate(day: Date, hour?: number) {
     if (!canEdit) return;
     const start = new Date(day);
@@ -339,7 +369,7 @@ export function AgendaCalendar({
   // ── Navegação ──────────────────────────────────────────────────────
   function shift(dir: 1 | -1) {
     const d = new Date(cursor);
-    if (view === "mes") d.setMonth(d.getMonth() + dir);
+    if (view === "mes" || view === "cards") d.setMonth(d.getMonth() + dir);
     else if (view === "semana") d.setDate(d.getDate() + 7 * dir);
     else d.setDate(d.getDate() + dir);
     setCursor(d);
@@ -395,6 +425,36 @@ export function AgendaCalendar({
 
   return (
     <div className="space-y-4">
+      {/* Mini painel — mesmo padrão da tela de Clientes */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Eventos hoje</p>
+          <p className="mt-1 text-2xl font-bold text-slate-100">{metrics.hoje}</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Próximos 7 dias</p>
+          <p className="mt-1 text-2xl font-bold text-brand-300">{metrics.semana}</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pendentes</p>
+          <p className="mt-1 text-2xl font-bold text-warn">{metrics.pendentes}</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">aguardando confirmação</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Próximo evento</p>
+          {metrics.next ? (
+            <>
+              <p className="mt-1 truncate text-sm font-bold text-grow-400">{metrics.next.title}</p>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                {new Date(metrics.next.start).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-2xl font-bold text-slate-600">—</p>
+          )}
+        </div>
+      </div>
+
       {/* Barra de controles */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -402,18 +462,22 @@ export function AgendaCalendar({
           <button onClick={() => setCursor(new Date())} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-ink-800">Hoje</button>
           <button onClick={() => shift(1)} className="rounded-lg border border-line p-1.5 text-slate-400 hover:bg-ink-800"><ChevronRight size={15} /></button>
           <p className="ml-2 text-sm font-bold capitalize text-slate-200">
-            {view === "dia" ? cursor.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : monthLabel}
+            {view === "dia"
+              ? cursor.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
+              : view === "cards"
+                ? "Próximos eventos"
+                : monthLabel}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-lg border border-line p-0.5">
-            {(["dia", "semana", "mes"] as const).map((v) => (
+            {(["cards", "dia", "semana", "mes"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition ${view === v ? "bg-brand-500/15 text-brand-300" : "text-slate-500 hover:text-slate-300"}`}
               >
-                {v === "mes" ? "Mês" : v}
+                {v === "mes" ? "Mês" : v === "cards" ? "Cards" : v}
               </button>
             ))}
           </div>
@@ -458,6 +522,87 @@ export function AgendaCalendar({
         </span>
       </div>
 
+      {/* Cards — mesmo layout da tela de Clientes */}
+      {view === "cards" && (
+        metrics.upcoming.length === 0 ? (
+          <div className="card p-10 text-center text-sm text-slate-500">
+            Nenhum evento futuro — clique em "Novo evento" para agendar.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {metrics.upcoming.slice(0, 24).map((e) => {
+              const hex = (e.color && CARD_COLORS[e.color]) || EVENT_TYPES[e.type]?.color || "#64748b";
+              const startAt = new Date(e.start);
+              return (
+                <div
+                  key={`${e.id}-${e.start}`}
+                  className="group relative overflow-hidden rounded-2xl p-4 text-white shadow-lg ring-1 ring-white/10 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl"
+                  style={{ background: `linear-gradient(140deg, ${hex}d9, ${hex}8c)` }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">
+                        {e.private && "🔒 "}
+                        {e.recurrence !== "NENHUMA" && "↻ "}
+                        {e.title}
+                      </p>
+                      <p className="truncate text-xs text-white/80">{EVENT_TYPES[e.type]?.label ?? e.type}</p>
+                    </div>
+                    {canEdit && (
+                      <button
+                        onClick={() => setEditing(e)}
+                        title="Editar evento"
+                        className="shrink-0 rounded-lg bg-black/20 p-1.5 text-white/80 transition hover:bg-black/35 hover:text-white"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-2.5 space-y-1 text-xs text-white/85">
+                    <p className="font-semibold text-white">
+                      {startAt.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
+                      {" · "}
+                      {hm(startAt)}–{hm(new Date(e.end))}
+                    </p>
+                    {e.clientName && <p className="truncate">🏢 {e.clientName}</p>}
+                    {e.attendeeIds.length > 0 && <p>👥 {e.attendeeIds.length} participante(s)</p>}
+                    {e.description && <p className="line-clamp-2 text-white/70">{e.description}</p>}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="rounded-lg bg-black/25 px-2 py-1 text-[10px] font-bold uppercase tracking-wide">
+                      {EVENT_STATUS_LABELS[e.status] ?? e.status}
+                    </span>
+                    {canEdit && (
+                      <div className="flex overflow-hidden rounded-lg bg-black/25 text-[10px] font-bold">
+                        {(["CONFIRMADO", "PENDENTE", "CANCELADO"] as const).map((st) => (
+                          <button
+                            key={st}
+                            onClick={() => setStatus(e.id, st)}
+                            disabled={savingStatus === e.id}
+                            title={EVENT_STATUS_LABELS[st]}
+                            className={`px-2 py-1 transition ${
+                              e.status === st ? "bg-white/90 text-ink-900" : "text-white/70 hover:bg-white/15"
+                            }`}
+                          >
+                            {savingStatus === e.id && e.status === st ? (
+                              <Loader2 size={10} className="animate-spin" />
+                            ) : (
+                              st[0]
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      )}
+
       {/* Mês */}
       {view === "mes" && (
         <div className="card overflow-hidden p-0">
@@ -500,7 +645,7 @@ export function AgendaCalendar({
       )}
 
       {/* Semana / Dia */}
-      {view !== "mes" && (
+      {(view === "semana" || view === "dia") && (
         <div className="card overflow-x-auto p-0">
           <div className="grid" style={{ gridTemplateColumns: `52px repeat(${days.length}, minmax(120px, 1fr))` }}>
             <div className="border-b border-line" />
