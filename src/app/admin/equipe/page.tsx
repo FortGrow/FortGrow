@@ -7,6 +7,7 @@ import { MODULES, ROLE_DEFAULTS, type ModuleKey } from "@/lib/rbac";
 import { initials } from "@/lib/utils";
 import { NewUserForm } from "./new-user-form";
 import { PermissionsEditor } from "./permissions-editor";
+import { UserEditor } from "./user-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,12 @@ export default async function EquipePage() {
                     templates={templatesDto}
                   />
                 )}
+                {session.role === "ADMIN" && u.id !== session.sub && (
+                  <UserEditor
+                    user={{ id: u.id, name: u.name, role: u.role, clientId: u.clientId, active: u.active }}
+                    clients={allClients.map((c) => ({ id: c.id, name: c.companyName }))}
+                  />
+                )}
               </div>
             </Td>
           </tr>
@@ -113,7 +120,17 @@ export default async function EquipePage() {
               <p className="text-xs text-slate-500">{u.email}</p>
             </Td>
             <Td>{u.client?.companyName ?? "—"}</Td>
-            <Td><Badge tone={u.active ? "grow" : "danger"}>{u.active ? "ATIVO" : "INATIVO"}</Badge></Td>
+            <Td>
+              <div className="flex items-center gap-2">
+                <Badge tone={u.active ? "grow" : "danger"}>{u.active ? "ATIVO" : "INATIVO"}</Badge>
+                {session.role === "ADMIN" && (
+                  <UserEditor
+                    user={{ id: u.id, name: u.name, role: u.role, clientId: u.clientId, active: u.active }}
+                    clients={allClients.map((c) => ({ id: c.id, name: c.companyName }))}
+                  />
+                )}
+              </div>
+            </Td>
           </tr>
         ))}
       </DataTable>

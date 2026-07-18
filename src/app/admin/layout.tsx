@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const raw = await getSession();
   const session = raw ? await verifyLiveSession(raw) : null;
-  if (!session) redirect("/login");
+  // Sessão revogada com cookie ainda no navegador → login com limpeza de cookie (evita loop)
+  if (!session) redirect(raw ? "/login?expirada=1" : "/login");
   if (session.role === "CLIENTE") redirect("/portal");
 
   const modules = allowedModules(session);

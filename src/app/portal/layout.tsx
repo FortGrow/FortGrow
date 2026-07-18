@@ -22,8 +22,12 @@ const ITEMS: NavItem[] = [
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const raw = await getSession();
   const session = raw ? await (await import("@/lib/api-guard")).verifyLiveSession(raw) : null;
-  if (!session) redirect("/login");
-  if (session.role !== "CLIENTE" || !session.clientId) redirect("/admin");
+  // Sessão revogada com cookie ainda no navegador → login com limpeza de cookie (evita loop)
+  if (!session) redirect(raw ? "/login?expirada=1" : "/login");
+  if (session.role !== "CLIENTE") redirect("/admin");
+  // Acesso de cliente sem empresa vinculada: conta mal configurada — não pode
+  // cair na área administrativa nem entrar em loop; volta ao login limpando o cookie
+  if (!session.clientId) redirect("/login?expirada=1");
 
   return (
     <AppShell session={session} items={ITEMS} areaLabel="Portal do Cliente">

@@ -9,6 +9,7 @@ import { parsePeriod, MONTHS_PT, MONTHS_SHORT } from "@/lib/period";
 import { brl } from "@/lib/utils";
 import { initials, fullDate } from "@/lib/utils";
 import { PayCommissionButton } from "./pay-button";
+import { PaymentActions } from "./payment-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: { 
     }),
   ]);
 
-  const paidDescriptions = new Set(payments.map((p) => p.description));
+  const paymentByDescription = new Map(payments.map((p) => [p.description, p]));
   const chartData = MONTHS_SHORT.map((label, i) => ({ label, comissao: Math.round(report.byMonth[i]) }));
 
   return (
@@ -84,8 +85,17 @@ export default async function ComissoesPage({ searchParams }: { searchParams: { 
                       year={year}
                       month={month}
                       amount={Math.round(c.monthTotal * 100) / 100}
-                      alreadyPaid={paidDescriptions.has(payDescription)}
+                      alreadyPaid={paymentByDescription.has(payDescription)}
                     />
+                    {paymentByDescription.has(payDescription) && (
+                      <PaymentActions
+                        expenseId={paymentByDescription.get(payDescription)!.id}
+                        description={payDescription}
+                        amount={Number(paymentByDescription.get(payDescription)!.amount)}
+                        date={paymentByDescription.get(payDescription)!.date.toISOString()}
+                        compact
+                      />
+                    )}
                   </div>
                 </div>
                 <DataTable headers={["Cliente", "Receita do mês", "Comissão", "Valor", "Lucro restante"]}>
@@ -110,12 +120,20 @@ export default async function ComissoesPage({ searchParams }: { searchParams: { 
         {payments.length === 0 ? (
           <div className="card p-8 text-center text-sm text-slate-600">Nenhum pagamento registrado ainda.</div>
         ) : (
-          <DataTable headers={["Descrição", "Valor", "Data do pagamento"]}>
+          <DataTable headers={["Descrição", "Valor", "Data do pagamento", ""]}>
             {payments.map((p) => (
               <tr key={p.id}>
                 <Td className="font-medium text-slate-200">{p.description}</Td>
                 <Td>{brl(p.amount)}</Td>
                 <Td className="text-slate-500">{fullDate(p.date)}</Td>
+                <Td>
+                  <PaymentActions
+                    expenseId={p.id}
+                    description={p.description}
+                    amount={Number(p.amount)}
+                    date={p.date.toISOString()}
+                  />
+                </Td>
               </tr>
             ))}
           </DataTable>
