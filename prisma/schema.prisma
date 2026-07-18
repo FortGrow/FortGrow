@@ -42,6 +42,7 @@ model User {
 
   accountFor    Client[]       @relation("accountManager")
   consultantFor Client[]       @relation("consultant")
+  commissions   StaffCommission[]
   leads         Lead[]
   tasks         Task[]
   ticketMsgs    TicketMessage[]
@@ -123,6 +124,7 @@ model Client {
   goals      Goal[]
   leads      Lead[]
   contentPosts ContentPost[]
+  staffCommissions StaffCommission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -417,13 +419,45 @@ model Invoice {
 
 model Expense {
   id          String   @id @default(cuid())
-  description String
-  category    String // midia | ferramentas | pessoal | impostos | outros
+  description String // nome do custo
+  category    String // softwares | hospedagem | funcionarios | comissoes | marketing | trafego_pago | ...
   amount      Decimal  @db.Decimal(12, 2)
-  date        DateTime
+  date        DateTime // data de vencimento/competência
+  recurring   Boolean  @default(false)
+  frequency   String   @default("unica") // mensal | anual | unica
+  status      String   @default("ATIVO") // ATIVO | PAGO | CANCELADO
+  notes       String?
   clientId    String?
   client      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+}
+
+/// Comissão de colaborador por cliente (percentual sobre a receita ou valor fixo mensal)
+model StaffCommission {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // PERCENTUAL | FIXO
+  value     Decimal  @db.Decimal(12, 2)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([clientId, userId])
+}
+
+/// Treinamentos disponibilizados no portal (gerenciados pelo admin, sem alterar código)
+model Training {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  category     String
+  videoUrl     String // YouTube/Vimeo — convertido para embed na exibição
+  thumbnailUrl String?
+  duration     String? // ex.: "12 min"
+  publishedAt  DateTime @default(now())
+  active       Boolean  @default(true)
 }
 
 // ─────────────────────────────── Documentos ───────────────────────────────
