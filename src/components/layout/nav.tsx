@@ -32,6 +32,7 @@ import {
   Wallet,
   FolderOpen,
   Instagram,
+  LineChart,
   TrendingUp,
 } from "lucide-react";
 
@@ -60,6 +61,7 @@ const ICONS: Record<string, LucideIcon> = {
   // portal
   visao: LayoutDashboard,
   resultados: TrendingUp,
+  performance: LineChart,
   calendario: CalendarCheck2,
   "google-ads": Target,
   "meta-ads": Megaphone,
