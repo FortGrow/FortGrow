@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Instagram, Plus, Trash2 } from "lucide-react";
 import { TrendChart } from "@/components/charts/trend-chart";
-import { StatCard } from "@/components/ui/stat-card";
 import { cn, num } from "@/lib/utils";
 
 export type IgRow = {
@@ -28,6 +27,15 @@ function engagementOf(r: IgRow) {
 const fmtPct = (v: number | null, digits = 1) =>
   v === null ? "—" : `${v.toLocaleString("pt-BR", { maximumFractionDigits: digits })}%`;
 
+/** Resumo consolidado do período — exibido pela seção Resultados do dashboard */
+export type IgSummary = {
+  followers: number | null;
+  growth: number | undefined;
+  totalViews: number;
+  avgEngagement: number | null;
+  avgNonFollowers: number | null;
+};
+
 const NUM_FIELDS = [
   ["views", "Visualizações"],
   ["likes", "Curtidas"],
@@ -48,10 +56,13 @@ export function InstagramPanel({
   clientId,
   editable,
   range,
+  onSummary,
 }: {
   clientId: string;
   editable: boolean;
   range: { start: string; end: string } | null;
+  /** Entrega o resumo do período ao dashboard (seção Resultados) */
+  onSummary?: (s: IgSummary | null) => void;
 }) {
   const [rows, setRows] = useState<IgRow[] | null>(null);
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
@@ -160,6 +171,18 @@ export function InstagramPanel({
   const totalReach = current.reduce((s, r) => s + r.reach, 0);
   const totalInteractions = current.reduce((s, r) => s + r.likes + r.comments + r.shares + r.saves, 0);
   const avgEngagement = totalReach > 0 ? (totalInteractions / totalReach) * 100 : null;
+  const avgNonFollowers =
+    current.length > 0 ? current.reduce((s, r) => s + r.nonFollowersPct, 0) / current.length : null;
+
+  /* Sobe o resumo para a seção Resultados do dashboard */
+  useEffect(() => {
+    onSummary?.(
+      rows === null
+        ? null
+        : { followers: last?.followers ?? null, growth, totalViews, avgEngagement, avgNonFollowers }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, range]);
 
   const chartData = useMemo(
     () =>
@@ -195,25 +218,6 @@ export function InstagramPanel({
         <Instagram size={18} className="text-violet" />
         <h2 className="text-base font-bold text-slate-100">Instagram</h2>
         <span className="text-xs text-slate-500">métricas do perfil, estilo Insights — seguem o período selecionado acima</span>
-      </div>
-
-      {/* Resumo do período */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <StatCard
-          label="Seguidores"
-          value={last ? num(last.followers) : "—"}
-          delta={growth}
-          hint={growth !== undefined ? "crescimento no período" : "lance 2+ dias para ver o crescimento"}
-          accent="violet"
-        />
-        <StatCard label="Visualizações" value={num(totalViews)} hint="total no período" accent="brand" />
-        <StatCard label="Alcance" value={num(totalReach)} hint="total no período" accent="grow" />
-        <StatCard
-          label="Engajamento"
-          value={fmtPct(avgEngagement)}
-          hint="(curtidas + comentários + compart. + salvos) / alcance"
-          accent="warn"
-        />
       </div>
 
       {/* Gráficos estilo Insights */}

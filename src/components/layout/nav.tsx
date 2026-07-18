@@ -70,6 +70,7 @@ const ICONS: Record<string, LucideIcon> = {
   portalfinanceiro: CircleDollarSign,
   documentos: FolderOpen,
   portalchamados: LifeBuoy,
+  dados: Building2,
   config: Settings2,
 };
 

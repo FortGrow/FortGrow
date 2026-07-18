@@ -25,6 +25,7 @@ export type EditableClient = {
   contractStart: string | null;
   contractMonths: number | null;
   projectStatus: string | null;
+  operationType: string | null;
   notes: string | null;
 };
 
@@ -42,6 +43,7 @@ const TEXT_FIELDS: { name: keyof EditableClient; label: string; type?: string }[
   { name: "contractStart", label: "Início do contrato", type: "date" },
   { name: "contractMonths", label: "Tempo de contrato (meses)", type: "number" },
   { name: "projectStatus", label: "Status do projeto" },
+  { name: "operationType", label: "Tipo de operação" },
 ];
 
 /** Edição completa do cliente — formulário populado com os dados atuais. */

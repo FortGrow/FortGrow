@@ -132,6 +132,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             contractStart: client.contractStart?.toISOString().slice(0, 10) ?? null,
             contractMonths: client.contractMonths,
             projectStatus: client.projectStatus,
+            operationType: client.operationType,
             notes: client.notes,
           }}
         />
@@ -209,6 +210,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             ["Consultor", client.consultant?.name],
             ["Tempo de contrato", client.contractMonths ? `${client.contractMonths} meses` : null],
             ["Status do projeto", client.projectStatus],
+            ["Tipo de operação", client.operationType],
             ["Observações", client.notes],
           ].map(([k, v]) => (
             <div key={k as string} className="flex justify-between gap-4 border-b border-line/60 pb-2 last:border-0">
