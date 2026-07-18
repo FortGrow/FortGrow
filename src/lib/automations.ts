@@ -1,5 +1,5 @@
 /**
- * Motor de automações do FortGrow CRM.
+ * Motor de automações do FortGrow.
  *
  * Executa os gatilhos ativos da tabela Automation e gera notificações
  * (canal "notificacao"/"email"/"whatsapp" — os canais externos ficam

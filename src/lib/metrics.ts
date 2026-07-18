@@ -1,5 +1,5 @@
 /**
- * Cálculos financeiros e de marketing do FortGrow CRM.
+ * Cálculos financeiros e de marketing do FortGrow.
  * Todas as fórmulas centralizadas para consistência entre dashboards.
  */
 
