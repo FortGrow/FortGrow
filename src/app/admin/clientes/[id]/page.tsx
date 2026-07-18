@@ -13,6 +13,7 @@ import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integratio
 import { ContentCalendarPanel } from "./content-calendar";
 import { StaffCommissionsPanel } from "./staff-commissions";
 import { EditClientForm } from "./edit-client-form";
+import { BillingPanel } from "./billing-panel";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,8 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       services: { include: { service: true } },
       contracts: true,
       projects: { orderBy: { createdAt: "desc" } },
-      invoices: { orderBy: { dueDate: "desc" }, take: 12 },
+      invoices: { orderBy: { dueDate: "desc" }, take: 24 },
+      subscriptions: { orderBy: { createdAt: "asc" } },
       documents: { orderBy: { createdAt: "desc" }, take: 10 },
       metrics: { where: { date: { gte: new Date(Date.now() - 90 * 86400000) } } },
       users: {
@@ -49,6 +51,14 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+
+  const [paidAgg, pendingAgg] = await Promise.all([
+    prisma.invoice.aggregate({ where: { clientId: client.id, status: "PAGO" }, _sum: { amount: true } }),
+    prisma.invoice.aggregate({
+      where: { clientId: client.id, status: { in: ["EM_ABERTO", "ATRASADO"] } },
+      _sum: { amount: true },
+    }),
+  ]);
 
   const totals = sumTotals(client.metrics as never[]);
   const byWeek = new Map<string, { leads: number; conversions: number }>();
@@ -198,19 +208,31 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             ))}
           </DataTable>
         </div>
-        <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-300">Faturas recentes</h2>
-          <DataTable headers={["Descrição", "Valor", "Vencimento", "Status"]}>
-            {client.invoices.map((i) => (
-              <tr key={i.id}>
-                <Td className="font-medium text-slate-200">{i.description}</Td>
-                <Td>{brl(i.amount)}</Td>
-                <Td className="text-slate-500">{fullDate(i.dueDate)}</Td>
-                <Td><StatusBadge status={i.status} /></Td>
-              </tr>
-            ))}
-          </DataTable>
-        </div>
+        <BillingPanel
+          clientId={client.id}
+          subscriptions={client.subscriptions.map((s) => ({
+            id: s.id,
+            description: s.description,
+            amount: Number(s.amount),
+            frequency: s.frequency,
+            startDate: s.startDate.toISOString(),
+            dueDay: s.dueDay,
+            status: s.status,
+            paymentMethod: s.paymentMethod,
+            notes: s.notes,
+          }))}
+          charges={client.invoices.map((i) => ({
+            id: i.id,
+            description: i.description,
+            amount: Number(i.amount),
+            dueDate: i.dueDate.toISOString(),
+            paidAt: i.paidAt?.toISOString() ?? null,
+            status: i.status,
+            method: i.method,
+          }))}
+          totalPaid={Number(paidAgg._sum.amount ?? 0)}
+          totalPending={Number(pendingAgg._sum.amount ?? 0)}
+        />
       </div>
 
       <div className="card mt-6 p-5">

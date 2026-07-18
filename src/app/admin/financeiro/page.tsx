@@ -9,13 +9,27 @@ import { PeriodSelect } from "@/components/ui/period-select";
 import { brl, fullDate, num, pct } from "@/lib/utils";
 import { ltv, paybackMonths } from "@/lib/metrics";
 import { commissionReport, costReport } from "@/lib/commissions";
+import { currentMrr, generateSubscriptionCharges } from "@/lib/billing";
 import { parsePeriod, MONTHS_PT, MONTHS_SHORT } from "@/lib/period";
 import { CommissionForm } from "./commission-form";
+import { MarkPaidButton, NewChargeForm } from "./charge-actions";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
-export default async function FinanceiroPage({ searchParams }: { searchParams: { ano?: string; mes?: string } }) {
+export default async function FinanceiroPage({
+  searchParams,
+}: {
+  searchParams: { ano?: string; mes?: string; status?: string };
+}) {
   const { year, month } = parsePeriod(searchParams);
+  const statusFilter = ["PAGO", "EM_ABERTO", "ATRASADO"].includes(searchParams.status ?? "")
+    ? searchParams.status
+    : undefined;
+
+  // Garante as cobranças do mês corrente antes de calcular qualquer coisa
+  await generateSubscriptionCharges().catch(() => 0);
   const m = month - 1;
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year + 1, 0, 1);
@@ -47,6 +61,15 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
       prisma.expense.findMany({ where: { status: { not: "CANCELADO" } }, orderBy: { date: "desc" }, take: 10 }),
     ]);
 
+  const [mrrInfo, allActiveClients] = await Promise.all([
+    currentMrr(),
+    prisma.client.findMany({
+      where: { archivedAt: null, status: { in: ["ATIVO", "ONBOARDING"] } },
+      select: { id: true, companyName: true },
+      orderBy: { companyName: "asc" },
+    }),
+  ]);
+
   // ── Receita ────────────────────────────────────────────────────────
   const paid = invoices.filter((i) => i.status === "PAGO");
   const monthOf = (i: (typeof invoices)[number]) => (i.paidAt ?? i.dueDate).getMonth();
@@ -64,7 +87,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
   const prevYearRevenue = Number(prevYearPaid._sum.amount ?? 0);
   const yearGrowth = prevYearRevenue > 0 ? ((yearRevenue - prevYearRevenue) / prevYearRevenue) * 100 : 0;
 
-  const mrr = activeClients.reduce((s, c) => s + Number(c.monthlyValue), 0);
+  const mrr = mrrInfo.mrr;
   const monthClients = clientsByMonth[m].size;
   const monthTicket = monthClients > 0 ? monthRevenue / monthClients : 0;
 
@@ -100,11 +123,26 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
   }));
   const comparison = MONTHS_SHORT.map((label, i) => ({ label, receita: Math.round(revenueByMonth[i]) }));
 
+  // Receita por cliente (pagas no ano) — top 10
+  const byClient = new Map<string, number>();
+  for (const i of paid) {
+    byClient.set(i.client.companyName, (byClient.get(i.client.companyName) ?? 0) + Number(i.amount));
+  }
+  const revenuePerClient = [...byClient.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([label, receita]) => ({ label: label.length > 14 ? `${label.slice(0, 13)}…` : label, receita: Math.round(receita) }));
+
+  // Tabela de cobranças com filtro por status
+  const chargeRows = (statusFilter ? invoices.filter((i) => i.status === statusFilter) : invoices).slice(0, 20);
+  const daysTo = (d: Date) => Math.ceil((d.getTime() - Date.now()) / 86400000);
+
   return (
     <>
       <PageHeader title="Faturamento" subtitle="Painel financeiro 360° — receitas, custos, comissões e lucro">
         <div className="flex flex-wrap items-center gap-2">
           <PeriodSelect year={year} month={month} />
+          <NewChargeForm clients={allActiveClients.map((c) => ({ id: c.id, name: c.companyName }))} />
           <CommissionForm
             clients={commissionClients.map((c) => ({
               id: c.id,
@@ -118,7 +156,12 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
 
       {/* Dashboard de faturamento */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Faturamento total (MRR ativo)" value={brl(mrr)} hint={`${activeClients.length} clientes ativos`} accent="grow" />
+        <StatCard
+          label="Receita recorrente (MRR)"
+          value={brl(mrr)}
+          hint={`${mrrInfo.withSubs} c/ mensalidade${mrrInfo.legacy > 0 ? ` + ${mrrInfo.legacy} pelo contrato` : ""}`}
+          accent="grow"
+        />
         <StatCard
           label={`Faturamento de ${MONTHS_PT[m]}`}
           value={brl(monthRevenue)}
@@ -133,7 +176,7 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
           hint={prevYearRevenue > 0 ? `vs. ${year - 1}` : "recebido no ano"}
           accent="brand"
         />
-        <StatCard label="Receita recorrente (MRR)" value={brl(mrr)} hint={`ARR ${brl(mrr * 12)}`} accent="violet" />
+        <StatCard label="Receita anual projetada (ARR)" value={brl(mrr * 12)} hint="MRR × 12" accent="violet" />
       </div>
 
       {/* Visão do mês selecionado */}
@@ -205,18 +248,60 @@ export default async function FinanceiroPage({ searchParams }: { searchParams: {
         <StatCard label="Payback" value={payback > 0 ? `${payback.toFixed(1)} meses` : "—"} accent="grow" />
       </div>
 
+      {/* Receita por cliente */}
+      {revenuePerClient.length > 0 && (
+        <div className="card mt-6 p-5">
+          <h2 className="mb-4 text-sm font-bold text-slate-300">Receita por cliente · {year} (top 10, pagas)</h2>
+          <BarsChart data={revenuePerClient} series={[{ key: "receita", label: "Receita" }]} format="brl" />
+        </div>
+      )}
+
       {/* Tabelas */}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-300">Mensalidades e cobranças · {year}</h2>
-          <DataTable headers={["Cliente", "Descrição", "Valor", "Vencimento", "Status"]}>
-            {invoices.slice(0, 12).map((i) => (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-slate-300">Mensalidades e cobranças · {year}</h2>
+            <div className="flex gap-1.5">
+              {[
+                [undefined, "Todas"],
+                ["PAGO", "Pagas"],
+                ["EM_ABERTO", "Pendentes"],
+                ["ATRASADO", "Atrasadas"],
+              ].map(([value, label]) => (
+                <Link
+                  key={label}
+                  href={`/admin/financeiro?ano=${year}&mes=${month}${value ? `&status=${value}` : ""}`}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                    statusFilter === value || (!statusFilter && !value)
+                      ? "bg-brand-500/15 text-brand-300 ring-1 ring-inset ring-brand-500/40"
+                      : "bg-ink-800 text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <DataTable headers={["Cliente", "Valor", "Vencimento", "Status", ""]}>
+            {chargeRows.map((i) => (
               <tr key={i.id} className="transition hover:bg-ink-800/50">
-                <Td className="font-medium text-slate-200">{i.client.companyName}</Td>
-                <Td className="max-w-48 truncate">{i.description}</Td>
-                <Td>{brl(i.amount)}</Td>
+                <Td>
+                  <p className="font-medium text-slate-200">{i.client.companyName}</p>
+                  <p className="max-w-52 truncate text-xs text-slate-500">{i.description}</p>
+                </Td>
+                <Td className="font-semibold">{brl(i.amount)}</Td>
                 <Td className="text-slate-500">{fullDate(i.dueDate)}</Td>
-                <Td><StatusBadge status={i.status} /></Td>
+                <Td>
+                  <span className="flex items-center gap-1.5">
+                    <StatusBadge status={i.status} />
+                    {i.status === "EM_ABERTO" && daysTo(i.dueDate) >= 0 && daysTo(i.dueDate) <= 5 && (
+                      <Badge tone="warn">{daysTo(i.dueDate) === 0 ? "vence hoje" : `vence em ${daysTo(i.dueDate)}d`}</Badge>
+                    )}
+                  </span>
+                </Td>
+                <Td>
+                  {(i.status === "EM_ABERTO" || i.status === "ATRASADO") && <MarkPaidButton invoiceId={i.id} />}
+                </Td>
               </tr>
             ))}
           </DataTable>
