@@ -58,3 +58,45 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ invoice, amount, clientCommission }, { status: 201 });
 }
+
+const patchSchema = z.object({
+  invoiceId: z.string().min(1),
+  salesVolume: z.coerce.number().positive(),
+  basePercent: z.coerce.number().positive().max(100),
+  sharePercent: z.coerce.number().positive().max(100),
+  reference: z.string().min(2).max(40),
+});
+
+/**
+ * Corrige um lançamento de comissão já feito: recalcula o valor a partir do
+ * volume vendido e das porcentagens e atualiza a cobrança (mesmo se paga).
+ */
+export async function PATCH(req: NextRequest) {
+  const session = await requireStaff("financeiro", "edit");
+  if (isResponse(session)) return session;
+
+  const parsed = patchSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const { invoiceId, salesVolume, basePercent, sharePercent, reference } = parsed.data;
+  const existing = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+  if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
+
+  const clientCommission = salesVolume * (basePercent / 100);
+  const amount = Math.round(clientCommission * (sharePercent / 100) * 100) / 100;
+
+  const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const invoice = await prisma.invoice.update({
+    where: { id: invoiceId },
+    data: {
+      description: `Comissão ${reference} — ${fmt(salesVolume)} vendidos × ${basePercent}% × ${sharePercent}%`,
+      amount,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "commission.launch_update", entity: "Invoice", entityId: invoiceId },
+  });
+
+  return NextResponse.json({ ok: true, invoice, amount, clientCommission });
+}

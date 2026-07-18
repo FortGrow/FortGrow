@@ -50,6 +50,7 @@ const ACTION_LABELS: Record<string, string> = {
   "training.create": "Publicou treinamento",
   "metrics.manual": "Lançou métricas manualmente",
   "commission.launch": "Lançou comissão de cliente",
+  "commission.launch_update": "Corrigiu lançamento de comissão",
   "commission_payment": "Registrou pagamento de comissão",
   "staff_commission.set": "Configurou comissão de colaborador",
   "integration.connect": "Conectou integração",
