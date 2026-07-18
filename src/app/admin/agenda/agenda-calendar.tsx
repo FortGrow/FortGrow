@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Copy, Link2, Loader2, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { EVENT_TYPES, EVENT_STATUS_LABELS, RECURRENCE_LABELS } from "@/lib/agenda";
+import { CARD_COLORS } from "@/components/kanban/kanban";
 
 export type EventDto = {
   id: string;
@@ -14,6 +15,7 @@ export type EventDto = {
   start: string;
   end: string;
   private: boolean;
+  color: string | null;
   recurrence: string;
   recurrenceUntil: string | null;
   seriesStart: string;
@@ -55,6 +57,7 @@ function EventForm({
   onSaved: () => void;
 }) {
   const [attendees, setAttendees] = useState<string[]>(initial?.attendeeIds ?? []);
+  const [color, setColor] = useState(initial?.color ?? "");
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -80,6 +83,7 @@ function EventForm({
       private: form.get("private") === "on",
       recurrence: form.get("recurrence"),
       recurrenceUntil: form.get("recurrenceUntil"),
+      color,
       attendeeIds: attendees,
     };
     try {
@@ -179,6 +183,22 @@ function EventForm({
                 defaultValue={initial?.recurrenceUntil?.slice(0, 10) ?? ""}
                 className="input"
               />
+            </div>
+          </div>
+          <div>
+            <label className="label">Cor do evento (opcional — sem escolher, vale a cor do tipo)</label>
+            <div className="flex flex-wrap items-center gap-2">
+              {Object.entries(CARD_COLORS).map(([key, hex]) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={key}
+                  onClick={() => setColor((c) => (c === key ? "" : key))}
+                  className={`h-6 w-6 rounded-full transition hover:scale-110 ${color === key ? "ring-2 ring-white/80 ring-offset-2 ring-offset-ink-900" : ""}`}
+                  style={{ backgroundColor: hex }}
+                />
+              ))}
+              <span className="text-xs text-slate-500">{color || "cor do tipo"}</span>
             </div>
           </div>
           <div>
@@ -345,6 +365,7 @@ export function AgendaCalendar({
 
   const chip = (e: EventDto, withTime = true) => {
     const t = EVENT_TYPES[e.type];
+    const hex = (e.color && CARD_COLORS[e.color]) || t?.color || "#64748b";
     return (
       <button
         key={e.id}
@@ -362,7 +383,7 @@ export function AgendaCalendar({
         className={`block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[11px] font-medium text-white transition hover:brightness-110 ${
           e.status === "CANCELADO" ? "line-through opacity-40" : e.status === "PENDENTE" ? "opacity-70" : ""
         } ${dragId === e.id ? "opacity-40" : ""}`}
-        style={{ backgroundColor: `${t?.color ?? "#64748b"}cc` }}
+        style={{ backgroundColor: `${hex}cc` }}
       >
         {withTime && `${hm(new Date(e.start))} `}
         {e.private && "🔒 "}

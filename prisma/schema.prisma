@@ -626,6 +626,8 @@ model Event {
   end         DateTime
   /// Evento privado: visível só para o criador e participantes (e admins)
   private     Boolean  @default(false)
+  /// Cor personalizada do evento (azul|verde|roxo|laranja|rosa|vermelho|ciano|amarelo); null = cor do tipo
+  color       String?
   /// Recorrência: NENHUMA | SEMANAL | MENSAL | ANUAL
   recurrence  String   @default("NENHUMA")
   /// Última data em que a recorrência vale (null = sem fim)

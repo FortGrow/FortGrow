@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
         start: occ.start.toISOString(),
         end: occ.end.toISOString(),
         private: e.private,
+        color: e.color,
         recurrence: e.recurrence,
         recurrenceUntil: e.recurrenceUntil?.toISOString() ?? null,
         /// início da série (para edição — a ocorrência exibida pode ser outra data)
@@ -83,6 +84,8 @@ const createSchema = z.object({
   start: z.string().min(10),
   end: z.string().min(10),
   private: z.boolean().optional(),
+  /// Cor personalizada ("" volta para a cor do tipo)
+  color: z.enum(["azul", "verde", "roxo", "laranja", "rosa", "vermelho", "ciano", "amarelo"]).optional().or(z.literal("")).optional(),
   recurrence: z.enum(["NENHUMA", "SEMANAL", "MENSAL", "ANUAL"]).optional(),
   recurrenceUntil: z.string().nullish(),
   attendeeIds: z.array(z.string()).max(50).optional(),
@@ -104,10 +107,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "O término precisa ser depois do início." }, { status: 400 });
   }
 
-  const { recurrenceUntil, ...restFields } = rest;
+  const { recurrenceUntil, color, ...restFields } = rest;
   const event = await prisma.event.create({
     data: {
       ...restFields,
+      color: color || null,
       description: restFields.description || null,
       start: startAt,
       end: endAt,
@@ -145,7 +149,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, start, end, attendeeIds, clientId, description, recurrenceUntil, ...rest } = parsed.data;
+  const { id, start, end, attendeeIds, clientId, description, recurrenceUntil, color, ...rest } = parsed.data;
   const existing = await prisma.event.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 });
   if (!canSee(session, existing)) return NextResponse.json({ error: "Evento privado." }, { status: 403 });
@@ -157,6 +161,7 @@ export async function PATCH(req: NextRequest) {
   if (attendeeIds !== undefined) data.attendeeIds = attendeeIds;
   if (clientId !== undefined) data.clientId = clientId || null;
   if (recurrenceUntil !== undefined) data.recurrenceUntil = recurrenceUntil ? new Date(recurrenceUntil) : null;
+  if (color !== undefined) data.color = color || null;
 
   const startAt = (data.start as Date) ?? existing.start;
   const endAt = (data.end as Date) ?? existing.end;
