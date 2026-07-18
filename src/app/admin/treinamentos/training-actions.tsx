@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Play, Plus, Trash2, X } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 
 export const TRAINING_CATEGORIES = [
@@ -102,6 +102,71 @@ export function NewTrainingForm() {
         </div>
       </form>
     </Overlay>
+  );
+}
+
+/**
+ * Pré-visualização no admin: clicar na capa abre o vídeo no player.
+ * Os botões de editar/excluir ficam por cima (z-10) e não disparam o preview.
+ */
+export function PreviewTraining({
+  embedUrl,
+  title,
+  children,
+}: {
+  embedUrl: string | null;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Assistir vídeo"
+        className="absolute inset-0 block h-full w-full cursor-pointer text-left"
+      >
+        {children}
+        <span className="absolute inset-0 flex items-center justify-center bg-ink-950/0 opacity-0 transition group-hover:bg-ink-950/40 group-hover:opacity-100">
+          <span className="rounded-full bg-brand-500 p-3 text-ink-950 shadow-glow">
+            <Play size={18} />
+          </span>
+        </span>
+      </button>
+
+      {open && (
+        <Overlay>
+          <div className="card w-full max-w-3xl animate-fade-up overflow-hidden p-0">
+            <div className="relative aspect-video w-full bg-black">
+              {embedUrl ? (
+                <iframe
+                  src={`${embedUrl}?autoplay=1`}
+                  title={title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 h-full w-full"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-500">
+                  Link de vídeo não reconhecido — clique no lápis e confira o link (YouTube ou Vimeo).
+                </div>
+              )}
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Fechar"
+                className="absolute right-3 top-3 rounded-full bg-ink-950/80 p-2 text-white backdrop-blur transition hover:bg-danger"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-sm font-semibold text-slate-200">{title}</p>
+            </div>
+          </div>
+        </Overlay>
+      )}
+    </>
   );
 }
 
