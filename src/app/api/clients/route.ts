@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { getSession } from "@/lib/auth";
+import { emptyToNull, invalidResponse } from "@/lib/validation";
 
 const createSchema = z.object({
   companyName: z.string().min(2),
@@ -12,7 +13,7 @@ const createSchema = z.object({
   monthlyValue: z.coerce.number().min(0).optional(),
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
-  contractMonths: z.coerce.number().int().min(1).max(120).optional(),
+  contractMonths: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(120).nullish()),
   contractStart: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().max(30).optional(),
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  if (!parsed.success) return invalidResponse(parsed.error);
 
   const { email, contractStart, monthlyValue, billingType, commissionBase, commissionShare, ...rest } = parsed.data;
 
@@ -74,7 +75,7 @@ export async function DELETE(req: NextRequest) {
   // id via querystring (?id=...) — corpos de DELETE podem ser descartados por proxies
   const bodyId = (await req.json().catch(() => null))?.id;
   const parsed = deleteSchema.safeParse({ id: req.nextUrl.searchParams.get("id") ?? bodyId });
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  if (!parsed.success) return invalidResponse(parsed.error);
 
   const purge = req.nextUrl.searchParams.get("purge") === "1";
   const client = await prisma.client.findUnique({
@@ -142,7 +143,7 @@ const updateSchema = z.object({
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
   contractStart: z.string().nullish(),
-  contractMonths: z.coerce.number().int().min(1).max(120).nullish(),
+  contractMonths: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(120).nullish()),
   projectStatus: nullableStr(80),
   notes: nullableStr(2000),
   /// Restaura um cliente da lixeira
@@ -155,7 +156,7 @@ export async function PATCH(req: NextRequest) {
   if (isResponse(session)) return session;
 
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  if (!parsed.success) return invalidResponse(parsed.error);
 
   const { id, adAccounts, email, contractStart, restore, ...fields } = parsed.data;
 
