@@ -137,12 +137,19 @@ export async function runAutomations(): Promise<AutomationRunResult> {
     }
   }
 
-  // ── Lembretes da Agenda: eventos começando em até 1h e em até 10 min ──
+  // ── Lembretes da Agenda: eventos (incl. recorrentes) começando em até 1h/10min ──
+  const { expandOccurrences } = await import("@/lib/agenda");
   const in1h = new Date(now.getTime() + 60 * 60000);
-  const upcoming = await prisma.event.findMany({
-    where: { status: { not: "CANCELADO" }, start: { gte: now, lte: in1h } },
-    select: { id: true, title: true, start: true, attendeeIds: true, createdById: true },
+  const candidates = await prisma.event.findMany({
+    where: {
+      status: { not: "CANCELADO" },
+      OR: [{ start: { gte: now, lte: in1h } }, { recurrence: { not: "NENHUMA" }, start: { lte: in1h } }],
+    },
+    select: { id: true, title: true, start: true, end: true, recurrence: true, recurrenceUntil: true, attendeeIds: true, createdById: true },
   });
+  const upcoming = candidates.flatMap((ev) =>
+    expandOccurrences(ev, now, new Date(in1h.getTime() + 1)).map((occ) => ({ ...ev, start: occ.start }))
+  );
   for (const ev of upcoming) {
     const minutes = Math.round((ev.start.getTime() - now.getTime()) / 60000);
     const when = ev.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
