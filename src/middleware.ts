@@ -16,6 +16,13 @@ export async function middleware(req: NextRequest) {
   const home = session ? (isClient ? "/portal" : "/admin") : "/login";
 
   if (pathname === "/" || pathname === "/login") {
+    // Sessão revogada/expirada: limpa o cookie e deixa fazer login de novo
+    // (sem isso, o cookie antigo causaria loop login → área → login)
+    if (pathname === "/login" && req.nextUrl.searchParams.get("expirada") === "1") {
+      const res = NextResponse.next();
+      res.cookies.delete(SESSION_COOKIE);
+      return res;
+    }
     if (session) return NextResponse.redirect(new URL(home, req.url));
     if (pathname === "/") return NextResponse.redirect(new URL("/login", req.url));
     return NextResponse.next();

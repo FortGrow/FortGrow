@@ -39,7 +39,7 @@ const METRIC_FIELDS = [
  */
 export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: string; accounts: AdAccounts }) {
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [status, setStatus] = useState<{ kind: "ok" | "erro"; text: string } | null>(null);
   const [metricsOpen, setMetricsOpen] = useState(false);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +48,9 @@ export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: str
   async function saveAccounts(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
-    setSaved(false);
+    setStatus(null);
     const form = new FormData(e.currentTarget);
+    const metaAdsId = String(form.get("metaAdsId") ?? "").trim();
     try {
       const res = await fetch("/api/clients", {
         method: "PATCH",
@@ -57,17 +58,45 @@ export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: str
         body: JSON.stringify({
           id: clientId,
           adAccounts: {
-            metaAdsId: form.get("metaAdsId"),
+            metaAdsId,
             googleAdsId: form.get("googleAdsId"),
             instagram: form.get("instagram"),
             ga4PropertyId: form.get("ga4PropertyId"),
           },
         }),
       });
-      if (res.ok) {
-        setSaved(true);
-        router.refresh();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setStatus({ kind: "erro", text: data.error ?? "Não foi possível salvar os vínculos." });
+        return;
       }
+
+      // Vínculo salvo — inicia a conexão na hora (sincronização da conta Meta)
+      if (metaAdsId) {
+        setStatus({ kind: "ok", text: "Vínculos salvos — conectando ao Meta Ads…" });
+        const syncRes = await fetch(`/api/sync/run?clientId=${encodeURIComponent(clientId)}`, { method: "POST" });
+        const syncData = await syncRes.json().catch(() => ({}));
+        if (!syncRes.ok) {
+          setStatus({ kind: "erro", text: syncData.error ?? "Vínculo salvo, mas a sincronização falhou." });
+        } else {
+          const r = syncData.result ?? {};
+          const problema = (r.details ?? []).find((d: string) => /não está conectada|HTTP|token|OAuth|falha/i.test(d));
+          if ((r.errors ?? 0) > 0 || problema) {
+            setStatus({
+              kind: "erro",
+              text: problema ?? "A conexão não foi concluída — confira o ID da conta e o token em Integrações.",
+            });
+          } else {
+            setStatus({
+              kind: "ok",
+              text: `Conectado! ${r.campaignsSynced ?? 0} campanha(s) e ${r.insightsUpserted ?? 0} métrica(s) sincronizadas.`,
+            });
+          }
+        }
+      } else {
+        setStatus({ kind: "ok", text: "Vínculos salvos!" });
+      }
+      router.refresh();
     } finally {
       setSaving(false);
     }
@@ -132,11 +161,16 @@ export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: str
           <label className="label" htmlFor="ci-ga4">GA4 · Property ID</label>
           <input id="ci-ga4" name="ga4PropertyId" defaultValue={accounts.ga4PropertyId ?? ""} className="input" placeholder="1234567" />
         </div>
-        <div className="flex items-center gap-3 sm:col-span-2 lg:col-span-4">
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
           <button type="submit" disabled={saving} className="btn-primary">
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Salvar vínculos
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {saving ? "Conectando…" : "Salvar e conectar"}
           </button>
-          {saved && <span className="text-xs font-medium text-grow-400">Vínculos salvos!</span>}
+          {status && (
+            <span className={`text-xs font-medium ${status.kind === "ok" ? "text-grow-400" : "text-danger"}`}>
+              {status.text}
+            </span>
+          )}
         </div>
       </form>
 

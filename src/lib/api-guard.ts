@@ -11,12 +11,17 @@ import { prisma } from "./prisma";
 export async function verifyLiveSession(session: SessionPayload): Promise<SessionPayload | null> {
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { active: true, tokenVersion: true, permissionsMatrix: true, role: true },
+    select: { active: true, tokenVersion: true, permissionsMatrix: true, role: true, clientId: true },
   });
   if (!user || !user.active) return null;
   if ((session.tv ?? 0) !== user.tokenVersion) return null;
-  // Sincroniza a matriz mais recente (defensivo; normalmente igual à do token)
-  return { ...session, perms: (user.permissionsMatrix as Record<string, string>) ?? {}, role: user.role };
+  // Sincroniza papel, empresa e matriz mais recentes (o token pode estar defasado)
+  return {
+    ...session,
+    perms: (user.permissionsMatrix as Record<string, string>) ?? {},
+    role: user.role,
+    clientId: user.clientId,
+  };
 }
 
 /**

@@ -13,6 +13,7 @@ import { currentMrr, generateSubscriptionCharges } from "@/lib/billing";
 import { parsePeriod, MONTHS_PT, MONTHS_SHORT } from "@/lib/period";
 import { CommissionForm } from "./commission-form";
 import { MarkPaidButton, NewChargeForm } from "./charge-actions";
+import { DonutChart } from "@/components/charts/donut-chart";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
@@ -128,10 +129,15 @@ export default async function FinanceiroPage({
   for (const i of paid) {
     byClient.set(i.client.companyName, (byClient.get(i.client.companyName) ?? 0) + Number(i.amount));
   }
-  const revenuePerClient = [...byClient.entries()]
-    .sort(([, a], [, b]) => b - a)
+  const sortedClients = [...byClient.entries()].sort(([, a], [, b]) => b - a);
+  const revenuePerClient = sortedClients
     .slice(0, 10)
     .map(([label, receita]) => ({ label: label.length > 14 ? `${label.slice(0, 13)}…` : label, receita: Math.round(receita) }));
+
+  // Participação (%) de cada cliente no faturamento — top 9 + "Outros"
+  const participationTop = sortedClients.slice(0, 9).map(([label, value]) => ({ label, value: Math.round(value * 100) / 100 }));
+  const outros = sortedClients.slice(9).reduce((s, [, v]) => s + v, 0);
+  const participation = outros > 0 ? [...participationTop, { label: "Outros", value: Math.round(outros * 100) / 100 }] : participationTop;
 
   // Tabela de cobranças com filtro por status
   const chargeRows = (statusFilter ? invoices.filter((i) => i.status === statusFilter) : invoices).slice(0, 20);
@@ -248,11 +254,17 @@ export default async function FinanceiroPage({
         <StatCard label="Payback" value={payback > 0 ? `${payback.toFixed(1)} meses` : "—"} accent="grow" />
       </div>
 
-      {/* Receita por cliente */}
+      {/* Receita e participação por cliente */}
       {revenuePerClient.length > 0 && (
-        <div className="card mt-6 p-5">
-          <h2 className="mb-4 text-sm font-bold text-slate-300">Receita por cliente · {year} (top 10, pagas)</h2>
-          <BarsChart data={revenuePerClient} series={[{ key: "receita", label: "Receita" }]} format="brl" />
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="card p-5">
+            <h2 className="mb-4 text-sm font-bold text-slate-300">Participação no faturamento · {year}</h2>
+            <DonutChart data={participation} />
+          </div>
+          <div className="card p-5">
+            <h2 className="mb-4 text-sm font-bold text-slate-300">Receita por cliente · {year} (top 10, pagas)</h2>
+            <BarsChart data={revenuePerClient} series={[{ key: "receita", label: "Receita" }]} format="brl" />
+          </div>
         </div>
       )}
 

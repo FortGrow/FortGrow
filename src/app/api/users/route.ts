@@ -94,38 +94,83 @@ export async function DELETE(req: NextRequest) {
 const permsSchema = z.object({
   id: z.string().min(1),
   /// { "crm": "ved", "financeiro": "v" } — v=ver, e=editar, d=excluir
-  permissionsMatrix: z.record(z.string().regex(/^[ved]{0,3}$/)),
+  permissionsMatrix: z.record(z.string().regex(/^[ved]{0,3}$/)).optional(),
+  // Edição do cadastro (corrigir papel/empresa/status de um login)
+  name: z.string().min(2).max(120).optional(),
+  role: z
+    .enum(["ADMIN", "FINANCEIRO", "COMERCIAL", "GESTOR", "SOCIAL_MEDIA", "DESIGNER", "TRAFEGO_PAGO", "CONSULTOR", "CLIENTE"])
+    .optional(),
+  clientId: z.string().nullish(),
+  active: z.boolean().optional(),
+  password: z.string().min(8).optional(),
 });
 
-/** Define a matriz de permissões granulares de um colaborador — somente ADMIN. */
+/**
+ * Atualiza um usuário — somente ADMIN. Aceita matriz de permissões e/ou
+ * cadastro (nome, papel, empresa, ativo, nova senha). Toda alteração derruba
+ * as sessões antigas do usuário na hora (tokenVersion).
+ */
 export async function PATCH(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Somente administradores alteram permissões." }, { status: 403 });
+    return NextResponse.json({ error: "Somente administradores alteram usuários." }, { status: 403 });
   }
 
   const parsed = permsSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const target = await prisma.user.findUnique({ where: { id: parsed.data.id } });
+  const { id, permissionsMatrix, name, role, clientId, active, password } = parsed.data;
+  const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
-  if (target.role === "ADMIN") {
-    return NextResponse.json({ error: "Administradores sempre têm acesso total." }, { status: 400 });
+
+  const data: Record<string, unknown> = { tokenVersion: { increment: 1 } };
+
+  if (permissionsMatrix !== undefined) {
+    if (target.role === "ADMIN") {
+      return NextResponse.json({ error: "Administradores sempre têm acesso total." }, { status: 400 });
+    }
+    // Remove módulos sem nenhuma flag
+    data.permissionsMatrix = Object.fromEntries(
+      Object.entries(permissionsMatrix).filter(([, flags]) => flags.length > 0)
+    );
   }
 
-  // Remove módulos sem nenhuma flag
-  const matrix = Object.fromEntries(
-    Object.entries(parsed.data.permissionsMatrix).filter(([, flags]) => flags.length > 0)
-  );
+  if (name !== undefined) data.name = name;
+  if (active !== undefined) {
+    if (target.id === session.sub && !active) {
+      return NextResponse.json({ error: "Você não pode desativar o próprio acesso." }, { status: 400 });
+    }
+    data.active = active;
+  }
+  if (password !== undefined) data.passwordHash = await bcrypt.hash(password, 10);
 
-  // Incrementa tokenVersion: sessões antigas do colaborador caem imediatamente
-  await prisma.user.update({
-    where: { id: target.id },
-    data: { permissionsMatrix: matrix, tokenVersion: { increment: 1 } },
-  });
+  const nextRole = role ?? target.role;
+  if (role !== undefined) {
+    if (target.id === session.sub && role !== "ADMIN") {
+      return NextResponse.json({ error: "Você não pode rebaixar o próprio acesso." }, { status: 400 });
+    }
+    data.role = role;
+  }
+  // Papel CLIENTE exige empresa vinculada; demais papéis não têm empresa
+  if (nextRole === "CLIENTE") {
+    const targetClientId = clientId !== undefined ? clientId : target.clientId;
+    if (!targetClientId) {
+      return NextResponse.json({ error: "Acesso de cliente precisa da empresa vinculada." }, { status: 400 });
+    }
+    data.clientId = targetClientId;
+  } else if (role !== undefined || clientId !== undefined) {
+    data.clientId = null;
+  }
+
+  await prisma.user.update({ where: { id }, data });
   await prisma.activityLog.create({
-    data: { userId: session.sub, action: "user.permissions", entity: "User", entityId: target.id },
+    data: {
+      userId: session.sub,
+      action: permissionsMatrix !== undefined && name === undefined && role === undefined ? "user.permissions" : "user.update",
+      entity: "User",
+      entityId: id,
+    },
   });
 
-  return NextResponse.json({ ok: true, permissionsMatrix: matrix });
+  return NextResponse.json({ ok: true, permissionsMatrix: data.permissionsMatrix ?? undefined });
 }
