@@ -13,7 +13,7 @@ const schema = z.object({
 
 /** Cadastra/atualiza a comissão de um colaborador em um cliente. */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "edit");
   if (isResponse(session)) return session;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
 /** Remove a comissão (id pela querystring). */
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "delete");
   if (isResponse(session)) return session;
 
   const id = req.nextUrl.searchParams.get("id");

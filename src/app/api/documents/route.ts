@@ -15,7 +15,7 @@ function sanitize(name: string) {
 
 /** Upload de documento para um cliente (equipe interna). */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("clientes");
+  const session = await requireStaff("clientes", "edit");
   if (isResponse(session)) return session;
 
   const form = await req.formData().catch(() => null);

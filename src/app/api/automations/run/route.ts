@@ -4,7 +4,7 @@ import { requireStaff, isResponse } from "@/lib/api-guard";
 
 /** Executa o ciclo de automações sob demanda (em produção, agendar via cron). */
 export async function POST() {
-  const session = await requireStaff("automacoes");
+  const session = await requireStaff("automacoes", "edit");
   if (isResponse(session)) return session;
 
   const result = await runAutomations();

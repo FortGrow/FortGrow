@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     role: user.role,
     clientId: user.clientId,
     permissions: user.permissions,
+    perms: (user.permissionsMatrix as Record<string, string>) ?? {},
   });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;

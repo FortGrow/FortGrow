@@ -36,6 +36,8 @@ model User {
   twoFactor    Boolean  @default(false)
   // Módulos liberados para colaboradores (chaves de módulo, ex.: "crm", "financeiro")
   permissions  String[] @default([])
+  /// Permissões granulares por módulo: { "crm": "ved", "financeiro": "v" } (v=ver, e=editar, d=excluir)
+  permissionsMatrix Json @default("{}")
   // Usuários CLIENTE pertencem a um cliente e só enxergam os dados dele
   clientId     String?
   client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -102,6 +104,7 @@ model Client {
   contractStart  DateTime?
   contractMonths Int?
   projectStatus  String?      @default("Em andamento")
+  notes          String?
 
   /// Contas de anúncio vinculadas: { googleAdsId, metaAdsId, instagram, ga4PropertyId }
   adAccounts     Json         @default("{}")

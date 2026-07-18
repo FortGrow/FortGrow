@@ -11,6 +11,8 @@ export type SessionPayload = {
   role: string;
   clientId: string | null;
   permissions: string[];
+  /** Matriz granular por módulo, flags "ved" (v=ver, e=editar, d=excluir). */
+  perms?: Record<string, string>;
 };
 
 function secretKey() {

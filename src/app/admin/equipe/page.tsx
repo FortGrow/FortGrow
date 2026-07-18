@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MODULES, ROLE_DEFAULTS, type ModuleKey } from "@/lib/rbac";
 import { initials } from "@/lib/utils";
 import { NewUserForm } from "./new-user-form";
+import { PermissionsEditor } from "./permissions-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,16 @@ export default async function EquipePage() {
 
   const modulesOf = (u: (typeof users)[number]): string[] => {
     if (u.role === "ADMIN") return ["Acesso total"];
+    const matrix = (u.permissionsMatrix as Record<string, string>) ?? {};
+    if (Object.keys(matrix).length > 0) {
+      return (Object.keys(MODULES) as ModuleKey[])
+        .filter((k) => matrix[k]?.includes("v"))
+        .map((k) => {
+          const f = matrix[k];
+          const extras = [f.includes("e") && "editar", f.includes("d") && "excluir"].filter(Boolean).join("+");
+          return extras ? `${MODULES[k]} (${extras})` : MODULES[k];
+        });
+    }
     const keys = (u.permissions.length ? u.permissions : ROLE_DEFAULTS[u.role] ?? []) as ModuleKey[];
     return keys.map((k) => MODULES[k] ?? k);
   };
@@ -67,7 +78,18 @@ export default async function EquipePage() {
               <span className="text-xs text-slate-400">{modulesOf(u).join(" · ")}</span>
             </Td>
             <Td>{u.twoFactor ? <Badge tone="grow">ativo</Badge> : <span className="text-xs text-slate-600">—</span>}</Td>
-            <Td><Badge tone={u.active ? "grow" : "danger"}>{u.active ? "ATIVO" : "INATIVO"}</Badge></Td>
+            <Td>
+              <div className="flex items-center gap-2">
+                <Badge tone={u.active ? "grow" : "danger"}>{u.active ? "ATIVO" : "INATIVO"}</Badge>
+                {session.role === "ADMIN" && u.role !== "ADMIN" && (
+                  <PermissionsEditor
+                    userId={u.id}
+                    userName={u.name}
+                    matrix={(u.permissionsMatrix as Record<string, string>) ?? {}}
+                  />
+                )}
+              </div>
+            </Td>
           </tr>
         ))}
       </DataTable>
