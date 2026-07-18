@@ -430,7 +430,7 @@ function LoginForm() {
       <div className="mb-7 flex flex-col items-center text-center lg:hidden">
         <FgMark size={64} className="mb-3 drop-shadow-[0_0_18px_rgba(56,189,248,0.35)]" />
         <h1 className="text-xl tracking-tight">
-          <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+          <FgWordmark />
         </h1>
       </div>
 
@@ -444,7 +444,7 @@ function LoginForm() {
           <FgMark size={40} className="drop-shadow-[0_0_14px_rgba(56,189,248,0.4)]" />
           <div>
             <p className="text-sm font-bold text-slate-100">
-              <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+              <FgWordmark />
             </p>
             <p className="text-[11px] text-slate-500">Acesse sua conta para continuar</p>
           </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, LogOut } from "lucide-react";
+import { Bell } from "lucide-react";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import type { SessionPayload } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +8,7 @@ import { NavLinks, type NavItem } from "./nav";
 import { FxLayer } from "./fx";
 import { GlobalSearch } from "./global-search";
 import { MobileMenu } from "./mobile-menu";
+import { LogoutButton } from "./logout-button";
 
 /** Shell compartilhado entre área administrativa e portal do cliente. */
 export async function AppShell({
@@ -37,7 +38,7 @@ export async function AppShell({
           <FgMark size={38} />
           <div>
             <p className="text-sm">
-              <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+              <FgWordmark />
             </p>
             <p className="text-[11px] text-slate-500">{areaLabel}</p>
           </div>
@@ -59,11 +60,7 @@ export async function AppShell({
                 <p className="truncate text-[11px] text-slate-500">{session.role.replaceAll("_", " ")} · editar perfil</p>
               </div>
             </Link>
-            <form action="/api/auth/logout" method="POST">
-              <button title="Sair" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-ink-700 hover:text-danger">
-                <LogOut size={15} />
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </aside>

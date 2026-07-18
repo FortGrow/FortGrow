@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 /** Manifest PWA — atalho na tela inicial com a identidade oficial da FortGrow. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FortGrow CRM",
+    name: "FortGrow",
     short_name: "FortGrow",
     description: "CRM da FortGrow — gestão comercial, projetos, financeiro e resultados de marketing.",
     start_url: "/",

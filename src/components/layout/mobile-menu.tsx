@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { LogoutButton } from "./logout-button";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { NavLinks, type NavItem } from "./nav";
 import { initials } from "@/lib/utils";
@@ -62,7 +63,7 @@ export function MobileMenu({
                 <FgMark size={34} />
                 <div>
                   <p className="text-sm">
-                    <FgWordmark /> <span className="font-semibold text-slate-400">CRM</span>
+                    <FgWordmark />
                   </p>
                   <p className="text-[11px] text-slate-500">{areaLabel}</p>
                 </div>
@@ -93,11 +94,7 @@ export function MobileMenu({
                     <p className="truncate text-[11px] text-slate-500">{role.replaceAll("_", " ")} · editar perfil</p>
                   </div>
                 </Link>
-                <form action="/api/auth/logout" method="POST">
-                  <button title="Sair" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-ink-700 hover:text-danger">
-                    <LogOut size={15} />
-                  </button>
-                </form>
+                <LogoutButton />
               </div>
             </div>
           </div>

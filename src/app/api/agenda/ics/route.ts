@@ -30,9 +30,9 @@ export async function GET(req: NextRequest) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//FortGrow CRM//Agenda//PT-BR",
+    "PRODID:-//FortGrow//Agenda//PT-BR",
     "CALSCALE:GREGORIAN",
-    "X-WR-CALNAME:FortGrow CRM",
+    "X-WR-CALNAME:FortGrow",
   ];
   for (const e of events) {
     const desc = [EVENT_TYPES[e.type]?.label ?? e.type, e.client ? `Cliente: ${e.client.companyName}` : null, e.description]

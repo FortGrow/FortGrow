@@ -1,5 +1,5 @@
 /**
- * Motor de mensalidades do FortGrow CRM.
+ * Motor de mensalidades do FortGrow.
  *
  * Uma Mensalidade (Subscription) descreve a recorrência; cada período gera
  * uma cobrança (Invoice) vinculada. A geração é idempotente: nunca cria duas

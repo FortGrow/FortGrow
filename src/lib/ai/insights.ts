@@ -1,5 +1,5 @@
 /**
- * Módulo de Inteligência — motor de análise do FortGrow CRM.
+ * Módulo de Inteligência — motor de análise do FortGrow.
  *
  * Gera insights determinísticos a partir dos dados do banco (funil, campanhas,
  * financeiro) e calcula forecast de faturamento e risco de churn por cliente.

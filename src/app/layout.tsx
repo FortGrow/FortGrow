@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "FortGrow CRM",
-    template: "%s · FortGrow CRM",
+    default: "FortGrow",
+    template: "%s · FortGrow",
   },
   description:
     "CRM SaaS da FortGrow — gestão comercial, projetos, financeiro e resultados de marketing em um só lugar.",

@@ -113,7 +113,7 @@ export default async function IaPage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-slate-600">
-        Análises geradas pelo motor de inteligência do FortGrow CRM.
+        Análises geradas pelo motor de inteligência do FortGrow.
         {process.env.OPENAI_API_KEY
           ? " Resumos executivos redigidos por IA generativa."
           : " Configure OPENAI_API_KEY para resumos executivos redigidos por IA generativa."}
