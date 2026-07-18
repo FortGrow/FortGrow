@@ -56,6 +56,7 @@ model User {
   notifications Notification[]
   logs          ActivityLog[]
   sessions      Session[]
+  trainingProgress TrainingProgress[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -516,6 +517,20 @@ model Training {
   duration     String? // ex.: "12 min"
   publishedAt  DateTime @default(now())
   active       Boolean  @default(true)
+
+  progress TrainingProgress[]
+}
+
+/// Assistido por completo: marcado pelo próprio usuário no player.
+model TrainingProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingId String
+  training   Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  watchedAt  DateTime @default(now())
+
+  @@unique([userId, trainingId])
 }
 
 // ─────────────────────────────── Documentos ───────────────────────────────
