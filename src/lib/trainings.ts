@@ -1,22 +1,22 @@
 /**
- * Cor por assunto dos treinamentos: determinística a partir do nome da
- * categoria, então o mesmo assunto tem sempre a mesma cor em qualquer tela.
- * Módulo puro — usável em server e client.
+ * Cor por assunto dos treinamentos. As cores são atribuídas pela posição na
+ * lista ordenada de assuntos existentes (não por hash), garantindo tons bem
+ * diferentes entre os assuntos exibidos juntos — e estáveis entre telas,
+ * já que todas derivam da mesma lista. Módulo puro (server e client).
  */
 
 export const CATEGORY_PALETTE = [
   "#0284c7", // azul
+  "#e11d48", // rosa
   "#059669", // verde
   "#8b5cf6", // violeta
-  "#d97706", // âmbar
-  "#e11d48", // rosa
+  "#f59e0b", // âmbar
   "#06b6d4", // ciano
-  "#6366f1", // índigo
-  "#f59e0b", // laranja
+  "#d946ef", // fúcsia
+  "#84cc16", // lima
 ] as const;
 
-export function categoryColor(category: string): string {
-  let hash = 0;
-  for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) >>> 0;
-  return CATEGORY_PALETTE[hash % CATEGORY_PALETTE.length];
+export function categoryColorMap(categories: string[]): Record<string, string> {
+  const sorted = [...new Set(categories)].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  return Object.fromEntries(sorted.map((c, i) => [c, CATEGORY_PALETTE[i % CATEGORY_PALETTE.length]]));
 }

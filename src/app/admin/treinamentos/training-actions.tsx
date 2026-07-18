@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 
 export const TRAINING_CATEGORIES = [
@@ -102,6 +102,119 @@ export function NewTrainingForm() {
         </div>
       </form>
     </Overlay>
+  );
+}
+
+export type EditableTraining = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  videoUrl: string;
+  thumbnailUrl: string | null;
+  duration: string | null;
+};
+
+/** Edição completa do treinamento — formulário pré-preenchido, salva via PATCH. */
+export function EditTrainingButton({ training }: { training: EditableTraining }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // A categoria atual pode não estar na lista fixa — inclui para não perder o valor
+  const categories = TRAINING_CATEGORIES.includes(training.category)
+    ? TRAINING_CATEGORIES
+    : [training.category, ...TRAINING_CATEGORIES];
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    try {
+      const res = await fetch("/api/trainings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: training.id,
+          title: form.get("title"),
+          description: form.get("description") || null,
+          category: form.get("category"),
+          videoUrl: form.get("videoUrl"),
+          thumbnailUrl: form.get("thumbnailUrl") || null,
+          duration: form.get("duration") || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Não foi possível salvar.");
+        return;
+      }
+      setOpen(false);
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        title="Editar treinamento"
+        className="rounded-lg bg-ink-950/70 p-2 text-slate-300 backdrop-blur transition hover:bg-brand-500/80 hover:text-white"
+      >
+        <Pencil size={14} />
+      </button>
+
+      {open && (
+        <Overlay>
+          <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
+            <h2 className="mb-4 text-lg font-bold text-slate-100">Editar treinamento</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="label" htmlFor="et-title">Título *</label>
+                <input id="et-title" name="title" required minLength={2} defaultValue={training.title} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="et-description">Descrição</label>
+                <textarea id="et-description" name="description" rows={2} defaultValue={training.description ?? ""} className="input" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label" htmlFor="et-category">Assunto *</label>
+                  <select id="et-category" name="category" required defaultValue={training.category} className="input">
+                    {categories.map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="et-duration">Duração</label>
+                  <input id="et-duration" name="duration" defaultValue={training.duration ?? ""} className="input" placeholder="12 min" />
+                </div>
+              </div>
+              <div>
+                <label className="label" htmlFor="et-video">Link do vídeo (YouTube/Vimeo) *</label>
+                <input id="et-video" name="videoUrl" type="url" required defaultValue={training.videoUrl} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="et-thumb">Thumbnail (URL da imagem — opcional)</label>
+                <input id="et-thumb" name="thumbnailUrl" type="url" defaultValue={training.thumbnailUrl ?? ""} className="input" />
+              </div>
+            </div>
+            {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading && <Loader2 size={15} className="animate-spin" />} Salvar alterações
+              </button>
+            </div>
+          </form>
+        </Overlay>
+      )}
+    </>
   );
 }
 

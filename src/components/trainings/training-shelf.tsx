@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { CheckCircle2, Clock, Play, X } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
-import { categoryColor } from "@/lib/trainings";
 
 /* eslint-disable @next/next/no-img-element */
 export type TrainingDTO = {
@@ -41,15 +40,16 @@ function WatchedBadge() {
 /** Player em modal com o vídeo incorporado + marcar como assistido. */
 function PlayerModal({
   t,
+  color,
   onClose,
   onToggleWatched,
 }: {
   t: TrainingDTO;
+  color: string;
   onClose: () => void;
   onToggleWatched: (id: string, watched: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const color = categoryColor(t.category);
 
   async function toggle() {
     setBusy(true);
@@ -133,13 +133,14 @@ function PlayerModal({
 /** Banner hero estilo Netflix com o treinamento em destaque. */
 export function TrainingHero({
   t,
+  color,
   onToggleWatched,
 }: {
   t: TrainingDTO;
+  color: string;
   onToggleWatched: (id: string, watched: boolean) => void;
 }) {
   const [playing, setPlaying] = useState(false);
-  const color = categoryColor(t.category);
   return (
     <>
       <div className="group relative mb-8 h-64 cursor-pointer overflow-hidden rounded-2xl sm:h-80" onClick={() => setPlaying(true)}>
@@ -160,7 +161,7 @@ export function TrainingHero({
           </button>
         </div>
       </div>
-      {playing && <PlayerModal t={t} onClose={() => setPlaying(false)} onToggleWatched={onToggleWatched} />}
+      {playing && <PlayerModal t={t} color={color} onClose={() => setPlaying(false)} onToggleWatched={onToggleWatched} />}
     </>
   );
 }
@@ -168,16 +169,18 @@ export function TrainingHero({
 /** Trilho horizontal por assunto — cor própria da categoria em cada card. */
 export function TrainingShelf({
   category,
+  color,
   items,
   onToggleWatched,
 }: {
   category: string;
+  color: string;
   items: TrainingDTO[];
   onToggleWatched: (id: string, watched: boolean) => void;
 }) {
   const [playing, setPlaying] = useState<TrainingDTO | null>(null);
-  const color = categoryColor(category);
   const watchedCount = items.filter((t) => t.watched).length;
+  const pct = items.length > 0 ? Math.round((watchedCount / items.length) * 100) : 0;
   // O modal precisa do item VIVO (props atualizadas), não da cópia salva no clique —
   // senão o botão "marcar como assistido" não reflete a mudança.
   const live = playing ? items.find((i) => i.id === playing.id) ?? playing : null;
@@ -192,6 +195,13 @@ export function TrainingShelf({
         <span className="text-xs text-slate-600">
           {watchedCount}/{items.length} assistido{items.length > 1 ? "s" : ""}
         </span>
+        <span className="h-1.5 w-28 overflow-hidden rounded-full bg-ink-800">
+          <span
+            className="block h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%`, backgroundColor: color }}
+          />
+        </span>
+        <span className="text-xs font-semibold" style={{ color }}>{pct}%</span>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-3">
         {items.map((t) => (
@@ -232,7 +242,7 @@ export function TrainingShelf({
           </button>
         ))}
       </div>
-      {live && <PlayerModal t={live} onClose={() => setPlaying(null)} onToggleWatched={onToggleWatched} />}
+      {live && <PlayerModal t={live} color={color} onClose={() => setPlaying(null)} onToggleWatched={onToggleWatched} />}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { toEmbedUrl, autoThumbnail } from "@/lib/video";
-import { categoryColor } from "@/lib/trainings";
-import { NewTrainingForm, DeleteTrainingButton } from "./training-actions";
+import { categoryColorMap } from "@/lib/trainings";
+import { NewTrainingForm, DeleteTrainingButton, EditTrainingButton } from "./training-actions";
 import { CheckCircle2, Clock, Film } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,7 @@ export default async function AdminTreinamentosPage() {
   ]);
   const watchedCount = new Map(watchedAgg.map((w) => [w.trainingId, w._count._all]));
   const categories = [...new Set(trainings.map((t) => t.category))];
+  const colors = categoryColorMap(categories);
 
   return (
     <>
@@ -30,7 +31,7 @@ export default async function AdminTreinamentosPage() {
         </div>
       ) : (
         categories.map((cat) => {
-          const color = categoryColor(cat);
+          const color = colors[cat];
           const items = trainings.filter((t) => t.category === cat);
           return (
             <div key={cat} className="mb-8">
@@ -61,7 +62,18 @@ export default async function AdminTreinamentosPage() {
                           className="absolute inset-x-0 bottom-0 h-1/3"
                           style={{ background: `linear-gradient(to top, ${color}59, transparent)` }}
                         />
-                        <div className="absolute right-2 top-2">
+                        <div className="absolute right-2 top-2 flex gap-1.5">
+                          <EditTrainingButton
+                            training={{
+                              id: t.id,
+                              title: t.title,
+                              description: t.description,
+                              category: t.category,
+                              videoUrl: t.videoUrl,
+                              thumbnailUrl: t.thumbnailUrl,
+                              duration: t.duration,
+                            }}
+                          />
                           <DeleteTrainingButton id={t.id} />
                         </div>
                         {t.duration && (
