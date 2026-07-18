@@ -49,33 +49,66 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ task }, { status: 201 });
 }
 
-const stageSchema = z.object({
+const updateSchema = z.object({
   id: z.string().min(1),
   stage: z.enum(["A_FAZER", "EM_ANDAMENTO", "EM_REVISAO", "CONCLUIDA"]).optional(),
   /// Cor do cartão ("" remove a cor)
   color: z.enum(COLORS).optional().or(z.literal("")).optional(),
+  // Edição completa do cartão
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).nullish(),
+  priority: z.enum(["BAIXA", "MEDIA", "ALTA", "URGENTE"]).optional(),
+  dueDate: z.string().nullish(),
+  assigneeId: z.string().nullish(),
 });
 
-/** Atualiza a tarefa: mudança de coluna (drag & drop) e/ou cor do cartão. */
+/** Atualiza a tarefa: coluna (drag & drop), cor e/ou edição completa do cartão. */
 export async function PATCH(req: NextRequest) {
   const session = await requireStaff("tarefas", "edit");
   if (isResponse(session)) return session;
 
-  const parsed = stageSchema.safeParse(await req.json().catch(() => null));
+  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { id, stage, color } = parsed.data;
-  if (!stage && color === undefined) {
+  const { id, stage, color, title, description, priority, dueDate, assigneeId } = parsed.data;
+
+  const before = await prisma.task.findUnique({ where: { id }, select: { assigneeId: true } });
+  if (!before) return NextResponse.json({ error: "Tarefa não encontrada." }, { status: 404 });
+
+  const data: Record<string, unknown> = {};
+  if (stage) data.status = stage;
+  if (color !== undefined) data.color = color || null;
+  if (title !== undefined) data.title = title;
+  if (description !== undefined) data.description = description || null;
+  if (priority !== undefined) data.priority = priority;
+  if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
+  if (assigneeId !== undefined) data.assigneeId = assigneeId || null;
+  if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
 
-  const task = await prisma.task.update({
-    where: { id },
-    data: {
-      ...(stage ? { status: stage } : {}),
-      ...(color !== undefined ? { color: color || null } : {}),
-    },
-  });
+  const task = await prisma.task.update({ where: { id }, data });
+
+  // Notifica quem recebeu a tarefa na redelegação
+  if (assigneeId && assigneeId !== before.assigneeId && assigneeId !== session.sub) {
+    await prisma.notification.create({
+      data: { userId: assigneeId, title: "Tarefa atribuída a você", body: task.title, href: "/admin/tarefas" },
+    });
+  }
 
   return NextResponse.json({ task });
+}
+
+/** Exclui uma tarefa (id via querystring). */
+export async function DELETE(req: NextRequest) {
+  const session = await requireStaff("tarefas", "delete");
+  if (isResponse(session)) return session;
+
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const task = await prisma.task.delete({ where: { id } }).catch(() => null);
+  if (!task) return NextResponse.json({ error: "Tarefa não encontrada." }, { status: 404 });
+
+  return NextResponse.json({ ok: true });
 }
