@@ -101,7 +101,7 @@ export default async function EquipePage() {
                 )}
                 {session.role === "ADMIN" && u.id !== session.sub && (
                   <UserEditor
-                    user={{ id: u.id, name: u.name, role: u.role, clientId: u.clientId, active: u.active }}
+                    user={{ id: u.id, name: u.name, role: u.role, clientId: u.clientId, active: u.active, clientScope: u.clientScope }}
                     clients={allClients.map((c) => ({ id: c.id, name: c.companyName }))}
                   />
                 )}

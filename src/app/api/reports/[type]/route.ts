@@ -38,7 +38,9 @@ export async function GET(_req: NextRequest, { params }: { params: { type: strin
       break;
     }
     case "clientes": {
-      const clients = await prisma.client.findMany({ orderBy: { companyName: "asc" } });
+      const { allowedClientIds, clientScopeWhere } = await import("@/lib/client-scope");
+      const scope = await allowedClientIds(session);
+      const clients = await prisma.client.findMany({ where: clientScopeWhere(scope), orderBy: { companyName: "asc" } });
       rows = clients.map((c) => ({
         empresa: c.companyName,
         plano: c.plan,

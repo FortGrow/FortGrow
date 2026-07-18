@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, isResponse } from "@/lib/api-guard";
+import { allowedClientIds, clientScopeWhere } from "@/lib/client-scope";
 
 /** Pesquisa global — escopo restrito ao papel do usuário. */
 export async function GET(req: NextRequest) {
@@ -26,8 +27,9 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  const scope = await allowedClientIds(session);
   const [clients, leads, projects, tasks] = await Promise.all([
-    prisma.client.findMany({ where: { companyName: contains, archivedAt: null }, take: 5 }),
+    prisma.client.findMany({ where: { companyName: contains, archivedAt: null, ...clientScopeWhere(scope) }, take: 5 }),
     prisma.lead.findMany({ where: { companyName: contains }, take: 5 }),
     prisma.project.findMany({ where: { name: contains }, take: 5 }),
     prisma.task.findMany({ where: { title: contains }, take: 5 }),

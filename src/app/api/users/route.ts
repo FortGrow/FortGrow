@@ -103,6 +103,8 @@ const permsSchema = z.object({
   clientId: z.string().nullish(),
   active: z.boolean().optional(),
   password: z.string().min(8).optional(),
+  /// TODOS | COMISSIONADOS — restringe o colaborador aos clientes onde recebe comissão
+  clientScope: z.enum(["TODOS", "COMISSIONADOS"]).optional(),
 });
 
 /**
@@ -119,7 +121,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = permsSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { id, permissionsMatrix, name, role, clientId, active, password } = parsed.data;
+  const { id, permissionsMatrix, name, role, clientId, active, password, clientScope } = parsed.data;
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
 
@@ -136,6 +138,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (name !== undefined) data.name = name;
+  if (clientScope !== undefined) data.clientScope = clientScope;
   if (active !== undefined) {
     if (target.id === session.sub && !active) {
       return NextResponse.json({ error: "Você não pode desativar o próprio acesso." }, { status: 400 });
