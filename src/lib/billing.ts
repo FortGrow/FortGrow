@@ -77,8 +77,8 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
 
 /**
  * MRR da carteira: soma o equivalente mensal das mensalidades ativas;
- * clientes FIXO sem nenhuma mensalidade cadastrada entram pelo valor mensal
- * do contrato (compatibilidade com o cadastro antigo).
+ * clientes sem nenhuma mensalidade cadastrada (fixos ou por comissão com
+ * mensalidade híbrida) entram pelo valor mensal do contrato.
  */
 export async function currentMrr(): Promise<{ mrr: number; withSubs: number; legacy: number }> {
   const [subs, legacyClients] = await Promise.all([
@@ -90,7 +90,6 @@ export async function currentMrr(): Promise<{ mrr: number; withSubs: number; leg
       where: {
         archivedAt: null,
         status: "ATIVO",
-        billingType: "FIXO",
         monthlyValue: { gt: 0 },
         subscriptions: { none: { status: "ATIVA" } },
       },

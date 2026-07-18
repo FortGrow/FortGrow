@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       ...rest,
       email: email || null,
       billingType: billingType ?? "FIXO",
-      monthlyValue: billingType === "COMISSAO" ? 0 : monthlyValue ?? 0,
+      // Comissão também pode ter mensalidade fixa (contrato híbrido)
+      monthlyValue: monthlyValue ?? 0,
       commissionBase: billingType === "COMISSAO" ? commissionBase! : 0,
       commissionShare: billingType === "COMISSAO" ? commissionShare! : 0,
       contractStart: contractStart ? new Date(contractStart) : new Date(),

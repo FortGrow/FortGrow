@@ -48,6 +48,9 @@ export default async function ClientesPage() {
               {c.billingType === "COMISSAO" ? (
                 <span className="text-xs font-semibold text-violet">
                   Comissão {Number(c.commissionBase)}% × {Number(c.commissionShare)}%
+                  {Number(c.monthlyValue) > 0 && (
+                    <span className="block font-medium text-slate-400">+ {brl(c.monthlyValue)}/mês</span>
+                  )}
                 </span>
               ) : (
                 `${brl(c.monthlyValue)}/mês`

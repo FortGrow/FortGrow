@@ -134,6 +134,20 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
             </div>
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="nc-monthlyValue-com">Mensalidade fixa (R$) — opcional</label>
+                <input
+                  id="nc-monthlyValue-com"
+                  name="monthlyValue"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={monthly}
+                  onChange={(e) => setMonthly(e.target.value)}
+                  className="input"
+                  placeholder="0,00 — deixe vazio se o contrato for só comissão"
+                />
+              </div>
               <div>
                 <label className="label" htmlFor="nc-commissionBase">Base de comissão do cliente (%) *</label>
                 <input

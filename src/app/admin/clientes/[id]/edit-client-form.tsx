@@ -141,6 +141,19 @@ export function EditClientForm({ client }: { client: EditableClient }) {
               ) : (
                 <>
                   <div>
+                    <label className="label" htmlFor="ec-monthlyValue-com">Mensalidade fixa (R$) — opcional</label>
+                    <input
+                      id="ec-monthlyValue-com"
+                      name="monthlyValue"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      defaultValue={client.monthlyValue}
+                      className="input"
+                      placeholder="0,00 se o contrato for só comissão"
+                    />
+                  </div>
+                  <div>
                     <label className="label" htmlFor="ec-commissionBase">Base do cliente (%)</label>
                     <input id="ec-commissionBase" name="commissionBase" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionBase} className="input" />
                   </div>
