@@ -3,6 +3,7 @@ import type { SessionPayload } from "./auth";
 /** Chaves de módulo da área administrativa. */
 export const MODULES = {
   dashboard: "Dashboard",
+  agenda: "Agenda",
   crm: "CRM Comercial",
   prospeccao: "Prospecção",
   clientes: "Clientes",
@@ -29,13 +30,13 @@ export type ModuleKey = keyof typeof MODULES;
 /** Permissões padrão por papel — o admin pode sobrescrever por usuário. */
 export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   ADMIN: Object.keys(MODULES) as ModuleKey[],
-  FINANCEIRO: ["dashboard", "financeiro", "comissoes", "custos", "contratos", "relatorios", "clientes"],
-  COMERCIAL: ["dashboard", "crm", "prospeccao", "clientes", "relatorios"],
-  GESTOR: ["dashboard", "crm", "clientes", "projetos", "tarefas", "campanhas", "ia", "relatorios", "chamados"],
-  SOCIAL_MEDIA: ["dashboard", "tarefas", "projetos", "campanhas"],
-  DESIGNER: ["dashboard", "tarefas", "projetos"],
-  TRAFEGO_PAGO: ["dashboard", "campanhas", "tarefas", "relatorios"],
-  CONSULTOR: ["dashboard", "clientes", "projetos", "tarefas", "chamados"],
+  FINANCEIRO: ["dashboard", "agenda", "financeiro", "comissoes", "custos", "contratos", "relatorios", "clientes"],
+  COMERCIAL: ["dashboard", "agenda", "crm", "prospeccao", "clientes", "relatorios"],
+  GESTOR: ["dashboard", "agenda", "crm", "clientes", "projetos", "tarefas", "campanhas", "ia", "relatorios", "chamados"],
+  SOCIAL_MEDIA: ["dashboard", "agenda", "tarefas", "projetos", "campanhas"],
+  DESIGNER: ["dashboard", "agenda", "tarefas", "projetos"],
+  TRAFEGO_PAGO: ["dashboard", "agenda", "campanhas", "tarefas", "relatorios"],
+  CONSULTOR: ["dashboard", "agenda", "clientes", "projetos", "tarefas", "chamados"],
 };
 
 export type PermLevel = "view" | "edit" | "delete";

@@ -137,6 +137,27 @@ export async function runAutomations(): Promise<AutomationRunResult> {
     }
   }
 
+  // ── Lembretes da Agenda: eventos começando em até 1h e em até 10 min ──
+  const in1h = new Date(now.getTime() + 60 * 60000);
+  const upcoming = await prisma.event.findMany({
+    where: { status: { not: "CANCELADO" }, start: { gte: now, lte: in1h } },
+    select: { id: true, title: true, start: true, attendeeIds: true, createdById: true },
+  });
+  for (const ev of upcoming) {
+    const minutes = Math.round((ev.start.getTime() - now.getTime()) / 60000);
+    const when = ev.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const people = new Set([...((ev.attendeeIds as string[]) ?? []), ev.createdById].filter(Boolean) as string[]);
+    for (const uid of people) {
+      if (minutes <= 10) {
+        if (await notifyOnce(uid, "Evento em 10 minutos", `${ev.title} — começa às ${when}`, "/admin/agenda"))
+          result.notificationsCreated++;
+      } else {
+        if (await notifyOnce(uid, "Evento em 1 hora", `${ev.title} — começa às ${when}`, "/admin/agenda"))
+          result.notificationsCreated++;
+      }
+    }
+  }
+
   await prisma.activityLog.create({
     data: {
       action: "automations.run",

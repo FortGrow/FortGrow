@@ -45,6 +45,7 @@ model User {
   client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   accountFor    Client[]       @relation("accountManager")
+  eventsCreated Event[]        @relation("eventCreator")
   consultantFor Client[]       @relation("consultant")
   commissions   StaffCommission[]
   leads         Lead[]
@@ -126,6 +127,7 @@ model Client {
   invoices   Invoice[]
   subscriptions Subscription[]
   adCampaigns   AdCampaign[]
+  events        Event[]
   expenses   Expense[]
   documents  Document[]
   tickets    Ticket[]
@@ -609,6 +611,34 @@ model Automation {
   template  String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+/// Evento da Agenda da empresa (reuniões, captações, alinhamentos, follow-ups)
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  /// REUNIAO_CLIENTE | CAPTACAO | ALINHAMENTO | FOLLOW_UP
+  type        String   @default("REUNIAO_CLIENTE")
+  /// CONFIRMADO | PENDENTE | CANCELADO
+  status      String   @default("CONFIRMADO")
+  start       DateTime
+  end         DateTime
+  /// Evento privado: visível só para o criador e participantes (e admins)
+  private     Boolean  @default(false)
+  /// IDs dos colaboradores participantes
+  attendeeIds Json     @default("[]")
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?    @relation("eventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Vinculação futura com o Google Calendar (sincronização bidirecional)
+  googleEventId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([start])
+  @@index([clientId, start])
 }
 
 /// Campanha sincronizada de uma plataforma de anúncios (Meta hoje; Google/TikTok no futuro)

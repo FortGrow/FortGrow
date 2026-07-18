@@ -31,6 +31,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       projects: { orderBy: { createdAt: "desc" } },
       invoices: { orderBy: { dueDate: "desc" }, take: 24 },
       subscriptions: { orderBy: { createdAt: "asc" } },
+      events: { where: { private: false }, orderBy: { start: "desc" }, take: 10 },
       documents: { orderBy: { createdAt: "desc" }, take: 10 },
       metrics: { where: { date: { gte: new Date(Date.now() - 90 * 86400000) } } },
       users: {
@@ -239,6 +240,30 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
           totalPending={Number(pendingAgg._sum.amount ?? 0)}
         />
       </div>
+
+      {client.events.length > 0 && (
+        <div className="card mt-6 p-5">
+          <h2 className="mb-4 text-sm font-bold text-slate-300">
+            Reuniões & eventos ·{" "}
+            <Link href="/admin/agenda" className="text-brand-400 hover:text-brand-300">abrir Agenda →</Link>
+          </h2>
+          <div className="divide-y divide-line/60">
+            {client.events.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-slate-200">{e.title}</p>
+                  <p className="text-xs text-slate-500">
+                    {e.start.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    {" · "}
+                    {e.type.replaceAll("_", " ").toLowerCase()}
+                  </p>
+                </div>
+                <StatusBadge status={e.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card mt-6 p-5">
         <h2 className="mb-4 text-sm font-bold text-slate-300">Enviar documento para o portal do cliente</h2>
