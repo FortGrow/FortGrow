@@ -7,8 +7,10 @@
  * Idempotente por 24h: não repete o mesmo aviso para o mesmo destinatário no dia.
  */
 import { prisma } from "@/lib/prisma";
+import { generateSubscriptionCharges } from "@/lib/billing";
 
 export type AutomationRunResult = {
+  chargesGenerated: number;
   invoicesMarkedOverdue: number;
   clientsPurged: number;
   notificationsCreated: number;
@@ -29,11 +31,15 @@ async function notifyOnce(userId: string, title: string, body: string, href: str
 export async function runAutomations(): Promise<AutomationRunResult> {
   const now = new Date();
   const result: AutomationRunResult = {
+    chargesGenerated: 0,
     invoicesMarkedOverdue: 0,
     clientsPurged: 0,
     notificationsCreated: 0,
     triggersRun: [],
   };
+
+  // Passo de manutenção: gera as cobranças do mês das mensalidades ativas
+  result.chargesGenerated = await generateSubscriptionCharges();
 
   const [automations, admins] = await Promise.all([
     prisma.automation.findMany({ where: { active: true } }),

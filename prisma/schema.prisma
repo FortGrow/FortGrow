@@ -124,6 +124,7 @@ model Client {
   projects   Project[]
   campaigns  Campaign[]
   invoices   Invoice[]
+  subscriptions Subscription[]
   expenses   Expense[]
   documents  Document[]
   tickets    Ticket[]
@@ -419,7 +420,34 @@ model Invoice {
   status      InvoiceStatus @default(EM_ABERTO)
   method      PaymentMethod?
   nfeUrl      String?
+  /// Cobrança gerada por uma mensalidade (null = cobrança avulsa)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   createdAt   DateTime      @default(now())
+
+  @@index([clientId, status])
+  @@index([subscriptionId, dueDate])
+}
+
+/// Mensalidade recorrente de um cliente — gera cobranças (Invoice) por período
+model Subscription {
+  id            String   @id @default(cuid())
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  description   String   @default("Mensalidade")
+  amount        Decimal  @db.Decimal(12, 2)
+  /// MENSAL | TRIMESTRAL | ANUAL
+  frequency     String   @default("MENSAL")
+  startDate     DateTime @default(now())
+  /// Dia do mês em que a cobrança vence
+  dueDay        Int      @default(5)
+  /// ATIVA | PAUSADA | CANCELADA
+  status        String   @default("ATIVA")
+  paymentMethod PaymentMethod?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invoices      Invoice[]
 
   @@index([clientId, status])
 }
