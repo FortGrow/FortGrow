@@ -313,6 +313,7 @@ export default async function FinanceiroPage({
                 </Td>
                 <Td>
                   {(i.status === "EM_ABERTO" || i.status === "ATRASADO") && <MarkPaidButton invoiceId={i.id} />}
+                  {i.status === "PAGO" && <MarkPaidButton invoiceId={i.id} paid />}
                 </Td>
               </tr>
             ))}
