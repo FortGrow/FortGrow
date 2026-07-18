@@ -184,6 +184,10 @@ model Lead {
   estimatedValue Decimal   @default(0) @db.Decimal(12, 2)
   notes          String?
   stage          LeadStage @default(LEAD)
+  /// Data do primeiro contato com o lead (padrão unificado Prospecção/CRM)
+  firstContactAt DateTime?
+  /// Status de prospecção: NOVO | CONTATADO | EM_CONVERSA | QUALIFICADO
+  prospectStatus String    @default("NOVO")
   position       Int       @default(0)
   ownerId        String?
   owner          User?     @relation(fields: [ownerId], references: [id], onDelete: SetNull)

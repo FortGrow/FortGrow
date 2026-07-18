@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Pencil } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { LEAD_SOURCES, normalizeLeadSource } from "@/lib/lead-taxonomy";
 
 export type EditableLead = {
   id: string;
@@ -35,7 +36,6 @@ const FIELDS: { name: keyof EditableLead; label: string; type?: string }[] = [
   { name: "facebook", label: "Facebook" },
   { name: "linkedin", label: "LinkedIn" },
   { name: "website", label: "Site" },
-  { name: "source", label: "Origem" },
   { name: "segment", label: "Segmento" },
   { name: "city", label: "Cidade" },
   { name: "state", label: "UF" },
@@ -110,6 +110,14 @@ export function EditLeadForm({ lead, light = false }: { lead: EditableLead; ligh
                   />
                 </div>
               ))}
+              <div>
+                <label className="label" htmlFor="el-source">Origem do lead</label>
+                <select id="el-source" name="source" defaultValue={normalizeLeadSource(lead.source)} className="input">
+                  {LEAD_SOURCES.map((s) => (
+                    <option key={s.key} value={s.key}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="label" htmlFor="el-potential">Potencial</label>
                 <select id="el-potential" name="potential" defaultValue={lead.potential ?? "Médio"} className="input">

@@ -1,15 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, MapPin, User } from "lucide-react";
 import { BarsChart } from "@/components/charts/bars-chart";
 import { TrendChart } from "@/components/charts/trend-chart";
-import { StatusBadge } from "@/components/ui/badge";
-import { EditLeadForm, type EditableLead } from "./edit-lead-form";
+import { type EditableLead } from "./edit-lead-form";
 
 export type LeadDto = EditableLead & {
   stage: string;
+  prospectStatus: string;
+  firstContactAt: string | null;
   ownerName: string | null;
   createdAt: string;
 };
@@ -33,13 +32,9 @@ const PERIODS = [
   { dias: 0, label: "Tudo" },
 ];
 
-/** Prospecção visual: cards coloridos por potencial + métricas de conversão. */
-export function ProspectingBoard({ leads: initial }: { leads: LeadDto[] }) {
-  const [leads, setLeads] = useState(initial);
-  const [filter, setFilter] = useState<string>("");
+/** Mini painel da prospecção: métricas de conversão + gráficos por potencial. */
+export function ProspectingBoard({ leads }: { leads: LeadDto[] }) {
   const [period, setPeriod] = useState(30);
-  const [saving, setSaving] = useState<string | null>(null);
-  const router = useRouter();
 
   // ── Métricas (respeitam o período; filtro de potencial é só dos cards) ──
   const metrics = useMemo(() => {
@@ -79,26 +74,6 @@ export function ProspectingBoard({ leads: initial }: { leads: LeadDto[] }) {
     return { total, closed, rate: total > 0 ? (closed / total) * 100 : 0, byPot, best, evolution };
   }, [leads, period]);
 
-  const visible = useMemo(
-    () => (filter ? leads.filter((l) => (l.potential ?? "Médio") === filter) : leads),
-    [leads, filter]
-  );
-
-  async function setPotential(id: string, potential: string) {
-    setSaving(id);
-    // Tempo real: muda a cor na hora (transição suave via CSS)
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, potential } : l)));
-    try {
-      const res = await fetch("/api/leads", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, potential }),
-      });
-      if (!res.ok) router.refresh();
-    } finally {
-      setSaving(null);
-    }
-  }
 
   const pill = (active: boolean) =>
     `rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
@@ -174,77 +149,6 @@ export function ProspectingBoard({ leads: initial }: { leads: LeadDto[] }) {
         </div>
       </div>
 
-      {/* Filtro por potencial */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button onClick={() => setFilter("")} className={pill(filter === "")}>Todos ({leads.length})</button>
-        {POTENTIALS.map((p) => (
-          <button
-            key={p}
-            onClick={() => setFilter(p)}
-            className={pill(filter === p)}
-            style={filter === p ? { color: POTENTIAL_STYLE[p].solid } : undefined}
-          >
-            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: POTENTIAL_STYLE[p].solid }} />
-            {p} ({leads.filter((l) => (l.potential ?? "Médio") === p).length})
-          </button>
-        ))}
-      </div>
-
-      {/* Cards coloridos */}
-      {visible.length === 0 ? (
-        <div className="card p-10 text-center text-sm text-slate-500">Nenhuma empresa neste filtro.</div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visible.map((l) => {
-            const style = POTENTIAL_STYLE[l.potential ?? "Médio"] ?? POTENTIAL_STYLE["Médio"];
-            return (
-              <div
-                key={l.id}
-                className="group relative overflow-hidden rounded-2xl p-4 text-white shadow-lg ring-1 ring-white/10 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl"
-                style={{ background: style.bg }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{l.companyName}</p>
-                    <p className="truncate text-xs text-white/80">
-                      {[l.contactName, l.segment].filter(Boolean).join(" · ") || "—"}
-                    </p>
-                  </div>
-                  <EditLeadForm lead={l} light />
-                </div>
-
-                <div className="mt-2.5 space-y-1 text-xs text-white/85">
-                  {(l.city || l.state) && (
-                    <p className="flex items-center gap-1.5"><MapPin size={11} /> {l.city}{l.state ? `/${l.state}` : ""}</p>
-                  )}
-                  {l.ownerName && <p className="flex items-center gap-1.5"><User size={11} /> {l.ownerName}</p>}
-                  {Number(l.estimatedValue) > 0 && <p className="font-semibold text-white">{brl(Number(l.estimatedValue))} estimado</p>}
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <StatusBadge status={l.stage} />
-                  {/* Troca de potencial em tempo real */}
-                  <div className="flex overflow-hidden rounded-lg bg-black/25 text-[10px] font-bold">
-                    {POTENTIALS.map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setPotential(l.id, p)}
-                        disabled={saving === l.id}
-                        title={`Potencial ${p}`}
-                        className={`px-2 py-1 transition ${
-                          (l.potential ?? "Médio") === p ? "bg-white/90 text-ink-900" : "text-white/70 hover:bg-white/15"
-                        }`}
-                      >
-                        {saving === l.id && (l.potential ?? "Médio") === p ? <Loader2 size={10} className="animate-spin" /> : p[0]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
