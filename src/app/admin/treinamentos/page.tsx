@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { toEmbedUrl, autoThumbnail } from "@/lib/video";
 import { categoryColorMap } from "@/lib/trainings";
-import { NewTrainingForm, DeleteTrainingButton, EditTrainingButton } from "./training-actions";
+import { NewTrainingForm, DeleteTrainingButton, EditTrainingButton, PreviewTraining } from "./training-actions";
 import { CheckCircle2, Clock, Film } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -50,19 +50,21 @@ export default async function AdminTreinamentosPage() {
                   return (
                     <div key={t.id} className="card group overflow-hidden p-0" style={{ boxShadow: `0 0 0 1px ${color}44` }}>
                       <div className="relative aspect-video bg-ink-900">
-                        {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={thumb} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <Film size={28} className="text-slate-600" />
-                          </div>
-                        )}
-                        <div
-                          className="absolute inset-x-0 bottom-0 h-1/3"
-                          style={{ background: `linear-gradient(to top, ${color}59, transparent)` }}
-                        />
-                        <div className="absolute right-2 top-2 flex gap-1.5">
+                        <PreviewTraining embedUrl={toEmbedUrl(t.videoUrl)} title={t.title}>
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+                          ) : (
+                            <span className="flex h-full items-center justify-center">
+                              <Film size={28} className="text-slate-600" />
+                            </span>
+                          )}
+                          <span
+                            className="absolute inset-x-0 bottom-0 h-1/3"
+                            style={{ background: `linear-gradient(to top, ${color}59, transparent)` }}
+                          />
+                        </PreviewTraining>
+                        <div className="absolute right-2 top-2 z-10 flex gap-1.5">
                           <EditTrainingButton
                             training={{
                               id: t.id,
@@ -96,7 +98,7 @@ export default async function AdminTreinamentosPage() {
                         <p className="mt-2 flex items-center gap-2 text-[11px] text-slate-600">
                           {t.publishedAt.toLocaleDateString("pt-BR")}
                           <span className="inline-flex items-center gap-1 text-grow-500">
-                            <CheckCircle2 size={11} /> {views} assistiu{views === 1 ? "" : "ram"} por completo
+                            <CheckCircle2 size={11} /> {views === 1 ? "1 assistiu" : `${views} assistiram`} por completo
                           </span>
                           {!valid && <span className="font-semibold text-danger">link de vídeo não reconhecido</span>}
                         </p>
