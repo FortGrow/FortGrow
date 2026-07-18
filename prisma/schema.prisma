@@ -754,10 +754,29 @@ model PerformanceEntry {
   commissionPercent Decimal? @db.Decimal(6, 3)
   /// Origem dos leads: INDICACAO | TRAFEGO_PAGO | ORGANICO | SOCIAL | OUTRO
   source     String   @default("OUTRO")
+
+  salesDetails PerformanceSale[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([clientId, date])
+}
+
+/// Detalhe de uma venda dentro de um lançamento de Performance: quem vendeu,
+/// valor, comprador e observações. Quando um lançamento tem detalhes, os
+/// campos Vendas e Receita bruta da linha são sincronizados a partir deles.
+model PerformanceSale {
+  id         String           @id @default(cuid())
+  entryId    String
+  entry      PerformanceEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  sellerName String
+  buyer      String?
+  amount     Decimal          @default(0) @db.Decimal(12, 2)
+  notes      String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([entryId])
 }
 
 /// Painel de Instagram do dashboard de Performance: lançamentos manuais

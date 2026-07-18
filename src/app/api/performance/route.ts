@@ -5,32 +5,10 @@ import { requireAuth, requireStaff, isResponse } from "@/lib/api-guard";
 import { allowedClientIds, canSeeClient } from "@/lib/client-scope";
 import { can } from "@/lib/rbac";
 import { invalidResponse } from "@/lib/validation";
+import { ENTRY_INCLUDE, serializeEntry } from "@/lib/performance";
 
 export const dynamic = "force-dynamic";
 
-function serialize(e: {
-  id: string;
-  date: Date;
-  investment: unknown;
-  leads: number;
-  sales: number;
-  revenue: unknown;
-  convPercent: unknown;
-  commissionPercent: unknown;
-  source: string;
-}) {
-  return {
-    id: e.id,
-    date: e.date.toISOString().slice(0, 10),
-    investment: Number(e.investment),
-    leads: e.leads,
-    sales: e.sales,
-    revenue: Number(e.revenue),
-    convPercent: e.convPercent == null ? null : Number(e.convPercent),
-    commissionPercent: e.commissionPercent == null ? null : Number(e.commissionPercent),
-    source: e.source,
-  };
-}
 
 /**
  * Lançamentos de performance de um cliente.
@@ -59,14 +37,14 @@ export async function GET(req: NextRequest) {
   }
 
   const [entries, client] = await Promise.all([
-    prisma.performanceEntry.findMany({ where: { clientId }, orderBy: { date: "asc" } }),
+    prisma.performanceEntry.findMany({ where: { clientId }, orderBy: { date: "asc" }, include: ENTRY_INCLUDE }),
     prisma.client.findUnique({
       where: { id: clientId },
       select: { perfConvPercent: true, perfCommissionPercent: true },
     }),
   ]);
   return NextResponse.json({
-    entries: entries.map(serialize),
+    entries: entries.map(serializeEntry),
     config: {
       convPercent: Number(client?.perfConvPercent ?? 100),
       commissionPercent: Number(client?.perfCommissionPercent ?? 100),
@@ -113,11 +91,12 @@ export async function POST(req: NextRequest) {
 
   const entry = await prisma.performanceEntry.create({
     data: { clientId, date: new Date(`${date}T12:00:00Z`), ...rest },
+    include: ENTRY_INCLUDE,
   });
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "performance.create", entity: "PerformanceEntry", entityId: entry.id },
   });
-  return NextResponse.json({ entry: serialize(entry) }, { status: 201 });
+  return NextResponse.json({ entry: serializeEntry(entry) }, { status: 201 });
 }
 
 const updateSchema = z.object({
@@ -149,8 +128,8 @@ export async function PATCH(req: NextRequest) {
 
   const data: Record<string, unknown> = { ...rest };
   if (date) data.date = new Date(`${date}T12:00:00Z`);
-  const entry = await prisma.performanceEntry.update({ where: { id }, data });
-  return NextResponse.json({ ok: true, entry: serialize(entry) });
+  const entry = await prisma.performanceEntry.update({ where: { id }, data, include: ENTRY_INCLUDE });
+  return NextResponse.json({ ok: true, entry: serializeEntry(entry) });
 }
 
 export async function DELETE(req: NextRequest) {
