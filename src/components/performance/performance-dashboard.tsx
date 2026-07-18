@@ -1,10 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, LineChart as LineChartIcon, SlidersHorizontal, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Compass,
+  LineChart as LineChartIcon,
+  Minus,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  UserRound,
+} from "lucide-react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { StatCard } from "@/components/ui/stat-card";
-import { InstagramPanel } from "@/components/performance/instagram-panel";
+import { InstagramPanel, type IgSummary } from "@/components/performance/instagram-panel";
 import { SalesModal } from "@/components/performance/sales-modal";
 import { cn, brl, num } from "@/lib/utils";
 
@@ -127,6 +139,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
      Receita bruta a linha precisa remontar para exibir os novos valores. */
   const [salesEntryId, setSalesEntryId] = useState<string | null>(null);
   const [rowVersion, setRowVersion] = useState<Record<string, number>>({});
+  /* Resumo do Instagram no período, entregue pelo painel (seção Resultados) */
+  const [ig, setIg] = useState<IgSummary | null>(null);
 
   function applyEntryUpdate(entry: PerfRow) {
     setRows((prev) => prev!.map((r) => (r.id === entry.id ? entry : r)));
@@ -343,6 +357,57 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
 
   /* Exemplo vivo da base de cálculo com os números do período atual */
   const baseExample = t.revenue * (cfg.convPercent / 100);
+  const prevBase = pt.revenue * (cfg.convPercent / 100);
+
+  /* ————— Visão geral: leitura estratégica (tendências + alertas), sem números crus ————— */
+  const dCac = delta(k.cac, p.cac);
+  const dCpl = delta(k.cpl, p.cpl);
+  const convRate = t.leads > 0 ? (t.sales / t.leads) * 100 : null;
+  const prevConvRate = pt.leads > 0 ? (pt.sales / pt.leads) * 100 : null;
+  const dConv = delta(convRate, prevConvRate);
+  const dRoi = delta(k.roi, p.roi);
+  const returnPerReal = t.investment > 0 ? k.real / t.investment : null;
+
+  const trendPhrase = (d: number | undefined, up: string, down: string, flat: string) =>
+    d === undefined ? "Sem base de comparação no período" : d >= 1 ? up : d <= -1 ? down : flat;
+
+  const trends: { title: string; delta?: number; good?: boolean; phrase: string }[] = [
+    {
+      title: "Tendência de CAC",
+      delta: dCac,
+      good: dCac === undefined ? undefined : dCac <= 0,
+      phrase: trendPhrase(dCac, "Custo de aquisição subindo", "Custo de aquisição caindo", "Custo de aquisição estável"),
+    },
+    {
+      title: "Tendência de CPL",
+      delta: dCpl,
+      good: dCpl === undefined ? undefined : dCpl <= 0,
+      phrase: trendPhrase(dCpl, "Leads ficando mais caros", "Leads ficando mais baratos", "Custo por lead estável"),
+    },
+    {
+      title: "Eficiência de conversão",
+      delta: dConv,
+      good: dConv === undefined ? undefined : dConv >= 0,
+      phrase: trendPhrase(dConv, "Conversão de leads em vendas melhorando", "Conversão de leads em vendas piorando", "Conversão estável"),
+    },
+    {
+      title: "Investimento × retorno",
+      delta: dRoi,
+      good: returnPerReal === null ? undefined : returnPerReal >= 1,
+      phrase:
+        returnPerReal === null
+          ? "Sem investimento no período"
+          : `Cada R$ 1 investido volta como R$ ${returnPerReal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} de receita real`,
+    },
+  ];
+
+  const absPct = (v: number) => `${Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  const alerts: { tone: "danger" | "warn"; msg: string }[] = [];
+  if (dCac !== undefined && dCac > 20) alerts.push({ tone: "warn", msg: `CAC subiu ${absPct(dCac)} vs o período anterior — custo de aquisição pressionado.` });
+  if (dCpl !== undefined && dCpl > 20) alerts.push({ tone: "warn", msg: `CPL subiu ${absPct(dCpl)} — cada lead está custando mais caro.` });
+  if (dConv !== undefined && dConv < -20) alerts.push({ tone: "danger", msg: `Queda de ${absPct(dConv)} na conversão de leads em vendas.` });
+  if (k.roi !== null && k.roi < 0) alerts.push({ tone: "danger", msg: "ROI negativo: o investimento superou a receita real no período." });
+  if (t.investment > 0 && t.leads === 0) alerts.push({ tone: "warn", msg: "Há investimento no período sem nenhum lead registrado." });
 
   return (
     <div className="space-y-5">
@@ -393,41 +458,130 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         ))}
       </div>
 
-      {/* KPIs com variação vs. período anterior */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-        <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
-        <StatCard label="CPL" value={fmtBrl(k.cpl)} delta={delta(k.cpl, p.cpl)} hint="investimento / leads" accent="violet" lowerIsBetter />
-        <StatCard
-          label="Custo por conversão"
-          value={fmtBrl(k.custoConv)}
-          delta={delta(k.custoConv, p.custoConv)}
-          hint="investimento / vendas"
-          accent="warn"
-          lowerIsBetter
-        />
-        <StatCard label="Ticket médio" value={fmtBrl(k.ticket)} delta={delta(k.ticket, p.ticket)} hint="receita bruta / vendas" accent="grow" />
-        <StatCard label="Valor por lead" value={fmtBrl(k.valorLead)} delta={delta(k.valorLead, p.valorLead)} hint="receita bruta / leads" accent="grow" />
-        <StatCard
-          label="Receita bruta"
-          value={brl(t.revenue)}
-          delta={delta(t.revenue, pt.revenue)}
-          hint="valor total vendido"
-          accent="brand"
-        />
-        <StatCard
-          label="Receita real"
-          value={brl(k.real)}
-          delta={delta(k.real, p.real)}
-          hint={`bruta × ${cfg.convPercent}% × ${cfg.commissionPercent}%`}
-          accent="grow"
-        />
-        <StatCard
-          label="ROI"
-          value={fmtPct(k.roi)}
-          delta={delta(k.roi, p.roi)}
-          hint="(receita real − investimento) / investimento"
-          accent="violet"
-        />
+      {/* Visão geral — leitura estratégica: tendências e alertas, sem números crus */}
+      <div className="card p-5">
+        <div className="mb-1 flex items-center gap-2">
+          <Compass size={16} className="text-brand-400" />
+          <h2 className="text-sm font-bold text-slate-200">Visão geral — o que está acontecendo</h2>
+        </div>
+        <p className="mb-3 text-xs text-slate-500">
+          Leitura estratégica do período. Os números completos ficam em Resultados, logo abaixo.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {trends.map((tr) => {
+            const Arrow = tr.delta === undefined ? Minus : tr.delta >= 0 ? TrendingUp : TrendingDown;
+            return (
+              <div key={tr.title} className="rounded-xl border border-line/60 bg-ink-900/50 p-3.5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{tr.title}</p>
+                <p className="mt-1.5 text-sm font-semibold leading-snug text-slate-200">{tr.phrase}</p>
+                {tr.delta !== undefined && (
+                  <span
+                    className={cn(
+                      "mt-1.5 inline-flex items-center gap-1 text-xs font-semibold",
+                      tr.good === undefined ? "text-slate-500" : tr.good ? "text-grow-400" : "text-danger"
+                    )}
+                  >
+                    <Arrow size={13} />
+                    {absPct(tr.delta)} vs período anterior
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Alertas estratégicos</p>
+          {alerts.length === 0 ? (
+            <p className="flex items-center gap-2 text-sm text-grow-400">
+              <CheckCircle2 size={15} /> Nenhum alerta: operação saudável no período.
+            </p>
+          ) : (
+            alerts.map((a) => (
+              <p
+                key={a.msg}
+                className={cn(
+                  "flex items-start gap-2 text-sm",
+                  a.tone === "danger" ? "text-danger" : "text-warn"
+                )}
+              >
+                <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {a.msg}
+              </p>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Resultados — resumo consolidado com todas as métricas reais */}
+      <div>
+        <h2 className="mb-3 text-sm font-bold text-slate-200">Resultados — resumo consolidado</h2>
+
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Performance</p>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
+          <StatCard label="CPL" value={fmtBrl(k.cpl)} delta={delta(k.cpl, p.cpl)} hint="investimento / leads" accent="violet" lowerIsBetter />
+          <StatCard
+            label="Custo por conversão"
+            value={fmtBrl(k.custoConv)}
+            delta={delta(k.custoConv, p.custoConv)}
+            hint="investimento / vendas"
+            accent="warn"
+            lowerIsBetter
+          />
+          <StatCard label="Ticket médio" value={fmtBrl(k.ticket)} delta={delta(k.ticket, p.ticket)} hint="receita bruta / vendas" accent="grow" />
+          <StatCard label="Valor por lead" value={fmtBrl(k.valorLead)} delta={delta(k.valorLead, p.valorLead)} hint="receita bruta / leads" accent="grow" />
+        </div>
+
+        <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Financeiro</p>
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <StatCard
+            label="Receita bruta"
+            value={brl(t.revenue)}
+            delta={delta(t.revenue, pt.revenue)}
+            hint="valor total vendido"
+            accent="brand"
+          />
+          <StatCard
+            label="Receita base"
+            value={brl(baseExample)}
+            delta={delta(baseExample, prevBase)}
+            hint={`bruta × ${cfg.convPercent}% de conversão real`}
+            accent="violet"
+          />
+          <StatCard
+            label="Receita real"
+            value={brl(k.real)}
+            delta={delta(k.real, p.real)}
+            hint={`base × ${cfg.commissionPercent}% — a métrica principal`}
+            accent="grow"
+          />
+          <StatCard
+            label="ROI"
+            value={fmtPct(k.roi)}
+            delta={delta(k.roi, p.roi)}
+            hint="(receita real − investimento) / investimento"
+            accent="violet"
+          />
+        </div>
+
+        <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Instagram</p>
+        {ig && (ig.followers !== null || ig.totalViews > 0) ? (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            <StatCard label="Visualizações" value={num(ig.totalViews)} hint="total no período" accent="brand" />
+            <StatCard label="Seguidores" value={ig.followers === null ? "—" : num(ig.followers)} hint="último lançamento" accent="violet" />
+            <StatCard
+              label="Crescimento de seguidores"
+              value={ig.growth === undefined ? "—" : `${ig.growth >= 0 ? "+" : ""}${ig.growth.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
+              hint="no período"
+              accent="grow"
+            />
+            <StatCard label="Engajamento médio" value={fmtPct(ig.avgEngagement)} hint="interações / alcance" accent="warn" />
+            <StatCard label="% não seguidores" value={fmtPct(ig.avgNonFollowers)} hint="expansão de público" accent="brand" />
+          </div>
+        ) : (
+          <p className="rounded-xl border border-line/60 bg-ink-900/40 px-4 py-3 text-xs text-slate-500">
+            Sem dados de Instagram no período — lance no painel Instagram, no fim da página.
+          </p>
+        )}
       </div>
 
       {/* Comparativo por origem de lead no período */}
@@ -771,7 +925,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       </div>
 
       {/* Painel de Instagram (estilo Insights), com o mesmo período selecionado */}
-      <InstagramPanel clientId={clientId} editable={editable} range={range} />
+      <InstagramPanel clientId={clientId} editable={editable} range={range} onSummary={setIg} />
 
       {/* Vendas detalhadas do lançamento selecionado */}
       {salesEntryId && rows.some((r) => r.id === salesEntryId) && (

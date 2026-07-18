@@ -16,6 +16,7 @@ const ITEMS: NavItem[] = [
   { href: "/portal/seo", label: "SEO", icon: "seo" },
   { href: "/portal/financeiro", label: "Financeiro", icon: "portalfinanceiro" },
   { href: "/portal/documentos", label: "Documentos", icon: "documentos" },
+  { href: "/portal/dados", label: "Dados do Cliente", icon: "dados" },
   { href: "/portal/treinamentos", label: "Treinamentos", icon: "treinamentos" },
   { href: "/portal/chamados", label: "Chamados", icon: "portalchamados" },
 ];
