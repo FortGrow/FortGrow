@@ -402,12 +402,56 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   ];
 
   const absPct = (v: number) => `${Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
-  const alerts: { tone: "danger" | "warn"; msg: string }[] = [];
+  const alerts: { tone: "danger" | "warn" | "ok"; msg: string }[] = [];
   if (dCac !== undefined && dCac > 20) alerts.push({ tone: "warn", msg: `CAC subiu ${absPct(dCac)} vs o período anterior — custo de aquisição pressionado.` });
   if (dCpl !== undefined && dCpl > 20) alerts.push({ tone: "warn", msg: `CPL subiu ${absPct(dCpl)} — cada lead está custando mais caro.` });
   if (dConv !== undefined && dConv < -20) alerts.push({ tone: "danger", msg: `Queda de ${absPct(dConv)} na conversão de leads em vendas.` });
   if (k.roi !== null && k.roi < 0) alerts.push({ tone: "danger", msg: "ROI negativo: o investimento superou a receita real no período." });
   if (t.investment > 0 && t.leads === 0) alerts.push({ tone: "warn", msg: "Há investimento no período sem nenhum lead registrado." });
+  // Crescimento positivo também é alerta — boas notícias em destaque
+  if (dCac !== undefined && dCac < -15) alerts.push({ tone: "ok", msg: `Bom sinal: o CAC caiu ${absPct(dCac)} vs o período anterior.` });
+  if (dCpl !== undefined && dCpl < -15) alerts.push({ tone: "ok", msg: `Leads mais baratos: o CPL caiu ${absPct(dCpl)}.` });
+  if (dConv !== undefined && dConv > 15) alerts.push({ tone: "ok", msg: `A conversão de leads em vendas cresceu ${absPct(dConv)}.` });
+  if (k.roi !== null && k.roi > 100) alerts.push({ tone: "ok", msg: "ROI acima de 100%: o retorno real mais que dobra o investimento." });
+
+  /* Resumo interpretativo — uma frase que junta custo × conversão */
+  const custoDelta = dCac ?? dCpl;
+  const custoNome = dCac !== undefined ? "custo por venda" : "custo por lead";
+  let resumo: string;
+  if (current.length === 0) {
+    resumo = "Ainda não há lançamentos no período selecionado.";
+  } else if (custoDelta === undefined && dConv === undefined) {
+    resumo = "Sem período anterior para comparar — acompanhe os números consolidados em Resultados.";
+  } else {
+    const partes: string[] = [];
+    if (custoDelta !== undefined) {
+      partes.push(
+        custoDelta <= -1
+          ? `seu ${custoNome} caiu ${absPct(custoDelta)}`
+          : custoDelta >= 1
+            ? `seu ${custoNome} subiu ${absPct(custoDelta)}`
+            : `seu ${custoNome} se manteve estável`
+      );
+    }
+    if (dConv !== undefined) {
+      partes.push(
+        dConv >= 1 ? `a conversão aumentou ${absPct(dConv)}` : dConv <= -1 ? `a conversão caiu ${absPct(dConv)}` : "a conversão ficou estável"
+      );
+    }
+    const goodCusto = custoDelta === undefined ? undefined : custoDelta <= 0;
+    const goodConv = dConv === undefined ? undefined : dConv >= 0;
+    const sufixo =
+      goodCusto !== false && goodConv !== false
+        ? " — ótimo sinal."
+        : goodCusto === false && goodConv === false
+          ? " — atenção ao rumo do período."
+          : " — movimento misto, vale acompanhar.";
+    const frase = partes.join(" enquanto ");
+    resumo = frase.charAt(0).toUpperCase() + frase.slice(1) + sufixo;
+    if (returnPerReal !== null) {
+      resumo += ` Cada R$ 1 investido está voltando como R$ ${returnPerReal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} de receita real.`;
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -489,6 +533,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             );
           })}
         </div>
+        {/* Resumo interpretativo — a leitura em uma frase */}
+        <div className="mt-4 rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">Resumo interpretativo</p>
+          <p className="mt-1 text-sm font-medium leading-relaxed text-slate-200">{resumo}</p>
+        </div>
+
         <div className="mt-4 space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Alertas estratégicos</p>
           {alerts.length === 0 ? (
@@ -501,10 +551,15 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                 key={a.msg}
                 className={cn(
                   "flex items-start gap-2 text-sm",
-                  a.tone === "danger" ? "text-danger" : "text-warn"
+                  a.tone === "danger" ? "text-danger" : a.tone === "warn" ? "text-warn" : "text-grow-400"
                 )}
               >
-                <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {a.msg}
+                {a.tone === "ok" ? (
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
+                ) : (
+                  <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                )}{" "}
+                {a.msg}
               </p>
             ))
           )}

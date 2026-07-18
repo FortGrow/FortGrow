@@ -111,6 +111,9 @@ model Client {
   projectStatus  String?      @default("Em andamento")
   /// Dados do Cliente (área separada do dashboard): como a operação funciona
   operationType  String?
+  /// Observações estratégicas VISÍVEIS ao cliente no portal (Dados do Cliente).
+  /// Diferente de `notes`, que é anotação interna da equipe.
+  strategicNotes String?
   notes          String?
   /// Lixeira: cliente arquivado (restaurável por 30 dias antes da exclusão definitiva)
   archivedAt     DateTime?
