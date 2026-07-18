@@ -13,6 +13,7 @@ import {
   Briefcase,
   Building2,
   CalendarCheck2,
+  CalendarDays,
   CircleDollarSign,
   FileText,
   Headphones,
@@ -35,6 +36,7 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
+  agenda: CalendarDays,
   crm: KanbanSquare,
   prospeccao: Search,
   clientes: Building2,
