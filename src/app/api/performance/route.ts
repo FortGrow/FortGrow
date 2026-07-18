@@ -15,6 +15,8 @@ function serialize(e: {
   leads: number;
   sales: number;
   revenue: unknown;
+  convPercent: unknown;
+  commissionPercent: unknown;
 }) {
   return {
     id: e.id,
@@ -23,6 +25,8 @@ function serialize(e: {
     leads: e.leads,
     sales: e.sales,
     revenue: Number(e.revenue),
+    convPercent: e.convPercent == null ? null : Number(e.convPercent),
+    commissionPercent: e.commissionPercent == null ? null : Number(e.commissionPercent),
   };
 }
 
@@ -52,12 +56,27 @@ export async function GET(req: NextRequest) {
     clientId = param;
   }
 
-  const entries = await prisma.performanceEntry.findMany({
-    where: { clientId },
-    orderBy: { date: "asc" },
+  const [entries, client] = await Promise.all([
+    prisma.performanceEntry.findMany({ where: { clientId }, orderBy: { date: "asc" } }),
+    prisma.client.findUnique({
+      where: { id: clientId },
+      select: { perfConvPercent: true, perfCommissionPercent: true },
+    }),
+  ]);
+  return NextResponse.json({
+    entries: entries.map(serialize),
+    config: {
+      convPercent: Number(client?.perfConvPercent ?? 100),
+      commissionPercent: Number(client?.perfCommissionPercent ?? 100),
+    },
   });
-  return NextResponse.json({ entries: entries.map(serialize) });
 }
+
+/** Override de % por linha: número 0–100 ou null (volta ao padrão do cliente). */
+const percentOverride = z.preprocess(
+  (v) => (v === "" ? null : v),
+  z.coerce.number().min(0).max(100).nullable()
+);
 
 const createSchema = z.object({
   clientId: z.string().min(1),
@@ -66,6 +85,8 @@ const createSchema = z.object({
   leads: z.coerce.number().int().min(0).default(0),
   sales: z.coerce.number().int().min(0).default(0),
   revenue: z.coerce.number().min(0).default(0),
+  convPercent: percentOverride.optional(),
+  commissionPercent: percentOverride.optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -101,6 +122,8 @@ const updateSchema = z.object({
   leads: z.coerce.number().int().min(0).optional(),
   sales: z.coerce.number().int().min(0).optional(),
   revenue: z.coerce.number().min(0).optional(),
+  convPercent: percentOverride.optional(),
+  commissionPercent: percentOverride.optional(),
 });
 
 export async function PATCH(req: NextRequest) {

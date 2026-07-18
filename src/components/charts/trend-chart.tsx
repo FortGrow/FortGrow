@@ -13,10 +13,13 @@ import {
 import { CHART_COLORS, GRID_STROKE, AXIS_TICK, TOOLTIP_STYLE } from "./theme";
 
 export type Series = { key: string; label: string };
-export type ValueFormat = "number" | "brl";
+export type ValueFormat = "number" | "brl" | "pct";
 
 /** Formatação resolvida no cliente — props de gráfico precisam ser serializáveis. */
 export function makeFormatter(format: ValueFormat | undefined, compact = false) {
+  if (format === "pct") {
+    return (v: number) => `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  }
   if (format === "brl") {
     return (v: number) =>
       Number(v).toLocaleString("pt-BR", {

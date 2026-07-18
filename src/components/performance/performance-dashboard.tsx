@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, LineChart as LineChartIcon } from "lucide-react";
+import { Plus, Trash2, LineChart as LineChartIcon, SlidersHorizontal } from "lucide-react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { StatCard } from "@/components/ui/stat-card";
 import { cn, brl, num } from "@/lib/utils";
@@ -12,22 +12,36 @@ export type PerfRow = {
   investment: number;
   leads: number;
   sales: number;
+  /** Receita bruta (valor total vendido) */
   revenue: number;
+  /** Overrides da base de cálculo; null = usa o padrão do cliente */
+  convPercent: number | null;
+  commissionPercent: number | null;
 };
+
+export type PerfConfig = { convPercent: number; commissionPercent: number };
 
 /* ————— Cálculos (estilo planilha: tudo derivado, nada armazenado) ————— */
 
-type Totals = { investment: number; leads: number; sales: number; revenue: number };
+type Totals = { investment: number; leads: number; sales: number; revenue: number; real: number };
 
-function totalsOf(rows: PerfRow[]): Totals {
+/** Receita Real da linha = bruta × % conversão real × % comissão (override ou padrão) */
+function realOf(r: PerfRow, cfg: PerfConfig) {
+  const conv = r.convPercent ?? cfg.convPercent;
+  const comm = r.commissionPercent ?? cfg.commissionPercent;
+  return r.revenue * (conv / 100) * (comm / 100);
+}
+
+function totalsOf(rows: PerfRow[], cfg: PerfConfig): Totals {
   return rows.reduce(
     (t, r) => ({
       investment: t.investment + r.investment,
       leads: t.leads + r.leads,
       sales: t.sales + r.sales,
       revenue: t.revenue + r.revenue,
+      real: t.real + realOf(r, cfg),
     }),
-    { investment: 0, leads: 0, sales: 0, revenue: 0 }
+    { investment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
   );
 }
 
@@ -40,10 +54,15 @@ function kpisOf(t: Totals) {
     custoConv: ratio(t.investment, t.sales),
     ticket: ratio(t.revenue, t.sales),
     valorLead: ratio(t.revenue, t.leads),
+    real: t.real,
+    // ROI sobre a receita REAL (não a bruta), em %
+    roi: t.investment > 0 ? ((t.real - t.investment) / t.investment) * 100 : null,
   };
 }
 
 const fmtBrl = (v: number | null) => (v === null ? "—" : brl(v));
+const fmtPct = (v: number | null) =>
+  v === null ? "—" : `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 const delta = (cur: number | null, prev: number | null) =>
   cur !== null && prev !== null && prev > 0 ? ((cur - prev) / prev) * 100 : undefined;
 
@@ -63,13 +82,16 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
  * Dashboard de performance por cliente — planilha reativa:
- * a equipe lança Data/Investimento/Leads/Vendas/Receita e todos os KPIs,
- * variações e gráficos recalculam na hora. Alterações salvam sozinhas no banco
- * (com debounce), então o histórico aparece igual em qualquer dispositivo
- * e no Portal do Cliente (somente leitura).
+ * a equipe lança Data/Investimento/Leads/Vendas/Receita bruta e o sistema
+ * deriva CAC, CPL, ticket, valor por lead, Receita Real (bruta × % conversão
+ * real × % comissão) e ROI sobre a receita real. A base de cálculo é
+ * configurável por cliente, com override opcional por linha. Tudo salva
+ * sozinho no banco (debounce + keepalive), então o histórico aparece igual
+ * em qualquer dispositivo e no Portal do Cliente (somente leitura).
  */
 export function PerformanceDashboard({ clientId, editable }: { clientId: string; editable: boolean }) {
   const [rows, setRows] = useState<PerfRow[] | null>(null);
+  const [cfg, setCfg] = useState<PerfConfig>({ convPercent: 100, commissionPercent: 100 });
   const [period, setPeriod] = useState<PeriodKey>("30");
   const [from, setFrom] = useState(() => iso(new Date(Date.now() - 29 * dayMs)));
   const [to, setTo] = useState(() => iso(new Date()));
@@ -79,17 +101,23 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   useEffect(() => {
     fetch(`/api/performance?clientId=${clientId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => setRows(d.entries as PerfRow[]))
+      .then((d) => {
+        setRows(d.entries as PerfRow[]);
+        setCfg(d.config as PerfConfig);
+      })
       .catch(() => setRows([]));
   }, [clientId]);
 
-  /* Autosave com debounce: acumula os campos alterados de cada linha e envia 800ms após a última tecla */
+  /* Autosave com debounce: linhas alteradas + config, enviados 800ms após a última tecla */
   const pending = useRef<Map<string, Partial<PerfRow>>>(new Map());
+  const pendingCfg = useRef<Partial<PerfConfig> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flush = useCallback(async () => {
     const batch = [...pending.current.entries()];
+    const cfgPatch = pendingCfg.current;
     pending.current.clear();
-    if (!batch.length) return;
+    pendingCfg.current = null;
+    if (!batch.length && !cfgPatch) return;
     setSave({ state: "saving" });
     try {
       for (const [id, patch] of batch) {
@@ -100,11 +128,24 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         });
         if (!res.ok) throw new Error();
       }
+      if (cfgPatch) {
+        const res = await fetch("/api/performance/config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientId, ...cfgPatch }),
+        });
+        if (!res.ok) throw new Error();
+      }
       setSave({ state: "saved", at: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) });
     } catch {
       setSave({ state: "error" });
     }
-  }, []);
+  }, [clientId]);
+
+  const schedule = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 800);
+  }, [flush]);
 
   /* Fechou/trocou de aba antes do debounce? Envia o que estiver pendente com keepalive. */
   useEffect(() => {
@@ -118,6 +159,15 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         }).catch(() => {});
       }
       pending.current.clear();
+      if (pendingCfg.current) {
+        fetch("/api/performance/config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientId, ...pendingCfg.current }),
+          keepalive: true,
+        }).catch(() => {});
+        pendingCfg.current = null;
+      }
     };
     const onHide = () => {
       if (document.visibilityState === "hidden") flushNow();
@@ -128,13 +178,18 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       window.removeEventListener("beforeunload", flushNow);
       document.removeEventListener("visibilitychange", onHide);
     };
-  }, []);
+  }, [clientId]);
 
   function edit(id: string, patch: Partial<PerfRow>) {
     setRows((prev) => prev!.map((r) => (r.id === id ? { ...r, ...patch } : r)));
     pending.current.set(id, { ...pending.current.get(id), ...patch });
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(flush, 800);
+    schedule();
+  }
+
+  function editCfg(patch: Partial<PerfConfig>) {
+    setCfg((prev) => ({ ...prev, ...patch }));
+    pendingCfg.current = { ...pendingCfg.current, ...patch };
+    schedule();
   }
 
   async function addRow() {
@@ -185,32 +240,31 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     };
   }, [rows, period, from, to]);
 
-  const k = kpisOf(totalsOf(current));
-  const p = kpisOf(totalsOf(previous));
+  const t = totalsOf(current, cfg);
+  const pt = totalsOf(previous, cfg);
+  const k = kpisOf(t);
+  const p = kpisOf(pt);
 
-  /* Gráfico: agrega lançamentos do mesmo dia e calcula os índices por data */
+  /* Gráficos: agrega lançamentos do mesmo dia e calcula os índices por data */
   const chartData = useMemo(() => {
-    const byDate = new Map<string, Totals>();
+    const byDate = new Map<string, PerfRow[]>();
     for (const r of current) {
-      const cur = byDate.get(r.date) ?? { investment: 0, leads: 0, sales: 0, revenue: 0 };
-      cur.investment += r.investment;
-      cur.leads += r.leads;
-      cur.sales += r.sales;
-      cur.revenue += r.revenue;
-      byDate.set(r.date, cur);
+      byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
     }
     return [...byDate.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, t]) => {
-        const kk = kpisOf(t);
+      .map(([date, dayRows]) => {
+        const kk = kpisOf(totalsOf(dayRows, cfg));
         return {
           label: new Date(`${date}T12:00:00Z`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
           cac: kk.cac ?? 0,
           cpl: kk.cpl ?? 0,
           custo: kk.custoConv ?? 0,
+          real: kk.real,
+          roi: kk.roi ?? 0,
         };
       });
-  }, [current]);
+  }, [current, cfg]);
 
   const table = useMemo(() => [...(rows ?? [])].sort((a, b) => b.date.localeCompare(a.date)), [rows]);
 
@@ -221,9 +275,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const inputCls =
     "w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-slate-200 outline-none transition hover:border-line focus:border-brand-500/60 focus:bg-ink-900 focus:ring-2 focus:ring-brand-500/20";
 
+  /* Exemplo vivo da base de cálculo com os números do período atual */
+  const baseExample = t.revenue * (cfg.convPercent / 100);
+
   return (
     <div className="space-y-5">
-      {/* Filtro de período — KPIs e gráfico seguem a janela; a tabela mostra tudo */}
+      {/* Filtro de período — KPIs e gráficos seguem a janela; a tabela mostra tudo */}
       <div className="flex flex-wrap items-center gap-2">
         {PERIODS.map((pd) => (
           <button
@@ -252,7 +309,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       </div>
 
       {/* KPIs com variação vs. período anterior */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
         <StatCard label="CPL" value={fmtBrl(k.cpl)} delta={delta(k.cpl, p.cpl)} hint="investimento / leads" accent="violet" lowerIsBetter />
         <StatCard
@@ -263,8 +320,29 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           accent="warn"
           lowerIsBetter
         />
-        <StatCard label="Ticket médio" value={fmtBrl(k.ticket)} delta={delta(k.ticket, p.ticket)} hint="receita / vendas" accent="grow" />
-        <StatCard label="Valor por lead" value={fmtBrl(k.valorLead)} delta={delta(k.valorLead, p.valorLead)} hint="receita / leads" accent="grow" />
+        <StatCard label="Ticket médio" value={fmtBrl(k.ticket)} delta={delta(k.ticket, p.ticket)} hint="receita bruta / vendas" accent="grow" />
+        <StatCard label="Valor por lead" value={fmtBrl(k.valorLead)} delta={delta(k.valorLead, p.valorLead)} hint="receita bruta / leads" accent="grow" />
+        <StatCard
+          label="Receita bruta"
+          value={brl(t.revenue)}
+          delta={delta(t.revenue, pt.revenue)}
+          hint="valor total vendido"
+          accent="brand"
+        />
+        <StatCard
+          label="Receita real"
+          value={brl(k.real)}
+          delta={delta(k.real, p.real)}
+          hint={`bruta × ${cfg.convPercent}% × ${cfg.commissionPercent}%`}
+          accent="grow"
+        />
+        <StatCard
+          label="ROI"
+          value={fmtPct(k.roi)}
+          delta={delta(k.roi, p.roi)}
+          hint="(receita real − investimento) / investimento"
+          accent="violet"
+        />
       </div>
 
       {/* Evolução dos custos */}
@@ -286,6 +364,92 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         ) : (
           <p className="py-10 text-center text-sm text-slate-500">
             Lance pelo menos dois dias de dados no período para ver a evolução.
+          </p>
+        )}
+      </div>
+
+      {/* Evolução do retorno: receita real e ROI */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <LineChartIcon size={16} className="text-grow-400" />
+            <h2 className="text-sm font-bold text-slate-200">Evolução — Receita real</h2>
+          </div>
+          {chartData.length >= 2 ? (
+            <TrendChart data={chartData} series={[{ key: "real", label: "Receita real" }]} format="brl" height={220} />
+          ) : (
+            <p className="py-8 text-center text-sm text-slate-500">Sem dados suficientes no período.</p>
+          )}
+        </div>
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <LineChartIcon size={16} className="text-violet" />
+            <h2 className="text-sm font-bold text-slate-200">Evolução — ROI</h2>
+          </div>
+          {chartData.length >= 2 ? (
+            <TrendChart data={chartData} series={[{ key: "roi", label: "ROI" }]} format="pct" height={220} />
+          ) : (
+            <p className="py-8 text-center text-sm text-slate-500">Sem dados suficientes no período.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Base de cálculo do cliente */}
+      <div className="card p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <SlidersHorizontal size={16} className="text-warn" />
+          <h2 className="text-sm font-bold text-slate-200">Base de cálculo</h2>
+          <span className="text-xs text-slate-500">define como a receita bruta vira receita real</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-5">
+          <div>
+            <label className="label">% Conversão real</label>
+            {editable ? (
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={cfg.convPercent}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  editCfg({ convPercent: Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 0 });
+                }}
+                className="input !w-28"
+              />
+            ) : (
+              <p className="text-lg font-bold text-slate-200">{cfg.convPercent}%</p>
+            )}
+          </div>
+          <div>
+            <label className="label">% Comissão / margem</label>
+            {editable ? (
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={cfg.commissionPercent}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  editCfg({ commissionPercent: Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 0 });
+                }}
+                className="input !w-28"
+              />
+            ) : (
+              <p className="text-lg font-bold text-slate-200">{cfg.commissionPercent}%</p>
+            )}
+          </div>
+          <p className="min-w-[240px] flex-1 rounded-xl border border-line/60 bg-ink-900/50 px-4 py-3 text-xs leading-relaxed text-slate-400">
+            No período: receita bruta <b className="text-slate-200">{brl(t.revenue)}</b> × {cfg.convPercent}% ={" "}
+            <b className="text-slate-200">{brl(baseExample)}</b> (receita base) × {cfg.commissionPercent}% ={" "}
+            <b className="text-grow-400">{brl(k.real)}</b> de receita real.
+          </p>
+        </div>
+        {editable && (
+          <p className="mt-2 text-[11px] text-slate-600">
+            Vale para todas as linhas; se precisar, dá para definir percentuais diferentes em uma linha específica na
+            tabela abaixo.
           </p>
         )}
       </div>
@@ -317,24 +481,27 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] text-sm">
+            <table className="w-full min-w-[1220px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
                   <th className="px-2 py-2.5 font-medium">Investimento</th>
                   <th className="px-2 py-2.5 font-medium">Leads</th>
                   <th className="px-2 py-2.5 font-medium">Vendas</th>
-                  <th className="px-2 py-2.5 font-medium">Receita</th>
+                  <th className="px-2 py-2.5 font-medium">Receita bruta</th>
+                  <th className="px-2 py-2.5 font-medium">% Conv.</th>
+                  <th className="px-2 py-2.5 font-medium">% Com.</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">CAC</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">CPL</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">Ticket</th>
-                  <th className="px-2 py-2.5 font-medium text-slate-600">R$/Lead</th>
+                  <th className="px-2 py-2.5 font-medium text-grow-500">Receita real</th>
+                  <th className="px-2 py-2.5 font-medium text-slate-600">ROI</th>
                   {editable && <th className="w-10" />}
                 </tr>
               </thead>
               <tbody>
                 {table.map((r) => {
-                  const rk = kpisOf(totalsOf([r]));
+                  const rk = kpisOf(totalsOf([r], cfg));
                   return (
                     <tr key={r.id} className="border-b border-line/50 transition hover:bg-ink-800/40">
                       {editable ? (
@@ -344,7 +511,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               type="date"
                               defaultValue={r.date}
                               onChange={(e) => e.target.value && edit(r.id, { date: e.target.value })}
-                              className={cn(inputCls, "min-w-[130px]")}
+                              className={cn(inputCls, "min-w-[128px]")}
                             />
                           </td>
                           {(["investment", "leads", "sales", "revenue"] as const).map((field) => (
@@ -359,7 +526,26 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                                   const v = Number(e.target.value);
                                   edit(r.id, { [field]: Number.isFinite(v) && v >= 0 ? v : 0 });
                                 }}
-                                className={cn(inputCls, "min-w-[96px]")}
+                                className={cn(inputCls, "min-w-[90px]")}
+                              />
+                            </td>
+                          ))}
+                          {(["convPercent", "commissionPercent"] as const).map((field) => (
+                            <td key={field} className="px-1 py-1">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                defaultValue={r[field] ?? ""}
+                                placeholder={String(field === "convPercent" ? cfg.convPercent : cfg.commissionPercent)}
+                                title="Vazio = usa o padrão da base de cálculo"
+                                onChange={(e) => {
+                                  if (e.target.value === "") return edit(r.id, { [field]: null });
+                                  const v = Number(e.target.value);
+                                  edit(r.id, { [field]: Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : null });
+                                }}
+                                className={cn(inputCls, "min-w-[64px]")}
                               />
                             </td>
                           ))}
@@ -371,12 +557,15 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                           <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.sales)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.revenue)}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{r.convPercent ?? cfg.convPercent}%</td>
+                          <td className="px-2 py-2.5 text-slate-400">{r.commissionPercent ?? cfg.commissionPercent}%</td>
                         </>
                       )}
                       <td className="px-2 py-2.5 text-xs text-slate-500">{fmtBrl(rk.cac)}</td>
                       <td className="px-2 py-2.5 text-xs text-slate-500">{fmtBrl(rk.cpl)}</td>
                       <td className="px-2 py-2.5 text-xs text-slate-500">{fmtBrl(rk.ticket)}</td>
-                      <td className="px-2 py-2.5 text-xs text-slate-500">{fmtBrl(rk.valorLead)}</td>
+                      <td className="px-2 py-2.5 text-xs font-semibold text-grow-400">{brl(rk.real)}</td>
+                      <td className="px-2 py-2.5 text-xs text-slate-500">{fmtPct(rk.roi)}</td>
                       {editable && (
                         <td className="px-1 py-1 text-right">
                           <button
@@ -397,8 +586,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         )}
         {editable && table.length > 0 && (
           <p className="mt-3 text-[11px] text-slate-600">
-            Edite qualquer célula direto na tabela — KPIs, variações e gráfico recalculam na hora e tudo é salvo
-            automaticamente.
+            Edite qualquer célula direto na tabela — KPIs, variações e gráficos recalculam na hora e tudo é salvo
+            automaticamente. % Conv. e % Com. vazios usam o padrão da base de cálculo.
           </p>
         )}
       </div>

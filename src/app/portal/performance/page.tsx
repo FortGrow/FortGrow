@@ -11,7 +11,7 @@ export default async function PortalPerformancePage() {
     <>
       <PageHeader
         title="Performance"
-        subtitle="Evolução de CAC, CPL, ticket médio e valor por lead — atualizado pela equipe FortGrow"
+        subtitle="CAC, CPL, receita real e ROI — o retorno verdadeiro do seu investimento, atualizado pela equipe FortGrow"
       />
       <PerformanceDashboard clientId={session.clientId!} editable={false} />
     </>
