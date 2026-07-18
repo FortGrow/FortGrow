@@ -13,7 +13,7 @@ const createSchema = z.object({
 
 /** Cadastra um plano/pacote da FortGrow. */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("servicos");
+  const session = await requireStaff("servicos", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
 /** Remove um plano (id pela querystring). */
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("servicos");
+  const session = await requireStaff("servicos", "delete");
   if (isResponse(session)) return session;
 
   const id = req.nextUrl.searchParams.get("id");

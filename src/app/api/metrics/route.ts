@@ -23,7 +23,7 @@ const schema = z.object({
  * alimenta os mesmos dashboards da sincronização automática.
  */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("campanhas");
+  const session = await requireStaff("campanhas", "edit");
   if (isResponse(session)) return session;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

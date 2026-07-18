@@ -12,6 +12,7 @@ import { PortalAccessPanel } from "./portal-access";
 import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integration";
 import { ContentCalendarPanel } from "./content-calendar";
 import { StaffCommissionsPanel } from "./staff-commissions";
+import { EditClientForm } from "./edit-client-form";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +76,30 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         }
       >
         <StatusBadge status={client.status} />
+        <EditClientForm
+          client={{
+            id: client.id,
+            companyName: client.companyName,
+            cnpj: client.cnpj,
+            segment: client.segment,
+            city: client.city,
+            state: client.state,
+            website: client.website,
+            instagram: client.instagram,
+            email: client.email,
+            phone: client.phone,
+            status: client.status,
+            plan: client.plan,
+            billingType: client.billingType,
+            monthlyValue: Number(client.monthlyValue),
+            commissionBase: Number(client.commissionBase),
+            commissionShare: Number(client.commissionShare),
+            contractStart: client.contractStart?.toISOString().slice(0, 10) ?? null,
+            contractMonths: client.contractMonths,
+            projectStatus: client.projectStatus,
+            notes: client.notes,
+          }}
+        />
         <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
 
@@ -149,6 +174,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             ["Consultor", client.consultant?.name],
             ["Tempo de contrato", client.contractMonths ? `${client.contractMonths} meses` : null],
             ["Status do projeto", client.projectStatus],
+            ["Observações", client.notes],
           ].map(([k, v]) => (
             <div key={k as string} className="flex justify-between gap-4 border-b border-line/60 pb-2 last:border-0">
               <span className="text-slate-500">{k}</span>

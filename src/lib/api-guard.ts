@@ -1,15 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSession, type SessionPayload } from "./auth";
-import { canAccess, type ModuleKey } from "./rbac";
+import { can, type ModuleKey, type PermLevel } from "./rbac";
 
-/** Garante sessão de equipe interna (e módulo, se informado). */
-export async function requireStaff(module?: ModuleKey): Promise<SessionPayload | NextResponse> {
+/**
+ * Garante sessão de equipe interna, módulo e nível de permissão.
+ * Nível padrão "view"; mutações devem exigir "edit" e remoções "delete".
+ */
+export async function requireStaff(
+  module?: ModuleKey,
+  level: PermLevel = "view"
+): Promise<SessionPayload | NextResponse> {
   const session = await getSession();
   if (!session || session.role === "CLIENTE") {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
-  if (module && !canAccess(session, module)) {
-    return NextResponse.json({ error: "Sem permissão para este módulo." }, { status: 403 });
+  if (module && !can(session, module, level)) {
+    const acao = level === "delete" ? "excluir" : level === "edit" ? "editar" : "acessar";
+    return NextResponse.json({ error: `Sem permissão para ${acao} neste módulo.` }, { status: 403 });
   }
   return session;
 }

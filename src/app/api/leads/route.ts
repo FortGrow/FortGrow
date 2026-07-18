@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("crm");
+  const session = await requireStaff("crm", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -54,31 +54,51 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ lead }, { status: 201 });
 }
 
-const stageSchema = z.object({
+const patchSchema = z.object({
   id: z.string().min(1),
-  stage: z.enum(["LEAD", "CONTATO", "DIAGNOSTICO", "REUNIAO", "PROPOSTA", "NEGOCIACAO", "FECHADO", "PERDIDO"]),
+  stage: z.enum(["LEAD", "CONTATO", "DIAGNOSTICO", "REUNIAO", "PROPOSTA", "NEGOCIACAO", "FECHADO", "PERDIDO"]).optional(),
+  // Edição completa dos dados do lead
+  companyName: z.string().min(1).max(160).optional(),
+  contactName: z.string().max(120).nullish(),
+  email: z.string().email().nullish().or(z.literal("")),
+  phone: z.string().max(30).nullish(),
+  whatsapp: z.string().max(30).nullish(),
+  instagram: z.string().max(80).nullish(),
+  facebook: z.string().max(120).nullish(),
+  linkedin: z.string().max(120).nullish(),
+  website: z.string().max(200).nullish(),
+  source: z.string().max(80).nullish(),
+  segment: z.string().max(80).nullish(),
+  city: z.string().max(80).nullish(),
+  state: z.string().max(2).nullish(),
+  potential: z.string().max(20).nullish(),
+  estimatedValue: z.coerce.number().min(0).optional(),
+  notes: z.string().max(2000).nullish(),
 });
 
-/** Move um lead de etapa no pipeline (Kanban). */
+/** Atualiza um lead: mudança de etapa (Kanban) e/ou edição completa dos dados. */
 export async function PATCH(req: NextRequest) {
-  const session = await requireStaff("crm");
+  const session = await requireStaff("crm", "edit");
   if (isResponse(session)) return session;
 
-  const parsed = stageSchema.safeParse(await req.json().catch(() => null));
+  const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const lead = await prisma.lead.update({
-    where: { id: parsed.data.id },
-    data: {
-      stage: parsed.data.stage,
-      activities: {
-        create: { type: "mudanca_etapa", content: `Movido para ${parsed.data.stage}`, author: session.name },
-      },
-    },
-  });
+  const { id, stage, email, ...fields } = parsed.data;
+  const data: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields)) if (v !== undefined) data[k] = v === "" ? null : v;
+  if (email !== undefined) data.email = email || null;
+  if (stage) {
+    data.stage = stage;
+    data.activities = {
+      create: { type: "mudanca_etapa", content: `Movido para ${stage}`, author: session.name },
+    };
+  }
+
+  const lead = await prisma.lead.update({ where: { id }, data });
 
   await prisma.activityLog.create({
-    data: { userId: session.sub, action: "lead.stage", entity: "Lead", entityId: lead.id },
+    data: { userId: session.sub, action: stage ? "lead.stage" : "lead.update", entity: "Lead", entityId: lead.id },
   });
 
   return NextResponse.json({ lead });

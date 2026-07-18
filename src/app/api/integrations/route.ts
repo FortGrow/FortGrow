@@ -11,7 +11,7 @@ const connectSchema = z.object({
 
 /** Conecta uma integração salvando a credencial (usada pelos syncs). */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("integracoes");
+  const session = await requireStaff("integracoes", "edit");
   if (isResponse(session)) return session;
 
   const parsed = connectSchema.safeParse(await req.json().catch(() => null));
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 const disconnectSchema = z.object({ provider: z.string().min(1) });
 
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("integracoes");
+  const session = await requireStaff("integracoes", "delete");
   if (isResponse(session)) return session;
 
   // provider via querystring — corpos de DELETE podem ser descartados por proxies

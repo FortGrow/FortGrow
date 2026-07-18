@@ -5,6 +5,7 @@ import { Badge, StatusBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { brl, fullDate } from "@/lib/utils";
 import { NewLeadForm } from "./new-lead-form";
+import { EditLeadForm } from "./edit-lead-form";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function ProspeccaoPage() {
       {leads.length === 0 ? (
         <EmptyState title="Nenhuma empresa cadastrada" hint="Cadastre a primeira empresa para começar a prospecção." />
       ) : (
-        <DataTable headers={["Empresa", "Contato", "Canal","Origem", "Segmento", "Cidade/UF", "Potencial", "Valor est.", "Etapa", "Responsável", "Criado"]}>
+        <DataTable headers={["Empresa", "Contato", "Canal","Origem", "Segmento", "Cidade/UF", "Potencial", "Valor est.", "Etapa", "Responsável", "Criado", ""]}>
           {leads.map((l) => (
             <tr key={l.id} className="transition hover:bg-ink-800/50">
               <Td className="font-semibold text-slate-200">{l.companyName}</Td>
@@ -45,6 +46,29 @@ export default async function ProspeccaoPage() {
               <Td><StatusBadge status={l.stage} /></Td>
               <Td>{l.owner?.name ?? "—"}</Td>
               <Td className="text-slate-500">{fullDate(l.createdAt)}</Td>
+              <Td>
+                <EditLeadForm
+                  lead={{
+                    id: l.id,
+                    companyName: l.companyName,
+                    contactName: l.contactName,
+                    email: l.email,
+                    phone: l.phone,
+                    whatsapp: l.whatsapp,
+                    instagram: l.instagram,
+                    facebook: l.facebook,
+                    linkedin: l.linkedin,
+                    website: l.website,
+                    source: l.source,
+                    segment: l.segment,
+                    city: l.city,
+                    state: l.state,
+                    potential: l.potential,
+                    estimatedValue: Number(l.estimatedValue),
+                    notes: l.notes,
+                  }}
+                />
+              </Td>
             </tr>
           ))}
         </DataTable>

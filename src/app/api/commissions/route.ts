@@ -24,7 +24,7 @@ const schema = z.object({
  * Gera uma fatura EM_ABERTO que alimenta todos os dashboards financeiros.
  */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "edit");
   if (isResponse(session)) return session;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

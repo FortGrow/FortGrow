@@ -15,7 +15,7 @@ const createSchema = z.object({
 
 /** Cria uma postagem no calendário do cliente. */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("campanhas");
+  const session = await requireStaff("campanhas", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -56,7 +56,7 @@ const statusSchema = z.object({
 
 /** Atualiza o status de uma postagem. */
 export async function PATCH(req: NextRequest) {
-  const session = await requireStaff("campanhas");
+  const session = await requireStaff("campanhas", "edit");
   if (isResponse(session)) return session;
 
   const parsed = statusSchema.safeParse(await req.json().catch(() => null));
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest) {
 
 /** Remove uma postagem do calendário (id pela querystring). */
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("campanhas");
+  const session = await requireStaff("campanhas", "delete");
   if (isResponse(session)) return session;
 
   const id = req.nextUrl.searchParams.get("id");

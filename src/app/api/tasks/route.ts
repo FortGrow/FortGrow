@@ -13,7 +13,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("tarefas");
+  const session = await requireStaff("tarefas", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -51,7 +51,7 @@ const stageSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const session = await requireStaff("tarefas");
+  const session = await requireStaff("tarefas", "edit");
   if (isResponse(session)) return session;
 
   const parsed = stageSchema.safeParse(await req.json().catch(() => null));

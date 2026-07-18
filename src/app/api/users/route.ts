@@ -90,3 +90,38 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+const permsSchema = z.object({
+  id: z.string().min(1),
+  /// { "crm": "ved", "financeiro": "v" } — v=ver, e=editar, d=excluir
+  permissionsMatrix: z.record(z.string().regex(/^[ved]{0,3}$/)),
+});
+
+/** Define a matriz de permissões granulares de um colaborador — somente ADMIN. */
+export async function PATCH(req: NextRequest) {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Somente administradores alteram permissões." }, { status: 403 });
+  }
+
+  const parsed = permsSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const target = await prisma.user.findUnique({ where: { id: parsed.data.id } });
+  if (!target) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+  if (target.role === "ADMIN") {
+    return NextResponse.json({ error: "Administradores sempre têm acesso total." }, { status: 400 });
+  }
+
+  // Remove módulos sem nenhuma flag
+  const matrix = Object.fromEntries(
+    Object.entries(parsed.data.permissionsMatrix).filter(([, flags]) => flags.length > 0)
+  );
+
+  await prisma.user.update({ where: { id: target.id }, data: { permissionsMatrix: matrix } });
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "user.permissions", entity: "User", entityId: target.id },
+  });
+
+  return NextResponse.json({ ok: true, permissionsMatrix: matrix });
+}

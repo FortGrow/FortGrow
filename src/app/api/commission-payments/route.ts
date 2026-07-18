@@ -17,7 +17,7 @@ const schema = z.object({
  * histórico de pagamentos automaticamente.
  */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "edit");
   if (isResponse(session)) return session;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

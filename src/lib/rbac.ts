@@ -37,16 +37,42 @@ export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   CONSULTOR: ["dashboard", "clientes", "projetos", "tarefas", "chamados"],
 };
 
+export type PermLevel = "view" | "edit" | "delete";
+/** Matriz granular por módulo: flags "ved" (v=ver, e=editar, d=excluir). */
+export type PermMatrix = Record<string, string>;
+
+const LEVEL_FLAG: Record<PermLevel, string> = { view: "v", edit: "e", delete: "d" };
+
 export function allowedModules(session: SessionPayload): ModuleKey[] {
   if (session.role === "ADMIN") return Object.keys(MODULES) as ModuleKey[];
+  // Matriz granular por usuário tem precedência
+  if (session.perms && Object.keys(session.perms).length > 0) {
+    return (Object.keys(MODULES) as ModuleKey[]).filter((k) => session.perms![k]?.includes("v"));
+  }
   if (session.permissions?.length) return session.permissions as ModuleKey[];
   return ROLE_DEFAULTS[session.role] ?? ["dashboard"];
 }
 
+/**
+ * Verificação granular: o usuário pode {ver|editar|excluir} neste módulo?
+ * ADMIN sempre pode tudo. Com matriz definida, ela manda. Sem matriz,
+ * os padrões do papel dão ver+editar; excluir fica restrito a ADMIN.
+ */
+export function can(session: SessionPayload | null, module: ModuleKey, level: PermLevel = "view"): boolean {
+  if (!session || session.role === "CLIENTE") return false;
+  if (session.role === "ADMIN") return true;
+  if (session.perms && Object.keys(session.perms).length > 0) {
+    return session.perms[module]?.includes(LEVEL_FLAG[level]) ?? false;
+  }
+  const modules = session.permissions?.length
+    ? (session.permissions as ModuleKey[])
+    : ROLE_DEFAULTS[session.role] ?? ["dashboard"];
+  if (!modules.includes(module)) return false;
+  return level !== "delete"; // sem matriz: ver e editar sim, excluir não
+}
+
 export function canAccess(session: SessionPayload | null, module: ModuleKey): boolean {
-  if (!session) return false;
-  if (session.role === "CLIENTE") return false;
-  return allowedModules(session).includes(module);
+  return can(session, module, "view");
 }
 
 export function isStaff(session: SessionPayload | null): boolean {

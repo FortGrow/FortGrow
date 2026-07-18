@@ -16,7 +16,7 @@ const createSchema = z.object({
 
 /** Cadastra um custo na central de custos. */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -48,7 +48,7 @@ const patchSchema = z.object({
 
 /** Atualiza o status de um custo. */
 export async function PATCH(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "edit");
   if (isResponse(session)) return session;
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
@@ -63,7 +63,7 @@ export async function PATCH(req: NextRequest) {
 
 /** Remove um custo (id pela querystring). */
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("financeiro");
+  const session = await requireStaff("financeiro", "delete");
   if (isResponse(session)) return session;
 
   const id = req.nextUrl.searchParams.get("id");

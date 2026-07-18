@@ -24,7 +24,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("clientes");
+  const session = await requireStaff("clientes", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -65,13 +65,11 @@ const deleteSchema = z.object({ id: z.string().min(1) });
 /**
  * Exclui um cliente e tudo que pertence a ele (serviços, contratos,
  * projetos, faturas, documentos, chamados, métricas e acessos ao portal).
- * Somente administradores.
+ * Requer permissão de exclusão no módulo Clientes (admins sempre têm).
  */
 export async function DELETE(req: NextRequest) {
-  const session = await getSession();
-  if (!session || session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Somente administradores podem excluir clientes." }, { status: 403 });
-  }
+  const session = await requireStaff("clientes", "delete");
+  if (isResponse(session)) return session;
 
   // id via querystring (?id=...) — corpos de DELETE podem ser descartados por proxies
   const bodyId = (await req.json().catch(() => null))?.id;
@@ -97,36 +95,66 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ ok: true, deleted: client.companyName });
 }
 
-const accountsSchema = z.object({
+const nullableStr = (max: number) => z.string().max(max).nullish();
+
+const updateSchema = z.object({
   id: z.string().min(1),
-  adAccounts: z.object({
-    googleAdsId: z.string().max(60).optional(),
-    metaAdsId: z.string().max(60).optional(),
-    instagram: z.string().max(80).optional(),
-    ga4PropertyId: z.string().max(60).optional(),
-  }),
+  // Contas de anúncio (integração de campanhas)
+  adAccounts: z
+    .object({
+      googleAdsId: z.string().max(60).optional(),
+      metaAdsId: z.string().max(60).optional(),
+      instagram: z.string().max(80).optional(),
+      ga4PropertyId: z.string().max(60).optional(),
+    })
+    .optional(),
+  // Edição completa do cadastro
+  companyName: z.string().min(2).max(160).optional(),
+  cnpj: nullableStr(30),
+  segment: nullableStr(80),
+  city: nullableStr(80),
+  state: nullableStr(2),
+  website: nullableStr(200),
+  instagram: nullableStr(80),
+  email: z.string().email().nullish().or(z.literal("")),
+  phone: nullableStr(30),
+  status: z.enum(["ATIVO", "PAUSADO", "INATIVO", "ONBOARDING"]).optional(),
+  plan: nullableStr(120),
+  billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
+  monthlyValue: z.coerce.number().min(0).optional(),
+  commissionBase: z.coerce.number().min(0).max(100).optional(),
+  commissionShare: z.coerce.number().min(0).max(100).optional(),
+  contractStart: z.string().nullish(),
+  contractMonths: z.coerce.number().int().min(1).max(120).nullish(),
+  projectStatus: nullableStr(80),
+  notes: nullableStr(2000),
 });
 
-/** Vincula as contas de anúncio do cliente (integração de campanhas). */
+/** Edição completa do cliente (todos os campos) e vínculo de contas de anúncio. */
 export async function PATCH(req: NextRequest) {
-  const session = await requireStaff("clientes");
+  const session = await requireStaff("clientes", "edit");
   if (isResponse(session)) return session;
 
-  const parsed = accountsSchema.safeParse(await req.json().catch(() => null));
+  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const clean = Object.fromEntries(
-    Object.entries(parsed.data.adAccounts).filter(([, v]) => String(v ?? "").trim() !== "")
-  );
+  const { id, adAccounts, email, contractStart, ...fields } = parsed.data;
 
-  const client = await prisma.client.update({
-    where: { id: parsed.data.id },
-    data: { adAccounts: clean },
-  });
+  const data: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields)) if (v !== undefined) data[k] = v === "" ? null : v;
+  if (email !== undefined) data.email = email || null;
+  if (contractStart !== undefined) data.contractStart = contractStart ? new Date(contractStart) : null;
+  if (adAccounts !== undefined) {
+    data.adAccounts = Object.fromEntries(
+      Object.entries(adAccounts).filter(([, v]) => String(v ?? "").trim() !== "")
+    );
+  }
+
+  const client = await prisma.client.update({ where: { id }, data });
 
   await prisma.activityLog.create({
-    data: { userId: session.sub, action: "client.link_accounts", entity: "Client", entityId: client.id },
+    data: { userId: session.sub, action: "client.update", entity: "Client", entityId: client.id },
   });
 
-  return NextResponse.json({ ok: true, adAccounts: client.adAccounts });
+  return NextResponse.json({ ok: true, client });
 }

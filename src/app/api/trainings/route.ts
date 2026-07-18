@@ -14,7 +14,7 @@ const createSchema = z.object({
 
 /** Publica um treinamento (aparece no portal sem alterar código). */
 export async function POST(req: NextRequest) {
-  const session = await requireStaff("treinamentos");
+  const session = await requireStaff("treinamentos", "edit");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
 /** Remove um treinamento (id pela querystring). */
 export async function DELETE(req: NextRequest) {
-  const session = await requireStaff("treinamentos");
+  const session = await requireStaff("treinamentos", "delete");
   if (isResponse(session)) return session;
 
   const id = req.nextUrl.searchParams.get("id");
