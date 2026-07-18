@@ -144,6 +144,7 @@ model Client {
   contentPosts ContentPost[]
   staffCommissions StaffCommission[]
   performanceEntries PerformanceEntry[]
+  instagramEntries   InstagramEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -751,8 +752,32 @@ model PerformanceEntry {
   /// Overrides por linha da base de cálculo; null = usa o padrão do cliente
   convPercent       Decimal? @db.Decimal(6, 3)
   commissionPercent Decimal? @db.Decimal(6, 3)
+  /// Origem dos leads: INDICACAO | TRAFEGO_PAGO | ORGANICO | SOCIAL | OUTRO
+  source     String   @default("OUTRO")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([clientId, date])
+}
+
+/// Painel de Instagram do dashboard de Performance: lançamentos manuais
+/// diários; taxa de engajamento e crescimento são derivados, nunca armazenados.
+model InstagramEntry {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  date            DateTime
+  views           Int      @default(0)
+  likes           Int      @default(0)
+  comments        Int      @default(0)
+  shares          Int      @default(0)
+  saves           Int      @default(0)
+  followers       Int      @default(0)
+  reach           Int      @default(0)
+  /// % do alcance vindo de não seguidores (expansão de público)
+  nonFollowersPct Decimal  @default(0) @db.Decimal(6, 3)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([clientId, date])
 }

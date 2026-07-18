@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, LineChart as LineChartIcon, SlidersHorizontal } from "lucide-react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { StatCard } from "@/components/ui/stat-card";
+import { InstagramPanel } from "@/components/performance/instagram-panel";
 import { cn, brl, num } from "@/lib/utils";
 
 export type PerfRow = {
@@ -17,7 +18,19 @@ export type PerfRow = {
   /** Overrides da base de cálculo; null = usa o padrão do cliente */
   convPercent: number | null;
   commissionPercent: number | null;
+  /** Origem dos leads (chave de SOURCES) */
+  source: string;
 };
+
+/** Origens de lead disponíveis no dropdown e nos filtros */
+export const SOURCES = [
+  { key: "INDICACAO", label: "Indicação" },
+  { key: "TRAFEGO_PAGO", label: "Tráfego Pago" },
+  { key: "ORGANICO", label: "Orgânico" },
+  { key: "SOCIAL", label: "Social" },
+  { key: "OUTRO", label: "Outro" },
+] as const;
+const sourceLabel = (key: string) => SOURCES.find((s) => s.key === key)?.label ?? key;
 
 export type PerfConfig = { convPercent: number; commissionPercent: number };
 
@@ -93,6 +106,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [rows, setRows] = useState<PerfRow[] | null>(null);
   const [cfg, setCfg] = useState<PerfConfig>({ convPercent: 100, commissionPercent: 100 });
   const [period, setPeriod] = useState<PeriodKey>("30");
+  const [source, setSource] = useState<string>("TODAS");
   const [from, setFrom] = useState(() => iso(new Date(Date.now() - 29 * dayMs)));
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
@@ -216,10 +230,21 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     if (!res?.ok) setSave({ state: "error" });
   }
 
-  /* Janela do período selecionado + janela anterior de mesmo tamanho (para a variação %) */
-  const { current, previous, rangeLabel } = useMemo(() => {
+  /* Janela do período selecionado + janela anterior de mesmo tamanho (para a variação %).
+     currentAll ignora o filtro de origem (usado no comparativo por origem);
+     current/previous respeitam origem e alimentam KPIs e gráficos. */
+  const { current, currentAll, previous, rangeLabel, range } = useMemo(() => {
     const all = rows ?? [];
-    if (period === "tudo") return { current: all, previous: [] as PerfRow[], rangeLabel: "todo o histórico" };
+    const bySource = (list: PerfRow[]) => (source === "TODAS" ? list : list.filter((r) => r.source === source));
+    if (period === "tudo") {
+      return {
+        current: bySource(all),
+        currentAll: all,
+        previous: [] as PerfRow[],
+        rangeLabel: "todo o histórico",
+        range: null as { start: string; end: string } | null,
+      };
+    }
     let start: string;
     let end: string;
     if (period === "custom") {
@@ -233,12 +258,15 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     const len = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / dayMs) + 1);
     const prevEnd = iso(new Date(new Date(start).getTime() - dayMs));
     const prevStart = iso(new Date(new Date(start).getTime() - len * dayMs));
+    const windowed = all.filter((r) => r.date >= start && r.date <= end);
     return {
-      current: all.filter((r) => r.date >= start && r.date <= end),
-      previous: all.filter((r) => r.date >= prevStart && r.date <= prevEnd),
+      current: bySource(windowed),
+      currentAll: windowed,
+      previous: bySource(all.filter((r) => r.date >= prevStart && r.date <= prevEnd)),
       rangeLabel: `${start.split("-").reverse().join("/")} a ${end.split("-").reverse().join("/")}`,
+      range: { start, end },
     };
-  }, [rows, period, from, to]);
+  }, [rows, period, from, to, source]);
 
   const t = totalsOf(current, cfg);
   const pt = totalsOf(previous, cfg);
@@ -266,7 +294,24 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       });
   }, [current, cfg]);
 
-  const table = useMemo(() => [...(rows ?? [])].sort((a, b) => b.date.localeCompare(a.date)), [rows]);
+  /* Tabela: mostra todo o histórico, respeitando só o filtro de origem */
+  const table = useMemo(
+    () =>
+      [...(rows ?? [])]
+        .filter((r) => source === "TODAS" || r.source === source)
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [rows, source]
+  );
+
+  /* Comparativo por origem no período (independe do filtro de origem ativo) */
+  const bySource = useMemo(
+    () =>
+      SOURCES.map((s) => {
+        const srcRows = currentAll.filter((r) => r.source === s.key);
+        return { ...s, count: srcRows.length, k: kpisOf(totalsOf(srcRows, cfg)), t: totalsOf(srcRows, cfg) };
+      }).filter((s) => s.count > 0),
+    [currentAll, cfg]
+  );
 
   if (rows === null) {
     return <div className="card p-8 text-center text-sm text-slate-500">Carregando performance…</div>;
@@ -308,6 +353,25 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         </span>
       </div>
 
+      {/* Filtro por origem de lead — KPIs, gráficos e tabela seguem a seleção */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Origem:</span>
+        {[{ key: "TODAS", label: "Todas" }, ...SOURCES].map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSource(s.key)}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+              source === s.key
+                ? "border-grow-500/40 bg-grow-500/15 text-grow-400"
+                : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {/* KPIs com variação vs. período anterior */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
@@ -344,6 +408,43 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           accent="violet"
         />
       </div>
+
+      {/* Comparativo por origem de lead no período */}
+      {bySource.length > 0 && (
+        <div className="card p-5">
+          <h2 className="mb-3 text-sm font-bold text-slate-200">Métricas por origem de lead</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
+                  <th className="px-2 py-2 font-medium">Origem</th>
+                  <th className="px-2 py-2 font-medium">Investimento</th>
+                  <th className="px-2 py-2 font-medium">Leads</th>
+                  <th className="px-2 py-2 font-medium">Vendas</th>
+                  <th className="px-2 py-2 font-medium">CPL</th>
+                  <th className="px-2 py-2 font-medium">CAC</th>
+                  <th className="px-2 py-2 font-medium">Receita real</th>
+                  <th className="px-2 py-2 font-medium">ROI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bySource.map((s) => (
+                  <tr key={s.key} className="border-b border-line/50">
+                    <td className="px-2 py-2.5 font-semibold text-slate-200">{s.label}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{brl(s.t.investment)}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{num(s.t.leads)}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{num(s.t.sales)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(s.k.cpl)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(s.k.cac)}</td>
+                    <td className="px-2 py-2.5 font-semibold text-grow-400">{brl(s.k.real)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtPct(s.k.roi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Evolução dos custos */}
       <div className="card p-5">
@@ -481,10 +582,11 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1220px] text-sm">
+            <table className="w-full min-w-[1340px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
+                  <th className="px-2 py-2.5 font-medium">Origem</th>
                   <th className="px-2 py-2.5 font-medium">Investimento</th>
                   <th className="px-2 py-2.5 font-medium">Leads</th>
                   <th className="px-2 py-2.5 font-medium">Vendas</th>
@@ -513,6 +615,19 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               onChange={(e) => e.target.value && edit(r.id, { date: e.target.value })}
                               className={cn(inputCls, "min-w-[128px]")}
                             />
+                          </td>
+                          <td className="px-1 py-1">
+                            <select
+                              defaultValue={r.source}
+                              onChange={(e) => edit(r.id, { source: e.target.value })}
+                              className={cn(inputCls, "min-w-[120px] cursor-pointer bg-ink-900/0")}
+                            >
+                              {SOURCES.map((s) => (
+                                <option key={s.key} value={s.key} className="bg-ink-900">
+                                  {s.label}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                           {(["investment", "leads", "sales", "revenue"] as const).map((field) => (
                             <td key={field} className="px-1 py-1">
@@ -553,6 +668,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                       ) : (
                         <>
                           <td className="px-2 py-2.5 text-slate-300">{r.date.split("-").reverse().join("/")}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{sourceLabel(r.source)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.sales)}</td>
@@ -591,6 +707,9 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         )}
       </div>
+
+      {/* Painel de Instagram (estilo Insights), com o mesmo período selecionado */}
+      <InstagramPanel clientId={clientId} editable={editable} range={range} />
     </div>
   );
 }
