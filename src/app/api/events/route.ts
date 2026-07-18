@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { invalidResponse } from "@/lib/validation";
+import { expandOccurrences } from "@/lib/agenda";
 import type { SessionPayload } from "@/lib/auth";
 
 const EVENT_TYPES = ["REUNIAO_CLIENTE", "CAPTACAO", "ALINHAMENTO", "FOLLOW_UP"] as const;
@@ -28,7 +29,8 @@ export async function GET(req: NextRequest) {
 
   const rows = await prisma.event.findMany({
     where: {
-      start: { gte: de, lt: ate },
+      // recorrentes entram mesmo com início antes da janela — a expansão filtra
+      OR: [{ start: { gte: de, lt: ate } }, { recurrence: { not: "NENHUMA" }, start: { lt: ate } }],
       ...(tipo ? { type: tipo } : {}),
       ...(cliente ? { clientId: cliente } : {}),
     },
@@ -46,21 +48,29 @@ export async function GET(req: NextRequest) {
       const attendees = (e.attendeeIds as string[]) ?? [];
       return attendees.includes(colaborador) || e.createdById === colaborador;
     })
-    .map((e) => ({
-      id: e.id,
-      title: e.title,
-      description: e.description,
-      type: e.type,
-      status: e.status,
-      start: e.start.toISOString(),
-      end: e.end.toISOString(),
-      private: e.private,
-      attendeeIds: (e.attendeeIds as string[]) ?? [],
-      clientId: e.clientId,
-      clientName: e.client?.companyName ?? null,
-      createdById: e.createdById,
-      createdByName: e.createdBy?.name ?? null,
-    }));
+    .flatMap((e) =>
+      expandOccurrences(e, de, ate).map((occ) => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        type: e.type,
+        status: e.status,
+        start: occ.start.toISOString(),
+        end: occ.end.toISOString(),
+        private: e.private,
+        recurrence: e.recurrence,
+        recurrenceUntil: e.recurrenceUntil?.toISOString() ?? null,
+        /// início da série (para edição — a ocorrência exibida pode ser outra data)
+        seriesStart: e.start.toISOString(),
+        seriesEnd: e.end.toISOString(),
+        attendeeIds: (e.attendeeIds as string[]) ?? [],
+        clientId: e.clientId,
+        clientName: e.client?.companyName ?? null,
+        createdById: e.createdById,
+        createdByName: e.createdBy?.name ?? null,
+      }))
+    )
+    .sort((a, b) => a.start.localeCompare(b.start));
 
   return NextResponse.json({ events });
 }
@@ -73,6 +83,8 @@ const createSchema = z.object({
   start: z.string().min(10),
   end: z.string().min(10),
   private: z.boolean().optional(),
+  recurrence: z.enum(["NENHUMA", "SEMANAL", "MENSAL", "ANUAL"]).optional(),
+  recurrenceUntil: z.string().nullish(),
   attendeeIds: z.array(z.string()).max(50).optional(),
   clientId: z.string().nullish(),
 });
@@ -92,13 +104,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "O término precisa ser depois do início." }, { status: 400 });
   }
 
+  const { recurrenceUntil, ...restFields } = rest;
   const event = await prisma.event.create({
     data: {
-      ...rest,
-      description: rest.description || null,
+      ...restFields,
+      description: restFields.description || null,
       start: startAt,
       end: endAt,
-      private: rest.private ?? false,
+      private: restFields.private ?? false,
+      recurrence: restFields.recurrence ?? "NENHUMA",
+      recurrenceUntil: recurrenceUntil ? new Date(recurrenceUntil) : null,
       attendeeIds: attendeeIds ?? [],
       clientId: clientId || null,
       createdById: session.sub,
@@ -130,7 +145,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, start, end, attendeeIds, clientId, description, ...rest } = parsed.data;
+  const { id, start, end, attendeeIds, clientId, description, recurrenceUntil, ...rest } = parsed.data;
   const existing = await prisma.event.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 });
   if (!canSee(session, existing)) return NextResponse.json({ error: "Evento privado." }, { status: 403 });
@@ -141,6 +156,7 @@ export async function PATCH(req: NextRequest) {
   if (end !== undefined) data.end = new Date(end);
   if (attendeeIds !== undefined) data.attendeeIds = attendeeIds;
   if (clientId !== undefined) data.clientId = clientId || null;
+  if (recurrenceUntil !== undefined) data.recurrenceUntil = recurrenceUntil ? new Date(recurrenceUntil) : null;
 
   const startAt = (data.start as Date) ?? existing.start;
   const endAt = (data.end as Date) ?? existing.end;

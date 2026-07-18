@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Copy, Link2, Loader2, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
-import { EVENT_TYPES, EVENT_STATUS_LABELS } from "@/lib/agenda";
+import { EVENT_TYPES, EVENT_STATUS_LABELS, RECURRENCE_LABELS } from "@/lib/agenda";
 
 export type EventDto = {
   id: string;
@@ -14,6 +14,10 @@ export type EventDto = {
   start: string;
   end: string;
   private: boolean;
+  recurrence: string;
+  recurrenceUntil: string | null;
+  seriesStart: string;
+  seriesEnd: string;
   attendeeIds: string[];
   clientId: string | null;
   clientName: string | null;
@@ -56,8 +60,8 @@ function EventForm({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const start = initial ? new Date(initial.start) : defaults?.start ?? new Date();
-  const end = initial ? new Date(initial.end) : defaults?.end ?? new Date(Date.now() + 3600000);
+  const start = initial ? new Date(initial.seriesStart ?? initial.start) : defaults?.start ?? new Date();
+  const end = initial ? new Date(initial.seriesEnd ?? initial.end) : defaults?.end ?? new Date(Date.now() + 3600000);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,6 +78,8 @@ function EventForm({
       end: new Date(String(form.get("end"))).toISOString(),
       clientId: form.get("clientId"),
       private: form.get("private") === "on",
+      recurrence: form.get("recurrence"),
+      recurrenceUntil: form.get("recurrenceUntil"),
       attendeeIds: attendees,
     };
     try {
@@ -154,6 +160,26 @@ function EventForm({
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label" htmlFor="ev-rec">Repetir</label>
+              <select id="ev-rec" name="recurrence" defaultValue={initial?.recurrence ?? "NENHUMA"} className="input">
+                {Object.entries(RECURRENCE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="ev-rec-until">Repetir até (opcional)</label>
+              <input
+                id="ev-rec-until"
+                name="recurrenceUntil"
+                type="date"
+                defaultValue={initial?.recurrenceUntil?.slice(0, 10) ?? ""}
+                className="input"
+              />
+            </div>
           </div>
           <div>
             <label className="label">Participantes</label>
@@ -263,7 +289,7 @@ export function AgendaCalendar({
 
   async function moveEvent(id: string, toDay: Date) {
     const ev = events.find((e) => e.id === id);
-    if (!ev) return;
+    if (!ev || ev.recurrence !== "NENHUMA") return;
     const start = new Date(ev.start);
     const duration = new Date(ev.end).getTime() - start.getTime();
     const newStart = new Date(toDay);
@@ -322,7 +348,7 @@ export function AgendaCalendar({
     return (
       <button
         key={e.id}
-        draggable={canEdit && view === "mes"}
+        draggable={canEdit && view === "mes" && e.recurrence === "NENHUMA"}
         onDragStart={(ev) => {
           ev.dataTransfer.setData("text/plain", e.id);
           setDragId(e.id);
@@ -340,6 +366,7 @@ export function AgendaCalendar({
       >
         {withTime && `${hm(new Date(e.start))} `}
         {e.private && "🔒 "}
+        {e.recurrence !== "NENHUMA" && "↻ "}
         {e.title}
       </button>
     );

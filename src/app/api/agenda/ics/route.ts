@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
     const desc = [EVENT_TYPES[e.type]?.label ?? e.type, e.client ? `Cliente: ${e.client.companyName}` : null, e.description]
       .filter(Boolean)
       .join("\n");
+    const freq = { SEMANAL: "WEEKLY", MENSAL: "MONTHLY", ANUAL: "YEARLY" }[e.recurrence];
     lines.push(
       "BEGIN:VEVENT",
       `UID:${e.id}@fortgrow-crm`,
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
       `SUMMARY:${esc(e.title)}`,
       `DESCRIPTION:${esc(desc)}`,
       `STATUS:${e.status === "PENDENTE" ? "TENTATIVE" : "CONFIRMED"}`,
+      ...(freq ? [`RRULE:FREQ=${freq}${e.recurrenceUntil ? `;UNTIL=${fmt(e.recurrenceUntil)}` : ""}`] : []),
       "END:VEVENT"
     );
   }
