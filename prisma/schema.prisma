@@ -116,6 +116,11 @@ model Client {
   /// Contas de anúncio vinculadas: { googleAdsId, metaAdsId, instagram, ga4PropertyId }
   adAccounts     Json         @default("{}")
 
+  /// Base de cálculo do dashboard de Performance: % do bruto que vira receita
+  /// base e % de comissão/margem sobre ela. 100/100 = receita real igual à bruta.
+  perfConvPercent       Decimal @default(100) @db.Decimal(6, 3)
+  perfCommissionPercent Decimal @default(100) @db.Decimal(6, 3)
+
   accountManagerId String?
   accountManager   User?   @relation("accountManager", fields: [accountManagerId], references: [id], onDelete: SetNull)
   consultantId     String?
@@ -741,7 +746,11 @@ model PerformanceEntry {
   investment Decimal  @default(0) @db.Decimal(12, 2)
   leads      Int      @default(0)
   sales      Int      @default(0)
+  /// Receita bruta (valor total vendido) do dia
   revenue    Decimal  @default(0) @db.Decimal(12, 2)
+  /// Overrides por linha da base de cálculo; null = usa o padrão do cliente
+  convPercent       Decimal? @db.Decimal(6, 3)
+  commissionPercent Decimal? @db.Decimal(6, 3)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
