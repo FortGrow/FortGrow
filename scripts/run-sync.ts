@@ -7,7 +7,9 @@ import { prisma } from "../src/lib/prisma";
 
 runSync()
   .then((r) => {
-    console.log(`Sync: ${r.clientsProcessed} cliente(s) processado(s), ${r.snapshotsUpserted} snapshot(s).`);
+    console.log(
+      `Sync: ${r.clientsProcessed} cliente(s), ${r.campaignsSynced} campanha(s), ${r.insightsUpserted} métrica(s), ${r.errors} erro(s).`
+    );
     for (const d of r.details) console.log("  •", d);
   })
   .catch((e) => {

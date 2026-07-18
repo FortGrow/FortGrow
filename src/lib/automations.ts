@@ -41,6 +41,14 @@ export async function runAutomations(): Promise<AutomationRunResult> {
   // Passo de manutenção: gera as cobranças do mês das mensalidades ativas
   result.chargesGenerated = await generateSubscriptionCharges();
 
+  // Passo de manutenção: sincroniza campanhas (respeitando o cache de 15 min)
+  try {
+    const { runSync } = await import("@/lib/sync");
+    await runSync({ onlyIfStale: true });
+  } catch {
+    // sync não pode derrubar as demais automações
+  }
+
   const [automations, admins] = await Promise.all([
     prisma.automation.findMany({ where: { active: true } }),
     prisma.user.findMany({ where: { role: "ADMIN", active: true }, select: { id: true } }),

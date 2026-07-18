@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Megaphone } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -86,6 +88,9 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         }
       >
         <StatusBadge status={client.status} />
+        <Link href={`/admin/clientes/${client.id}/campanhas`} className="btn-ghost">
+          <Megaphone size={15} /> Campanhas Meta
+        </Link>
         <EditClientForm
           client={{
             id: client.id,

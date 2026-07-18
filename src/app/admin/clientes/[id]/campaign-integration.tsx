@@ -118,7 +118,7 @@ export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: str
       <form onSubmit={saveAccounts} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="label" htmlFor="ci-meta">Meta Ads · ID da conta</label>
-          <input id="ci-meta" name="metaAdsId" defaultValue={accounts.metaAdsId ?? ""} className="input" placeholder="act_123456789" />
+          <input id="ci-meta" name="metaAdsId" defaultValue={accounts.metaAdsId ?? ""} className="input" placeholder="act_123456789 (várias: separe por vírgula)" />
         </div>
         <div>
           <label className="label" htmlFor="ci-google">Google Ads · ID do cliente</label>

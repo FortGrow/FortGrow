@@ -121,7 +121,8 @@ const updateSchema = z.object({
   adAccounts: z
     .object({
       googleAdsId: z.string().max(60).optional(),
-      metaAdsId: z.string().max(60).optional(),
+      /// aceita várias contas separadas por vírgula
+      metaAdsId: z.string().max(200).optional(),
       instagram: z.preprocess(normalizeInstagram, z.string().max(80).optional()),
       ga4PropertyId: z.string().max(60).optional(),
     })
