@@ -169,6 +169,11 @@ export function CampaignIntegrationPanel({ clientId, accounts }: { clientId: str
           {status && (
             <span className={`text-xs font-medium ${status.kind === "ok" ? "text-grow-400" : "text-danger"}`}>
               {status.text}
+              {status.kind === "erro" && /token|conectad|Integraç/i.test(status.text) && (
+                <a href="/admin/integracoes" className="ml-1.5 font-semibold text-brand-400 underline hover:text-brand-300">
+                  Abrir Integrações →
+                </a>
+              )}
             </span>
           )}
         </div>
