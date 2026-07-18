@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [clients, leads, projects, tasks] = await Promise.all([
-    prisma.client.findMany({ where: { companyName: contains }, take: 5 }),
+    prisma.client.findMany({ where: { companyName: contains, archivedAt: null }, take: 5 }),
     prisma.lead.findMany({ where: { companyName: contains }, take: 5 }),
     prisma.project.findMany({ where: { name: contains }, take: 5 }),
     prisma.task.findMany({ where: { title: contains }, take: 5 }),

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { verifyLiveSession } from "@/lib/api-guard";
 import { allowedModules, MODULES } from "@/lib/rbac";
 import { AppShell } from "@/components/layout/shell";
 import type { NavItem } from "@/components/layout/nav";
@@ -7,7 +8,8 @@ import type { NavItem } from "@/components/layout/nav";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
+  const raw = await getSession();
+  const session = raw ? await verifyLiveSession(raw) : null;
   if (!session) redirect("/login");
   if (session.role === "CLIENTE") redirect("/portal");
 

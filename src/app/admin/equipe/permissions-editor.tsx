@@ -16,21 +16,56 @@ const LEVELS = [
  * Editor da matriz de permissões por usuário:
  * cada módulo × (ver / editar / excluir), salvo no banco vinculado ao usuário.
  */
+export type PermTemplate = { id: string; name: string; matrix: Record<string, string> };
+
 export function PermissionsEditor({
   userId,
   userName,
   matrix: initial,
+  templates = [],
 }: {
   userId: string;
   userName: string;
   matrix: Record<string, string>;
+  templates?: PermTemplate[];
 }) {
   const [open, setOpen] = useState(false);
   const [matrix, setMatrix] = useState<Record<string, string>>(initial);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState("");
+  const [templateMsg, setTemplateMsg] = useState<string | null>(null);
   const router = useRouter();
+
+  function applyTemplate(id: string) {
+    const t = templates.find((t) => t.id === id);
+    if (t) {
+      setMatrix({ ...t.matrix });
+      setSaved(false);
+      setTemplateMsg(`Template "${t.name}" aplicado — clique em Salvar para confirmar.`);
+    }
+  }
+
+  async function saveAsTemplate() {
+    if (templateName.trim().length < 2) {
+      setTemplateMsg("Dê um nome ao template (mín. 2 caracteres).");
+      return;
+    }
+    const res = await fetch("/api/permission-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: templateName.trim(), matrix }),
+    });
+    if (res.ok) {
+      setTemplateMsg(`Template "${templateName.trim()}" salvo!`);
+      setTemplateName("");
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setTemplateMsg(data.error ?? "Falha ao salvar template.");
+    }
+  }
 
   function toggle(module: string, flag: string) {
     setSaved(false);
@@ -90,7 +125,24 @@ export function PermissionsEditor({
               Sem nenhuma marcação, valem os padrões do papel. As mudanças valem no próximo login do colaborador.
             </p>
 
-            <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-line">
+            {templates.length > 0 && (
+              <div className="mb-3">
+                <label className="label" htmlFor={`tpl-${userId}`}>Aplicar template</label>
+                <select
+                  id={`tpl-${userId}`}
+                  defaultValue=""
+                  onChange={(e) => e.target.value && applyTemplate(e.target.value)}
+                  className="input"
+                >
+                  <option value="">Selecione um template…</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="max-h-[45vh] overflow-y-auto rounded-xl border border-line">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-ink-850">
                   <tr className="border-b border-line text-[11px] uppercase tracking-wider text-slate-500">
@@ -119,6 +171,19 @@ export function PermissionsEditor({
                 </tbody>
               </table>
             </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Nome do template (ex.: Vendedor Jr)"
+                className="input flex-1 py-2"
+              />
+              <button type="button" onClick={saveAsTemplate} className="btn-ghost py-2 text-xs">
+                Salvar como template
+              </button>
+            </div>
+            {templateMsg && <p className="mt-2 text-xs font-medium text-brand-400">{templateMsg}</p>}
 
             {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
             <div className="mt-5 flex items-center justify-end gap-3">

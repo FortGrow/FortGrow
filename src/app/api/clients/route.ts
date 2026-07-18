@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
 const deleteSchema = z.object({ id: z.string().min(1) });
 
 /**
- * Exclui um cliente e tudo que pertence a ele (serviços, contratos,
- * projetos, faturas, documentos, chamados, métricas e acessos ao portal).
+ * Soft delete: arquiva o cliente (lixeira de 30 dias) e desativa os acessos
+ * ao portal na hora. Com ?purge=1, exclui definitivamente (dados em cascata).
  * Requer permissão de exclusão no módulo Clientes (admins sempre têm).
  */
 export async function DELETE(req: NextRequest) {
@@ -76,23 +76,40 @@ export async function DELETE(req: NextRequest) {
   const parsed = deleteSchema.safeParse({ id: req.nextUrl.searchParams.get("id") ?? bodyId });
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
+  const purge = req.nextUrl.searchParams.get("purge") === "1";
   const client = await prisma.client.findUnique({
     where: { id: parsed.data.id },
-    select: { id: true, companyName: true },
+    select: { id: true, companyName: true, archivedAt: true },
   });
   if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
 
+  if (purge) {
+    await prisma.$transaction([
+      prisma.user.deleteMany({ where: { clientId: client.id, role: "CLIENTE" } }),
+      prisma.client.delete({ where: { id: client.id } }),
+      prisma.activityLog.create({
+        data: { userId: session.sub, action: "client.purge", entity: "Client", entityId: client.id },
+      }),
+    ]);
+    return NextResponse.json({ ok: true, purged: client.companyName });
+  }
+
   await prisma.$transaction([
-    // Remove os acessos ao portal deste cliente
-    prisma.user.deleteMany({ where: { clientId: client.id, role: "CLIENTE" } }),
-    // O restante cai em cascata pelas FKs do schema
-    prisma.client.delete({ where: { id: client.id } }),
+    prisma.client.update({
+      where: { id: client.id },
+      data: { archivedAt: new Date(), status: "INATIVO" },
+    }),
+    // Desativa os acessos ao portal e derruba as sessões imediatamente
+    prisma.user.updateMany({
+      where: { clientId: client.id, role: "CLIENTE" },
+      data: { active: false, tokenVersion: { increment: 1 } },
+    }),
     prisma.activityLog.create({
-      data: { userId: session.sub, action: "client.delete", entity: "Client", entityId: client.id },
+      data: { userId: session.sub, action: "client.archive", entity: "Client", entityId: client.id },
     }),
   ]);
 
-  return NextResponse.json({ ok: true, deleted: client.companyName });
+  return NextResponse.json({ ok: true, archived: client.companyName });
 }
 
 const nullableStr = (max: number) => z.string().max(max).nullish();
@@ -128,6 +145,8 @@ const updateSchema = z.object({
   contractMonths: z.coerce.number().int().min(1).max(120).nullish(),
   projectStatus: nullableStr(80),
   notes: nullableStr(2000),
+  /// Restaura um cliente da lixeira
+  restore: z.boolean().optional(),
 });
 
 /** Edição completa do cliente (todos os campos) e vínculo de contas de anúncio. */
@@ -138,9 +157,18 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { id, adAccounts, email, contractStart, ...fields } = parsed.data;
+  const { id, adAccounts, email, contractStart, restore, ...fields } = parsed.data;
 
   const data: Record<string, unknown> = {};
+  if (restore) {
+    data.archivedAt = null;
+    data.status = "ATIVO";
+    // Reativa os acessos ao portal
+    await prisma.user.updateMany({
+      where: { clientId: id, role: "CLIENTE" },
+      data: { active: true, tokenVersion: { increment: 1 } },
+    });
+  }
   for (const [k, v] of Object.entries(fields)) if (v !== undefined) data[k] = v === "" ? null : v;
   if (email !== undefined) data.email = email || null;
   if (contractStart !== undefined) data.contractStart = contractStart ? new Date(contractStart) : null;

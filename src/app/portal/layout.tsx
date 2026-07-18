@@ -20,7 +20,8 @@ const ITEMS: NavItem[] = [
 ];
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
+  const raw = await getSession();
+  const session = raw ? await (await import("@/lib/api-guard")).verifyLiveSession(raw) : null;
   if (!session) redirect("/login");
   if (session.role !== "CLIENTE" || !session.clientId) redirect("/admin");
 

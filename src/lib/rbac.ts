@@ -21,6 +21,7 @@ export const MODULES = {
   automacoes: "Automações",
   integracoes: "Integrações",
   equipe: "Equipe & Permissões",
+  auditoria: "Auditoria",
 } as const;
 
 export type ModuleKey = keyof typeof MODULES;

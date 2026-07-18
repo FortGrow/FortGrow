@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 
 export type AutomationRunResult = {
   invoicesMarkedOverdue: number;
+  clientsPurged: number;
   notificationsCreated: number;
   triggersRun: string[];
 };
@@ -27,7 +28,12 @@ async function notifyOnce(userId: string, title: string, body: string, href: str
 
 export async function runAutomations(): Promise<AutomationRunResult> {
   const now = new Date();
-  const result: AutomationRunResult = { invoicesMarkedOverdue: 0, notificationsCreated: 0, triggersRun: [] };
+  const result: AutomationRunResult = {
+    invoicesMarkedOverdue: 0,
+    clientsPurged: 0,
+    notificationsCreated: 0,
+    triggersRun: [],
+  };
 
   const [automations, admins] = await Promise.all([
     prisma.automation.findMany({ where: { active: true } }),
@@ -41,6 +47,21 @@ export async function runAutomations(): Promise<AutomationRunResult> {
     data: { status: "ATRASADO" },
   });
   result.invoicesMarkedOverdue = overdueUpdate.count;
+
+  // Passo de manutenção: esvazia a Lixeira — clientes arquivados há mais de 30 dias
+  const purgeBefore = new Date(now.getTime() - 30 * 86400000);
+  const expired = await prisma.client.findMany({
+    where: { archivedAt: { not: null, lt: purgeBefore } },
+    select: { id: true, companyName: true },
+  });
+  for (const c of expired) {
+    await prisma.$transaction([
+      prisma.user.deleteMany({ where: { clientId: c.id, role: "CLIENTE" } }),
+      prisma.client.delete({ where: { id: c.id } }),
+      prisma.activityLog.create({ data: { action: "client.auto_purge", entity: "Client", entityId: c.id } }),
+    ]);
+    result.clientsPurged++;
+  }
 
   // ── vencimento_fatura: avisa admins e usuários do cliente ──────────
   if (activeTriggers.has("vencimento_fatura")) {

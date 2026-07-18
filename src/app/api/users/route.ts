@@ -118,7 +118,11 @@ export async function PATCH(req: NextRequest) {
     Object.entries(parsed.data.permissionsMatrix).filter(([, flags]) => flags.length > 0)
   );
 
-  await prisma.user.update({ where: { id: target.id }, data: { permissionsMatrix: matrix } });
+  // Incrementa tokenVersion: sessões antigas do colaborador caem imediatamente
+  await prisma.user.update({
+    where: { id: target.id },
+    data: { permissionsMatrix: matrix, tokenVersion: { increment: 1 } },
+  });
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "user.permissions", entity: "User", entityId: target.id },
   });
