@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, LineChart as LineChartIcon, SlidersHorizontal } from "lucide-react";
+import { Plus, Trash2, LineChart as LineChartIcon, SlidersHorizontal, UserRound } from "lucide-react";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { StatCard } from "@/components/ui/stat-card";
 import { InstagramPanel } from "@/components/performance/instagram-panel";
+import { SalesModal } from "@/components/performance/sales-modal";
 import { cn, brl, num } from "@/lib/utils";
 
 export type PerfRow = {
@@ -20,6 +21,16 @@ export type PerfRow = {
   commissionPercent: number | null;
   /** Origem dos leads (chave de SOURCES) */
   source: string;
+  /** Vendas detalhadas (quem vendeu etc.); quando existem, Vendas e Receita bruta vêm delas */
+  salesDetails: SaleDetail[];
+};
+
+export type SaleDetail = {
+  id: string;
+  sellerName: string;
+  buyer: string | null;
+  amount: number;
+  notes: string | null;
 };
 
 /** Origens de lead disponíveis no dropdown e nos filtros */
@@ -111,6 +122,16 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
   const [adding, setAdding] = useState(false);
+  /* Modal de vendas detalhadas + contador de versão por linha: os inputs da
+     tabela são não-controlados, então quando o modal re-sincroniza Vendas e
+     Receita bruta a linha precisa remontar para exibir os novos valores. */
+  const [salesEntryId, setSalesEntryId] = useState<string | null>(null);
+  const [rowVersion, setRowVersion] = useState<Record<string, number>>({});
+
+  function applyEntryUpdate(entry: PerfRow) {
+    setRows((prev) => prev!.map((r) => (r.id === entry.id ? entry : r)));
+    setRowVersion((v) => ({ ...v, [entry.id]: (v[entry.id] ?? 0) + 1 }));
+  }
 
   useEffect(() => {
     fetch(`/api/performance?clientId=${clientId}`)
@@ -604,8 +625,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
               <tbody>
                 {table.map((r) => {
                   const rk = kpisOf(totalsOf([r], cfg));
+                  const hasSales = r.salesDetails.length > 0;
                   return (
-                    <tr key={r.id} className="border-b border-line/50 transition hover:bg-ink-800/40">
+                    <tr
+                      key={`${r.id}-v${rowVersion[r.id] ?? 0}`}
+                      className="border-b border-line/50 transition hover:bg-ink-800/40"
+                    >
                       {editable ? (
                         <>
                           <td className="px-1 py-1">
@@ -629,22 +654,45 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               ))}
                             </select>
                           </td>
-                          {(["investment", "leads", "sales", "revenue"] as const).map((field) => (
-                            <td key={field} className="px-1 py-1">
-                              <input
-                                type="number"
-                                min={0}
-                                step={field === "leads" || field === "sales" ? 1 : 0.01}
-                                defaultValue={r[field] || ""}
-                                placeholder="0"
-                                onChange={(e) => {
-                                  const v = Number(e.target.value);
-                                  edit(r.id, { [field]: Number.isFinite(v) && v >= 0 ? v : 0 });
-                                }}
-                                className={cn(inputCls, "min-w-[90px]")}
-                              />
-                            </td>
-                          ))}
+                          {(["investment", "leads", "sales", "revenue"] as const).map((field) => {
+                            // Com vendas detalhadas, Vendas e Receita bruta vêm delas (não editar direto)
+                            const synced = hasSales && (field === "sales" || field === "revenue");
+                            return (
+                              <td key={field} className="px-1 py-1">
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step={field === "leads" || field === "sales" ? 1 : 0.01}
+                                    defaultValue={r[field] || ""}
+                                    placeholder="0"
+                                    disabled={synced}
+                                    title={synced ? "Calculado pelas vendas detalhadas — clique no ícone ao lado" : undefined}
+                                    onChange={(e) => {
+                                      const v = Number(e.target.value);
+                                      edit(r.id, { [field]: Number.isFinite(v) && v >= 0 ? v : 0 });
+                                    }}
+                                    className={cn(inputCls, "min-w-[90px]", synced && "opacity-70")}
+                                  />
+                                  {field === "sales" && (
+                                    <button
+                                      onClick={() => setSalesEntryId(r.id)}
+                                      title="Detalhar vendas: quem vendeu, valor, comprador…"
+                                      className={cn(
+                                        "flex shrink-0 items-center gap-0.5 rounded-lg p-1.5 text-xs transition",
+                                        hasSales
+                                          ? "bg-brand-500/15 text-brand-300 hover:bg-brand-500/25"
+                                          : "text-slate-600 hover:bg-ink-800 hover:text-slate-300"
+                                      )}
+                                    >
+                                      <UserRound size={14} />
+                                      {hasSales && <span className="font-semibold">{r.salesDetails.length}</span>}
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })}
                           {(["convPercent", "commissionPercent"] as const).map((field) => (
                             <td key={field} className="px-1 py-1">
                               <input
@@ -671,7 +719,21 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                           <td className="px-2 py-2.5 text-slate-400">{sourceLabel(r.source)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
-                          <td className="px-2 py-2.5 text-slate-300">{num(r.sales)}</td>
+                          <td className="px-2 py-2.5 text-slate-300">
+                            <span className="flex items-center gap-1.5">
+                              {num(r.sales)}
+                              {hasSales && (
+                                <button
+                                  onClick={() => setSalesEntryId(r.id)}
+                                  title="Ver quem fez as vendas"
+                                  className="flex items-center gap-0.5 rounded-lg bg-brand-500/15 p-1 px-1.5 text-xs text-brand-300 transition hover:bg-brand-500/25"
+                                >
+                                  <UserRound size={13} />
+                                  <span className="font-semibold">{r.salesDetails.length}</span>
+                                </button>
+                              )}
+                            </span>
+                          </td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.revenue)}</td>
                           <td className="px-2 py-2.5 text-slate-400">{r.convPercent ?? cfg.convPercent}%</td>
                           <td className="px-2 py-2.5 text-slate-400">{r.commissionPercent ?? cfg.commissionPercent}%</td>
@@ -710,6 +772,16 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
 
       {/* Painel de Instagram (estilo Insights), com o mesmo período selecionado */}
       <InstagramPanel clientId={clientId} editable={editable} range={range} />
+
+      {/* Vendas detalhadas do lançamento selecionado */}
+      {salesEntryId && rows.some((r) => r.id === salesEntryId) && (
+        <SalesModal
+          entry={rows.find((r) => r.id === salesEntryId)!}
+          editable={editable}
+          onClose={() => setSalesEntryId(null)}
+          onEntryUpdate={applyEntryUpdate}
+        />
+      )}
     </div>
   );
 }
