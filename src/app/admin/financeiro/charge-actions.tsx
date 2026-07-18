@@ -2,21 +2,21 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, CheckCircle2, Loader2, Plus } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Loader2, Plus, Undo2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 
-/** Marca uma cobrança como paga direto da tabela do Faturamento. */
-export function MarkPaidButton({ invoiceId }: { invoiceId: string }) {
+/** Alterna o status de pagamento de uma cobrança direto da tabela do Faturamento. */
+export function MarkPaidButton({ invoiceId, paid = false }: { invoiceId: string; paid?: boolean }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function markPaid() {
+  async function toggle() {
     setLoading(true);
     try {
       const res = await fetch("/api/invoices", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: invoiceId, status: "PAGO" }),
+        body: JSON.stringify({ id: invoiceId, status: paid ? "EM_ABERTO" : "PAGO" }),
       });
       if (res.ok) router.refresh();
     } finally {
@@ -26,12 +26,17 @@ export function MarkPaidButton({ invoiceId }: { invoiceId: string }) {
 
   return (
     <button
-      onClick={markPaid}
+      onClick={toggle}
       disabled={loading}
-      title="Marcar como paga"
-      className="inline-flex items-center gap-1 rounded-lg bg-grow-500/10 px-2 py-1 text-[11px] font-semibold text-grow-400 ring-1 ring-inset ring-grow-500/20 transition hover:bg-grow-500/20 disabled:opacity-40"
+      title={paid ? "Desfazer pagamento (volta para em aberto)" : "Marcar como paga"}
+      className={
+        paid
+          ? "inline-flex items-center gap-1 rounded-lg bg-warn/10 px-2 py-1 text-[11px] font-semibold text-warn ring-1 ring-inset ring-warn/20 transition hover:bg-warn/20 disabled:opacity-40"
+          : "inline-flex items-center gap-1 rounded-lg bg-grow-500/10 px-2 py-1 text-[11px] font-semibold text-grow-400 ring-1 ring-inset ring-grow-500/20 transition hover:bg-grow-500/20 disabled:opacity-40"
+      }
     >
-      {loading ? <Loader2 size={12} className="animate-spin" /> : <BadgeCheck size={12} />} Pago
+      {loading ? <Loader2 size={12} className="animate-spin" /> : paid ? <Undo2 size={12} /> : <BadgeCheck size={12} />}
+      {paid ? "Desfazer" : "Pago"}
     </button>
   );
 }

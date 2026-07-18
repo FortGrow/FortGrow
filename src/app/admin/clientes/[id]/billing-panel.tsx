@@ -10,6 +10,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -374,6 +375,14 @@ export function BillingPanel({
       `pay-${id}`
     );
 
+  const undoPaid = (id: string) =>
+    call(
+      "/api/invoices",
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "EM_ABERTO" }) },
+      "Pagamento desfeito — cobrança em aberto de novo.",
+      `unpay-${id}`
+    );
+
   const deleteSub = (id: string) =>
     call(`/api/subscriptions?id=${encodeURIComponent(id)}`, { method: "DELETE" }, "Mensalidade excluída.", `del-${id}`);
 
@@ -476,6 +485,17 @@ export function BillingPanel({
                         >
                           {busy === `pay-${c.id}` ? <Loader2 size={12} className="animate-spin" /> : <BadgeCheck size={12} />}
                           Marcar pago
+                        </button>
+                      )}
+                      {c.status === "PAGO" && (
+                        <button
+                          onClick={() => undoPaid(c.id)}
+                          disabled={busy === `unpay-${c.id}`}
+                          title="Desfazer pagamento (volta para em aberto)"
+                          className="inline-flex items-center gap-1 rounded-lg bg-warn/10 px-2 py-1 text-[11px] font-semibold text-warn ring-1 ring-inset ring-warn/20 transition hover:bg-warn/20 disabled:opacity-40"
+                        >
+                          {busy === `unpay-${c.id}` ? <Loader2 size={12} className="animate-spin" /> : <Undo2 size={12} />}
+                          Desfazer pago
                         </button>
                       )}
                       <button
