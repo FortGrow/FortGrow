@@ -43,7 +43,7 @@ const FIELDS: { name: keyof EditableLead; label: string; type?: string }[] = [
 ];
 
 /** Edição completa do lead — formulário populado com os dados atuais. */
-export function EditLeadForm({ lead }: { lead: EditableLead }) {
+export function EditLeadForm({ lead, light = false }: { lead: EditableLead; light?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -82,7 +82,11 @@ export function EditLeadForm({ lead }: { lead: EditableLead }) {
       <button
         onClick={() => setOpen(true)}
         title="Editar lead"
-        className="rounded-lg p-2 text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-400"
+        className={
+          light
+            ? "shrink-0 rounded-lg bg-black/20 p-1.5 text-white/80 transition hover:bg-black/35 hover:text-white"
+            : "rounded-lg p-2 text-slate-500 transition hover:bg-brand-500/10 hover:text-brand-400"
+        }
       >
         <Pencil size={14} />
       </button>
