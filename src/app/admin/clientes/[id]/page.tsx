@@ -11,6 +11,7 @@ import { UploadDocForm } from "./upload-doc-form";
 import { PortalAccessPanel } from "./portal-access";
 import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integration";
 import { ContentCalendarPanel } from "./content-calendar";
+import { StaffCommissionsPanel } from "./staff-commissions";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +38,16 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         orderBy: { date: "asc" },
         take: 60,
       },
+      staffCommissions: { include: { user: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!client) notFound();
+
+  const staff = await prisma.user.findMany({
+    where: { active: true, role: { not: "CLIENTE" } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   const totals = sumTotals(client.metrics as never[]);
   const byWeek = new Map<string, { leads: number; conversions: number }>();
@@ -72,6 +80,18 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
 
       <div className="mb-6 space-y-4">
         <PortalAccessPanel clientId={client.id} users={client.users} />
+        <StaffCommissionsPanel
+          clientId={client.id}
+          staff={staff}
+          commissions={client.staffCommissions.map((c) => ({
+            id: c.id,
+            userId: c.userId,
+            userName: c.user.name,
+            type: c.type,
+            value: Number(c.value),
+            note: c.note,
+          }))}
+        />
         <CampaignIntegrationPanel clientId={client.id} accounts={(client.adAccounts as AdAccounts) ?? {}} />
         <ContentCalendarPanel
           clientId={client.id}

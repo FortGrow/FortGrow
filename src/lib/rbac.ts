@@ -13,6 +13,9 @@ export const MODULES = {
   campanhas: "Campanhas",
   ia: "Inteligência",
   financeiro: "Faturamento",
+  comissoes: "Comissões",
+  custos: "Custos",
+  treinamentos: "Treinamentos",
   relatorios: "Relatórios",
   chamados: "Chamados",
   automacoes: "Automações",
@@ -25,7 +28,7 @@ export type ModuleKey = keyof typeof MODULES;
 /** Permissões padrão por papel — o admin pode sobrescrever por usuário. */
 export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   ADMIN: Object.keys(MODULES) as ModuleKey[],
-  FINANCEIRO: ["dashboard", "financeiro", "contratos", "relatorios", "clientes"],
+  FINANCEIRO: ["dashboard", "financeiro", "comissoes", "custos", "contratos", "relatorios", "clientes"],
   COMERCIAL: ["dashboard", "crm", "prospeccao", "clientes", "relatorios"],
   GESTOR: ["dashboard", "crm", "clientes", "projetos", "tarefas", "campanhas", "ia", "relatorios", "chamados"],
   SOCIAL_MEDIA: ["dashboard", "tarefas", "projetos", "campanhas"],

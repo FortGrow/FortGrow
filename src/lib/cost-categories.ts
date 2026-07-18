@@ -1,0 +1,21 @@
+/** Categorias da central de custos (rótulos em pt-BR). */
+export const COST_CATEGORY_LABELS: Record<string, string> = {
+  softwares: "Softwares",
+  aplicativos: "Aplicativos",
+  hospedagem: "Hospedagem",
+  dominio: "Domínio",
+  funcionarios: "Funcionários",
+  comissoes: "Comissões",
+  marketing: "Marketing",
+  trafego_pago: "Tráfego Pago",
+  internet: "Internet",
+  energia: "Energia",
+  ferramentas: "Ferramentas",
+  assinaturas: "Assinaturas",
+  escritorio: "Escritório",
+  contabilidade: "Contabilidade",
+  impostos: "Impostos",
+  midia: "Mídia",
+  pessoal: "Pessoal",
+  outros: "Outros",
+};
