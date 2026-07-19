@@ -70,6 +70,7 @@ const createSchema = z.object({
   convPercent: percentOverride.optional(),
   commissionPercent: percentOverride.optional(),
   source: z.enum(SOURCES).optional(),
+  campaign: z.string().max(120).nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { clientId, date, ...rest } = parsed.data;
+  const { clientId, date, campaign, ...rest } = parsed.data;
   const scope = await allowedClientIds(session);
   if (!canSeeClient(scope, clientId)) {
     return NextResponse.json({ error: "Sem permissão para este cliente." }, { status: 403 });
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 
   const entry = await prisma.performanceEntry.create({
-    data: { clientId, date: new Date(`${date}T12:00:00Z`), ...rest },
+    data: { clientId, date: new Date(`${date}T12:00:00Z`), campaign: campaign?.trim() || null, ...rest },
     include: ENTRY_INCLUDE,
   });
   await prisma.activityLog.create({
@@ -109,6 +110,7 @@ const updateSchema = z.object({
   convPercent: percentOverride.optional(),
   commissionPercent: percentOverride.optional(),
   source: z.enum(SOURCES).optional(),
+  campaign: z.string().max(120).nullish(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -118,7 +120,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, date, ...rest } = parsed.data;
+  const { id, date, campaign, ...rest } = parsed.data;
   const existing = await prisma.performanceEntry.findUnique({ where: { id }, select: { clientId: true } });
   if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
   const scope = await allowedClientIds(session);
@@ -128,6 +130,7 @@ export async function PATCH(req: NextRequest) {
 
   const data: Record<string, unknown> = { ...rest };
   if (date) data.date = new Date(`${date}T12:00:00Z`);
+  if (campaign !== undefined) data.campaign = campaign?.trim() || null;
   const entry = await prisma.performanceEntry.update({ where: { id }, data, include: ENTRY_INCLUDE });
   return NextResponse.json({ ok: true, entry: serializeEntry(entry) });
 }

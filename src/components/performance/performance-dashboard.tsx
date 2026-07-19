@@ -33,6 +33,8 @@ export type PerfRow = {
   commissionPercent: number | null;
   /** Origem dos leads (chave de SOURCES) */
   source: string;
+  /** Campanha específica do lançamento (ex.: "Brasil — Automóvel") */
+  campaign: string | null;
   /** Vendas detalhadas (quem vendeu etc.); quando existem, Vendas e Receita bruta vêm delas */
   salesDetails: SaleDetail[];
 };
@@ -131,6 +133,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [cfg, setCfg] = useState<PerfConfig>({ convPercent: 100, commissionPercent: 100 });
   const [period, setPeriod] = useState<PeriodKey>("30");
   const [source, setSource] = useState<string>("TODAS");
+  const [campaign, setCampaign] = useState<string>("");
   const [from, setFrom] = useState(() => iso(new Date(Date.now() - 29 * dayMs)));
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
@@ -271,7 +274,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
      current/previous respeitam origem e alimentam KPIs e gráficos. */
   const { current, currentAll, previous, rangeLabel, range } = useMemo(() => {
     const all = rows ?? [];
-    const bySource = (list: PerfRow[]) => (source === "TODAS" ? list : list.filter((r) => r.source === source));
+    const bySource = (list: PerfRow[]) =>
+      (source === "TODAS" ? list : list.filter((r) => r.source === source)).filter(
+        (r) => !campaign || (r.campaign ?? "") === campaign
+      );
     if (period === "tudo") {
       return {
         current: bySource(all),
@@ -302,7 +308,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       rangeLabel: `${start.split("-").reverse().join("/")} a ${end.split("-").reverse().join("/")}`,
       range: { start, end },
     };
-  }, [rows, period, from, to, source]);
+  }, [rows, period, from, to, source, campaign]);
 
   const t = totalsOf(current, cfg);
   const pt = totalsOf(previous, cfg);
@@ -335,8 +341,25 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     () =>
       [...(rows ?? [])]
         .filter((r) => source === "TODAS" || r.source === source)
+        .filter((r) => !campaign || (r.campaign ?? "") === campaign)
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [rows, source]
+    [rows, source, campaign]
+  );
+
+  /* Campanhas conhecidas + comparativo por campanha no período */
+  const campaignNames = useMemo(
+    () => [...new Set((rows ?? []).map((r) => r.campaign?.trim()).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [rows]
+  );
+  const byCampaign = useMemo(
+    () =>
+      campaignNames
+        .map((name) => {
+          const cRows = currentAll.filter((r) => (r.campaign ?? "") === name);
+          return { name, count: cRows.length, k: kpisOf(totalsOf(cRows, cfg)), t: totalsOf(cRows, cfg) };
+        })
+        .filter((c) => c.count > 0),
+    [campaignNames, currentAll, cfg]
   );
 
   /* Comparativo por origem no período (independe do filtro de origem ativo) */
@@ -527,6 +550,38 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         ))}
       </div>
 
+      {/* Filtro por campanha — definida na coluna Campanha da tabela */}
+      {campaignNames.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Campanha:</span>
+          <button
+            onClick={() => setCampaign("")}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+              campaign === ""
+                ? "border-violet/40 bg-violet/15 text-violet"
+                : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+            )}
+          >
+            Todas
+          </button>
+          {campaignNames.map((name) => (
+            <button
+              key={name}
+              onClick={() => setCampaign(name)}
+              className={cn(
+                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                campaign === name
+                  ? "border-violet/40 bg-violet/15 text-violet"
+                  : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+              )}
+            >
+              {name} ({(rows ?? []).filter((r) => (r.campaign ?? "") === name).length})
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Visão geral — leitura estratégica: tendências e alertas, sem números crus */}
       <div className="card p-5">
         <div className="mb-1 flex items-center gap-2">
@@ -680,6 +735,43 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         )}
       </div>
+
+      {/* Comparativo por campanha no período — CAC/CPL de cada campanha */}
+      {byCampaign.length > 0 && (
+        <div className="card p-5">
+          <h2 className="mb-3 text-sm font-bold text-slate-200">Métricas por campanha</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
+                  <th className="px-2 py-2 font-medium">Campanha</th>
+                  <th className="px-2 py-2 font-medium">Investimento</th>
+                  <th className="px-2 py-2 font-medium">Leads</th>
+                  <th className="px-2 py-2 font-medium">Vendas</th>
+                  <th className="px-2 py-2 font-medium">CPL</th>
+                  <th className="px-2 py-2 font-medium">CAC</th>
+                  <th className="px-2 py-2 font-medium">Receita real</th>
+                  <th className="px-2 py-2 font-medium">ROI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byCampaign.map((c) => (
+                  <tr key={c.name} className="border-b border-line/50">
+                    <td className="px-2 py-2.5 font-semibold text-slate-200">{c.name}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{brl(c.t.investment)}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{num(c.t.leads)}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{num(c.t.sales)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(c.k.cpl)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(c.k.cac)}</td>
+                    <td className="px-2 py-2.5 font-semibold text-grow-400">{brl(c.k.real)}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{fmtPct(c.k.roi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Comparativo por origem de lead no período */}
       {bySource.length > 0 && (
@@ -854,11 +946,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1340px] text-sm">
+            <table className="w-full min-w-[1480px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
                   <th className="px-2 py-2.5 font-medium">Origem</th>
+                  <th className="px-2 py-2.5 font-medium">Campanha</th>
                   <th className="px-2 py-2.5 font-medium">Investimento</th>
                   <th className="px-2 py-2.5 font-medium">Leads</th>
                   <th className="px-2 py-2.5 font-medium">Vendas</th>
@@ -904,6 +997,16 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                                 </option>
                               ))}
                             </select>
+                          </td>
+                          <td className="px-1 py-1">
+                            <input
+                              list="perf-campanhas"
+                              defaultValue={r.campaign ?? ""}
+                              placeholder="Campanha…"
+                              title="Ex.: Europa, Brasil — Automóvel"
+                              onChange={(e) => edit(r.id, { campaign: e.target.value })}
+                              className={cn(inputCls, "min-w-[130px]")}
+                            />
                           </td>
                           {(["investment", "leads", "sales", "revenue"] as const).map((field) => {
                             // Com vendas detalhadas, Vendas e Receita bruta vêm delas (não editar direto)
@@ -968,6 +1071,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                         <>
                           <td className="px-2 py-2.5 text-slate-300">{r.date.split("-").reverse().join("/")}</td>
                           <td className="px-2 py-2.5 text-slate-400">{sourceLabel(r.source)}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{r.campaign ?? "—"}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
                           <td className="px-2 py-2.5 text-slate-300">
@@ -1013,6 +1117,11 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             </table>
           </div>
         )}
+        <datalist id="perf-campanhas">
+          {campaignNames.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
         {editable && table.length > 0 && (
           <p className="mt-3 text-[11px] text-slate-600">
             Edite qualquer célula direto na tabela — KPIs, variações e gráficos recalculam na hora e tudo é salvo

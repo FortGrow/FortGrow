@@ -29,6 +29,7 @@ export function serializeEntry(e: {
   convPercent: unknown;
   commissionPercent: unknown;
   source: string;
+  campaign: string | null;
   salesDetails?: SaleRecord[];
 }) {
   return {
@@ -41,6 +42,7 @@ export function serializeEntry(e: {
     convPercent: e.convPercent == null ? null : Number(e.convPercent),
     commissionPercent: e.commissionPercent == null ? null : Number(e.commissionPercent),
     source: e.source,
+    campaign: e.campaign,
     salesDetails: (e.salesDetails ?? []).map(serializeSale),
   };
 }
