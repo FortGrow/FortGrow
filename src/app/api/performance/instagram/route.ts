@@ -12,6 +12,7 @@ function serialize(e: {
   id: string;
   date: Date;
   views: number;
+  interactions: number;
   likes: number;
   comments: number;
   shares: number;
@@ -24,10 +25,8 @@ function serialize(e: {
     id: e.id,
     date: e.date.toISOString().slice(0, 10),
     views: e.views,
-    likes: e.likes,
-    comments: e.comments,
-    shares: e.shares,
-    saves: e.saves,
+    // Linhas legadas (antes do campo único) somam as interações antigas
+    interactions: e.interactions > 0 ? e.interactions : e.likes + e.comments + e.shares + e.saves,
     followers: e.followers,
     reach: e.reach,
     nonFollowersPct: Number(e.nonFollowersPct),
@@ -66,10 +65,7 @@ export async function GET(req: NextRequest) {
 
 const counters = {
   views: z.coerce.number().int().min(0).default(0),
-  likes: z.coerce.number().int().min(0).default(0),
-  comments: z.coerce.number().int().min(0).default(0),
-  shares: z.coerce.number().int().min(0).default(0),
-  saves: z.coerce.number().int().min(0).default(0),
+  interactions: z.coerce.number().int().min(0).default(0),
   followers: z.coerce.number().int().min(0).default(0),
   reach: z.coerce.number().int().min(0).default(0),
   nonFollowersPct: z.coerce.number().min(0).max(100).default(0),
@@ -111,10 +107,7 @@ const updateSchema = z.object({
   id: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   views: counters.views.optional(),
-  likes: counters.likes.optional(),
-  comments: counters.comments.optional(),
-  shares: counters.shares.optional(),
-  saves: counters.saves.optional(),
+  interactions: counters.interactions.optional(),
   followers: counters.followers.optional(),
   reach: counters.reach.optional(),
   nonFollowersPct: counters.nonFollowersPct.optional(),
