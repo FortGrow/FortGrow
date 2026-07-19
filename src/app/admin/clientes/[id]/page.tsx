@@ -86,14 +86,17 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       where: { clientId: client.id, description: { startsWith: "Comissão" } },
       _sum: { amount: true },
     }),
-    // Resumo de performance: lançamentos manuais dos últimos 30 dias
+    // Lançamentos de Performance dos últimos 90 dias — fonte principal do painel
     prisma.performanceEntry.findMany({
-      where: { clientId: client.id, date: { gte: new Date(Date.now() - 30 * 86400000) } },
+      where: { clientId: client.id, date: { gte: new Date(Date.now() - 90 * 86400000) } },
+      orderBy: { date: "asc" },
     }),
   ]);
+  const perfEntries90 = perfEntries;
+  const perfEntries30 = perfEntries90.filter((e) => e.date.getTime() >= Date.now() - 30 * 86400000);
 
   // KPIs do dashboard de Performance (30d): receita real usa a base de cálculo do cliente
-  const perf = perfEntries.reduce(
+  const perf = perfEntries30.reduce(
     (t, e) => {
       const conv = Number(e.convPercent ?? client.perfConvPercent);
       const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
@@ -110,13 +113,30 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
   const perfCac = perf.sales > 0 ? perf.investment / perf.sales : null;
   const perfCpl = perf.leads > 0 ? perf.investment / perf.leads : null;
   const perfRoi = perf.investment > 0 ? ((perf.real - perf.investment) / perf.investment) * 100 : null;
-  const hasPerf = perfEntries.length > 0;
+  const hasPerf = perfEntries30.length > 0;
   const comissaoPaga = Number(comissaoPagaAgg._sum.amount ?? 0);
   const comissaoTotal = Number(comissaoTotalAgg._sum.amount ?? 0);
 
-  const totals = sumTotals(client.metrics as never[]);
+  /* Painel de 90 dias: quando há lançamentos de Performance, eles são a fonte
+     (o que a equipe aponta é o que aparece); sem lançamentos, cai para as
+     métricas sincronizadas dos canais (Meta Ads etc.). */
+  const usePerfSource = perfEntries90.length > 0;
+  const totals = usePerfSource
+    ? sumTotals(
+        perfEntries90.map((e) => ({
+          leads: e.leads,
+          conversions: e.sales,
+          spend: Number(e.investment),
+          revenue: Number(e.revenue),
+        }))
+      )
+    : sumTotals(client.metrics as never[]);
+
+  const weekRows = usePerfSource
+    ? perfEntries90.map((e) => ({ date: e.date, leads: e.leads, conversions: e.sales }))
+    : client.metrics.map((m) => ({ date: m.date, leads: m.leads, conversions: m.conversions }));
   const byWeek = new Map<string, { leads: number; conversions: number }>();
-  for (const m of client.metrics) {
+  for (const m of weekRows) {
     const week = new Date(m.date);
     week.setDate(week.getDate() - week.getDay());
     const key = week.toISOString().slice(0, 10);
@@ -275,6 +295,12 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         />
       </div>
 
+      <div className="mb-2 flex items-center gap-2">
+        <h2 className="text-sm font-bold text-slate-300">Resultados dos últimos 90 dias</h2>
+        <span className="text-[11px] text-slate-500">
+          fonte: {usePerfSource ? "lançamentos de Performance" : "métricas sincronizadas dos canais"}
+        </span>
+      </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Leads (90d)" value={num(totals.leads)} accent="brand" />
         <StatCard label="Conversões (90d)" value={num(totals.conversions)} accent="grow" />
