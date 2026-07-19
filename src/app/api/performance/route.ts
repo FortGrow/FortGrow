@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
 }
 
 const SOURCES = ["INDICACAO", "TRAFEGO_PAGO", "ORGANICO", "SOCIAL", "OUTRO"] as const;
+const CAMPAIGN_TYPES = ["LEADS", "VENDAS", "ENGAJAMENTO", "RECONHECIMENTO", "TRAFEGO", "OUTRO"] as const;
 
 /** Override de % por linha: número 0–100 ou null (volta ao padrão do cliente). */
 const percentOverride = z.preprocess(
@@ -71,6 +72,7 @@ const createSchema = z.object({
   commissionPercent: percentOverride.optional(),
   source: z.enum(SOURCES).optional(),
   campaign: z.string().max(120).nullish(),
+  campaignType: z.enum(CAMPAIGN_TYPES).nullish().or(z.literal("")),
 });
 
 export async function POST(req: NextRequest) {
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { clientId, date, campaign, ...rest } = parsed.data;
+  const { clientId, date, campaign, campaignType, ...rest } = parsed.data;
   const scope = await allowedClientIds(session);
   if (!canSeeClient(scope, clientId)) {
     return NextResponse.json({ error: "Sem permissão para este cliente." }, { status: 403 });
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
   }
 
   const entry = await prisma.performanceEntry.create({
-    data: { clientId, date: new Date(`${date}T12:00:00Z`), campaign: campaign?.trim() || null, ...rest },
+    data: { clientId, date: new Date(`${date}T12:00:00Z`), campaign: campaign?.trim() || null, campaignType: campaignType || null, ...rest },
     include: ENTRY_INCLUDE,
   });
   await prisma.activityLog.create({
@@ -111,6 +113,7 @@ const updateSchema = z.object({
   commissionPercent: percentOverride.optional(),
   source: z.enum(SOURCES).optional(),
   campaign: z.string().max(120).nullish(),
+  campaignType: z.enum(CAMPAIGN_TYPES).nullish().or(z.literal("")),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -120,7 +123,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, date, campaign, ...rest } = parsed.data;
+  const { id, date, campaign, campaignType, ...rest } = parsed.data;
   const existing = await prisma.performanceEntry.findUnique({ where: { id }, select: { clientId: true } });
   if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
   const scope = await allowedClientIds(session);
@@ -131,6 +134,7 @@ export async function PATCH(req: NextRequest) {
   const data: Record<string, unknown> = { ...rest };
   if (date) data.date = new Date(`${date}T12:00:00Z`);
   if (campaign !== undefined) data.campaign = campaign?.trim() || null;
+  if (campaignType !== undefined) data.campaignType = campaignType || null;
   const entry = await prisma.performanceEntry.update({ where: { id }, data, include: ENTRY_INCLUDE });
   return NextResponse.json({ ok: true, entry: serializeEntry(entry) });
 }

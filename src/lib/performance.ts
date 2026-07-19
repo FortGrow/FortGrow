@@ -30,6 +30,7 @@ export function serializeEntry(e: {
   commissionPercent: unknown;
   source: string;
   campaign: string | null;
+  campaignType: string | null;
   salesDetails?: SaleRecord[];
 }) {
   return {
@@ -43,6 +44,7 @@ export function serializeEntry(e: {
     commissionPercent: e.commissionPercent == null ? null : Number(e.commissionPercent),
     source: e.source,
     campaign: e.campaign,
+    campaignType: e.campaignType,
     salesDetails: (e.salesDetails ?? []).map(serializeSale),
   };
 }
