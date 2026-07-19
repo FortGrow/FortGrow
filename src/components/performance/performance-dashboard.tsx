@@ -360,36 +360,57 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const baseExample = t.revenue * (cfg.convPercent / 100);
   const prevBase = pt.revenue * (cfg.convPercent / 100);
 
-  /* ————— Visão geral: leitura estratégica (tendências + alertas), sem números crus ————— */
-  const dCac = delta(k.cac, p.cac);
-  const dCpl = delta(k.cpl, p.cpl);
+  /* ————— Visão geral: leitura estratégica (tendências + alertas), sem números crus —————
+     Sem lançamentos no período anterior, a tendência compara o fim × o início
+     do próprio período (metades por data); com um único dia de dados, os
+     tiles mostram os valores atuais em vez de "sem base de comparação". */
+  let cmpCur = current;
+  let cmpPrev = previous;
+  let cmpNote = "vs período anterior";
+  if (previous.length === 0) {
+    const dates = [...new Set(current.map((r) => r.date))].sort();
+    if (dates.length >= 2) {
+      const mid = dates[Math.ceil(dates.length / 2)];
+      cmpPrev = current.filter((r) => r.date < mid);
+      cmpCur = current.filter((r) => r.date >= mid);
+      cmpNote = "fim vs início do período";
+    }
+  }
+  const ck = kpisOf(totalsOf(cmpCur, cfg));
+  const cpv = kpisOf(totalsOf(cmpPrev, cfg));
+  const cct = totalsOf(cmpCur, cfg);
+  const cpt = totalsOf(cmpPrev, cfg);
+  const dCac = delta(ck.cac, cpv.cac);
+  const dCpl = delta(ck.cpl, cpv.cpl);
   const convRate = t.leads > 0 ? (t.sales / t.leads) * 100 : null;
   const prevConvRate = pt.leads > 0 ? (pt.sales / pt.leads) * 100 : null;
-  const dConv = delta(convRate, prevConvRate);
-  const dRoi = delta(k.roi, p.roi);
+  const cmpConvCur = cct.leads > 0 ? (cct.sales / cct.leads) * 100 : null;
+  const cmpConvPrev = cpt.leads > 0 ? (cpt.sales / cpt.leads) * 100 : null;
+  const dConv = delta(cmpConvCur, cmpConvPrev);
+  const dRoi = delta(ck.roi, cpv.roi);
   const returnPerReal = t.investment > 0 ? k.real / t.investment : null;
 
-  const trendPhrase = (d: number | undefined, up: string, down: string, flat: string) =>
-    d === undefined ? "Sem base de comparação no período" : d >= 1 ? up : d <= -1 ? down : flat;
+  const trendPhrase = (d: number | undefined, up: string, down: string, flat: string, atual: string) =>
+    d === undefined ? atual : d >= 1 ? up : d <= -1 ? down : flat;
 
   const trends: { title: string; delta?: number; good?: boolean; phrase: string }[] = [
     {
       title: "Tendência de CAC",
       delta: dCac,
       good: dCac === undefined ? undefined : dCac <= 0,
-      phrase: trendPhrase(dCac, "Custo de aquisição subindo", "Custo de aquisição caindo", "Custo de aquisição estável"),
+      phrase: trendPhrase(dCac, "Custo de aquisição subindo", "Custo de aquisição caindo", "Custo de aquisição estável", `CAC atual: ${fmtBrl(k.cac)}`),
     },
     {
       title: "Tendência de CPL",
       delta: dCpl,
       good: dCpl === undefined ? undefined : dCpl <= 0,
-      phrase: trendPhrase(dCpl, "Leads ficando mais caros", "Leads ficando mais baratos", "Custo por lead estável"),
+      phrase: trendPhrase(dCpl, "Leads ficando mais caros", "Leads ficando mais baratos", "Custo por lead estável", `CPL atual: ${fmtBrl(k.cpl)}`),
     },
     {
       title: "Eficiência de conversão",
       delta: dConv,
       good: dConv === undefined ? undefined : dConv >= 0,
-      phrase: trendPhrase(dConv, "Conversão de leads em vendas melhorando", "Conversão de leads em vendas piorando", "Conversão estável"),
+      phrase: trendPhrase(dConv, "Conversão de leads em vendas melhorando", "Conversão de leads em vendas piorando", "Conversão estável", `Conversão atual: ${fmtPct(convRate)}`),
     },
     {
       title: "Investimento × retorno",
@@ -404,13 +425,13 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
 
   const absPct = (v: number) => `${Math.abs(v).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
   const alerts: { tone: "danger" | "warn" | "ok"; msg: string }[] = [];
-  if (dCac !== undefined && dCac > 20) alerts.push({ tone: "warn", msg: `CAC subiu ${absPct(dCac)} vs o período anterior — custo de aquisição pressionado.` });
+  if (dCac !== undefined && dCac > 20) alerts.push({ tone: "warn", msg: `CAC subiu ${absPct(dCac)} (${cmpNote}) — custo de aquisição pressionado.` });
   if (dCpl !== undefined && dCpl > 20) alerts.push({ tone: "warn", msg: `CPL subiu ${absPct(dCpl)} — cada lead está custando mais caro.` });
   if (dConv !== undefined && dConv < -20) alerts.push({ tone: "danger", msg: `Queda de ${absPct(dConv)} na conversão de leads em vendas.` });
   if (k.roi !== null && k.roi < 0) alerts.push({ tone: "danger", msg: "ROI negativo: o investimento superou a receita real no período." });
   if (t.investment > 0 && t.leads === 0) alerts.push({ tone: "warn", msg: "Há investimento no período sem nenhum lead registrado." });
   // Crescimento positivo também é alerta — boas notícias em destaque
-  if (dCac !== undefined && dCac < -15) alerts.push({ tone: "ok", msg: `Bom sinal: o CAC caiu ${absPct(dCac)} vs o período anterior.` });
+  if (dCac !== undefined && dCac < -15) alerts.push({ tone: "ok", msg: `Bom sinal: o CAC caiu ${absPct(dCac)} (${cmpNote}).` });
   if (dCpl !== undefined && dCpl < -15) alerts.push({ tone: "ok", msg: `Leads mais baratos: o CPL caiu ${absPct(dCpl)}.` });
   if (dConv !== undefined && dConv > 15) alerts.push({ tone: "ok", msg: `A conversão de leads em vendas cresceu ${absPct(dConv)}.` });
   if (k.roi !== null && k.roi > 100) alerts.push({ tone: "ok", msg: "ROI acima de 100%: o retorno real mais que dobra o investimento." });
@@ -422,7 +443,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   if (current.length === 0) {
     resumo = "Ainda não há lançamentos no período selecionado.";
   } else if (custoDelta === undefined && dConv === undefined) {
-    resumo = "Sem período anterior para comparar — acompanhe os números consolidados em Resultados.";
+    resumo = `Primeiros lançamentos do período: CAC ${fmtBrl(k.cac)}${convRate !== null ? ` e conversão de ${fmtPct(convRate)}` : ""}. A leitura de tendência aparece a partir do segundo dia de dados.`;
+    if (returnPerReal !== null) {
+      resumo += ` Cada R$ 1 investido está voltando como R$ ${returnPerReal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} de receita real.`;
+    }
   } else {
     const partes: string[] = [];
     if (custoDelta !== undefined) {
@@ -519,7 +543,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
               <div key={tr.title} className="rounded-xl border border-line/60 bg-ink-900/50 p-3.5">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{tr.title}</p>
                 <p className="mt-1.5 text-sm font-semibold leading-snug text-slate-200">{tr.phrase}</p>
-                {tr.delta !== undefined && (
+                {tr.delta !== undefined ? (
                   <span
                     className={cn(
                       "mt-1.5 inline-flex items-center gap-1 text-xs font-semibold",
@@ -527,7 +551,11 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                     )}
                   >
                     <Arrow size={13} />
-                    {absPct(tr.delta)} vs período anterior
+                    {absPct(tr.delta)} {cmpNote}
+                  </span>
+                ) : (
+                  <span className="mt-1.5 block text-xs text-slate-500">
+                    tendência aparece com 2+ dias de lançamentos
                   </span>
                 )}
               </div>
