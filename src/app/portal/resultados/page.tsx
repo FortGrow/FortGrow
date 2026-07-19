@@ -56,7 +56,7 @@ export default async function ResultadosPage({ searchParams }: { searchParams: {
         <StatCard label="ROAS" value={`${kpis.roas(t).toFixed(2)}x`} accent="violet" />
         <StatCard label="CAC" value={brl(kpis.cac(t))} accent="brand" />
         <StatCard label="CPL · CPA" value={`${brl(kpis.cpl(t))} · ${brl(kpis.cpa(t))}`} accent="brand" />
-        <StatCard label="Valor por lead" value={brl(kpis.valuePerLead(t))} hint="receita / leads" accent="grow" />
+        <StatCard label="Valor por lead" value={brl(kpis.valuePerLead(t))} hint="valor gasto / leads" accent="grow" />
         <StatCard label="Ticket médio" value={brl(kpis.avgTicket(t))} hint="receita / vendas" accent="brand" />
         <StatCard label="Custo por venda" value={brl(kpis.costPerSale(t))} hint="investimento / vendas" accent="warn" />
         <StatCard label="CTR" value={pct(kpis.ctr(t), 2)} accent="brand" />

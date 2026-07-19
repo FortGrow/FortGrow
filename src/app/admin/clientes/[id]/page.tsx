@@ -125,9 +125,19 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     cur.conversions += m.conversions;
     byWeek.set(key, cur);
   }
-  const trend = [...byWeek.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => ({ label: new Date(k).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }), ...v }));
+  // 12 semanas fixas, com zero nas vazias — uma única semana de dados vira
+  // linha contínua em vez de pontos soltos (gráfico "quebrado")
+  const trend: { label: string; leads: number; conversions: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const week = new Date(Date.now() - i * 7 * 86400000);
+    week.setDate(week.getDate() - week.getDay());
+    const key = week.toISOString().slice(0, 10);
+    trend.push({
+      label: new Date(`${key}T12:00:00Z`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+      leads: byWeek.get(key)?.leads ?? 0,
+      conversions: byWeek.get(key)?.conversions ?? 0,
+    });
+  }
 
   return (
     <>
@@ -270,7 +280,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         <StatCard label="Conversões (90d)" value={num(totals.conversions)} accent="grow" />
         <StatCard label="Investimento (90d)" value={brl(totals.spend)} accent="warn" />
         <StatCard label="ROAS (90d)" value={`${kpis.roas(totals).toFixed(2)}x`} accent="violet" />
-        <StatCard label="Valor por lead" value={brl(kpis.valuePerLead(totals))} hint="receita / leads" accent="grow" />
+        <StatCard label="Valor por lead" value={brl(kpis.valuePerLead(totals))} hint="valor gasto / leads" accent="grow" />
         <StatCard label="Ticket médio" value={brl(kpis.avgTicket(totals))} hint="receita / vendas" accent="brand" />
         <StatCard label="Custo por venda" value={brl(kpis.costPerSale(totals))} hint="investimento / vendas" accent="warn" />
         <StatCard label="Receita (90d)" value={brl(totals.revenue)} accent="grow" />
