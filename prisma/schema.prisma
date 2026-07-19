@@ -811,6 +811,9 @@ model InstagramEntry {
   client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   date            DateTime
   views           Int      @default(0)
+  /// Total de interações do dia (campo único; likes/comments/shares/saves
+  /// antigos são somados como fallback para linhas legadas)
+  interactions    Int      @default(0)
   likes           Int      @default(0)
   comments        Int      @default(0)
   shares          Int      @default(0)

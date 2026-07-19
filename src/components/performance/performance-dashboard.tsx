@@ -89,7 +89,8 @@ function kpisOf(t: Totals) {
     cpl: ratio(t.investment, t.leads),
     custoConv: ratio(t.investment, t.sales),
     ticket: ratio(t.revenue, t.sales),
-    valorLead: ratio(t.revenue, t.leads),
+    // Valor por lead = valor gasto / leads gerados (pedido do cliente)
+    valorLead: ratio(t.investment, t.leads),
     real: t.real,
     // ROI sobre a receita REAL (não a bruta), em %
     roi: t.investment > 0 ? ((t.real - t.investment) / t.investment) * 100 : null,
@@ -573,7 +574,13 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Performance</p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
           <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
-          <StatCard label="CPL" value={fmtBrl(k.cpl)} delta={delta(k.cpl, p.cpl)} hint="investimento / leads" accent="violet" lowerIsBetter />
+          <StatCard
+            label="Conversão de leads"
+            value={fmtPct(convRate)}
+            delta={delta(convRate, prevConvRate)}
+            hint="vendas / leads gerados"
+            accent="violet"
+          />
           <StatCard
             label="Custo por conversão"
             value={fmtBrl(k.custoConv)}
@@ -583,7 +590,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             lowerIsBetter
           />
           <StatCard label="Ticket médio" value={fmtBrl(k.ticket)} delta={delta(k.ticket, p.ticket)} hint="receita bruta / vendas" accent="grow" />
-          <StatCard label="Valor por lead" value={fmtBrl(k.valorLead)} delta={delta(k.valorLead, p.valorLead)} hint="receita bruta / leads" accent="grow" />
+          <StatCard
+            label="Valor por lead"
+            value={fmtBrl(k.valorLead)}
+            delta={delta(k.valorLead, p.valorLead)}
+            hint="valor gasto / leads gerados"
+            accent="grow"
+            lowerIsBetter
+          />
         </div>
 
         <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Financeiro</p>

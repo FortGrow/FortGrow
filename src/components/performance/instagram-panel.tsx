@@ -8,20 +8,16 @@ import { cn, num } from "@/lib/utils";
 export type IgRow = {
   id: string;
   date: string; // yyyy-mm-dd
-  views: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
   followers: number;
+  views: number;
   reach: number;
   nonFollowersPct: number;
+  interactions: number;
 };
 
-/** Taxa de engajamento = (curtidas + comentários + compartilhamentos + salvamentos) / alcance */
+/** Taxa de engajamento = interações / alcance */
 function engagementOf(r: IgRow) {
-  const interactions = r.likes + r.comments + r.shares + r.saves;
-  return r.reach > 0 ? (interactions / r.reach) * 100 : null;
+  return r.reach > 0 ? (r.interactions / r.reach) * 100 : null;
 }
 
 const fmtPct = (v: number | null, digits = 1) =>
@@ -36,13 +32,10 @@ export type IgSummary = {
   avgNonFollowers: number | null;
 };
 
+/* Ordem pedida: Seguidores · Visualizações · Alcance · % Não seg. · Interações */
 const NUM_FIELDS = [
-  ["views", "Visualizações"],
-  ["likes", "Curtidas"],
-  ["comments", "Comentários"],
-  ["shares", "Compart."],
-  ["saves", "Salvos"],
   ["followers", "Seguidores"],
+  ["views", "Visualizações"],
   ["reach", "Alcance"],
 ] as const;
 
@@ -169,7 +162,7 @@ export function InstagramPanel({
       : undefined;
   const totalViews = current.reduce((s, r) => s + r.views, 0);
   const totalReach = current.reduce((s, r) => s + r.reach, 0);
-  const totalInteractions = current.reduce((s, r) => s + r.likes + r.comments + r.shares + r.saves, 0);
+  const totalInteractions = current.reduce((s, r) => s + r.interactions, 0);
   const avgEngagement = totalReach > 0 ? (totalInteractions / totalReach) * 100 : null;
   const avgNonFollowers =
     current.length > 0 ? current.reduce((s, r) => s + r.nonFollowersPct, 0) / current.length : null;
@@ -262,14 +255,11 @@ export function InstagramPanel({
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
-                  <th className="px-2 py-2.5 font-medium">Visualizações</th>
-                  <th className="px-2 py-2.5 font-medium">Curtidas</th>
-                  <th className="px-2 py-2.5 font-medium">Comentários</th>
-                  <th className="px-2 py-2.5 font-medium">Compart.</th>
-                  <th className="px-2 py-2.5 font-medium">Salvos</th>
                   <th className="px-2 py-2.5 font-medium">Seguidores</th>
+                  <th className="px-2 py-2.5 font-medium">Visualizações</th>
                   <th className="px-2 py-2.5 font-medium">Alcance</th>
                   <th className="px-2 py-2.5 font-medium">% Não seg.</th>
+                  <th className="px-2 py-2.5 font-medium">Interações</th>
                   <th className="px-2 py-2.5 font-medium text-violet">Engajamento</th>
                   {editable && <th className="w-10" />}
                 </tr>
@@ -318,18 +308,29 @@ export function InstagramPanel({
                             className={cn(inputCls, "min-w-[64px]")}
                           />
                         </td>
+                        <td className="px-1 py-1">
+                          <input
+                            type="number"
+                            min={0}
+                            step={1}
+                            defaultValue={r.interactions || ""}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              edit(r.id, { interactions: Number.isFinite(v) && v >= 0 ? Math.round(v) : 0 });
+                            }}
+                            className={cn(inputCls, "min-w-[84px]")}
+                          />
+                        </td>
                       </>
                     ) : (
                       <>
                         <td className="px-2 py-2.5 text-slate-300">{r.date.split("-").reverse().join("/")}</td>
-                        <td className="px-2 py-2.5 text-slate-300">{num(r.views)}</td>
-                        <td className="px-2 py-2.5 text-slate-300">{num(r.likes)}</td>
-                        <td className="px-2 py-2.5 text-slate-300">{num(r.comments)}</td>
-                        <td className="px-2 py-2.5 text-slate-300">{num(r.shares)}</td>
-                        <td className="px-2 py-2.5 text-slate-300">{num(r.saves)}</td>
                         <td className="px-2 py-2.5 text-slate-300">{num(r.followers)}</td>
+                        <td className="px-2 py-2.5 text-slate-300">{num(r.views)}</td>
                         <td className="px-2 py-2.5 text-slate-300">{num(r.reach)}</td>
                         <td className="px-2 py-2.5 text-slate-400">{fmtPct(r.nonFollowersPct)}</td>
+                        <td className="px-2 py-2.5 text-slate-300">{num(r.interactions)}</td>
                       </>
                     )}
                     <td className="px-2 py-2.5 text-xs font-semibold text-violet">{fmtPct(engagementOf(r))}</td>
