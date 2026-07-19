@@ -780,6 +780,8 @@ model PerformanceEntry {
   source     String   @default("OUTRO")
   /// Campanha específica do lançamento (ex.: "Europa", "Brasil — Automóvel")
   campaign   String?
+  /// Objetivo da campanha: LEADS | VENDAS | ENGAJAMENTO | RECONHECIMENTO | TRAFEGO | OUTRO
+  campaignType String?
 
   salesDetails PerformanceSale[]
   createdAt  DateTime @default(now())

@@ -35,6 +35,8 @@ export type PerfRow = {
   source: string;
   /** Campanha específica do lançamento (ex.: "Brasil — Automóvel") */
   campaign: string | null;
+  /** Objetivo da campanha (chave de CAMPAIGN_TYPES) */
+  campaignType: string | null;
   /** Vendas detalhadas (quem vendeu etc.); quando existem, Vendas e Receita bruta vêm delas */
   salesDetails: SaleDetail[];
 };
@@ -56,6 +58,17 @@ export const SOURCES = [
   { key: "OUTRO", label: "Outro" },
 ] as const;
 const sourceLabel = (key: string) => SOURCES.find((s) => s.key === key)?.label ?? key;
+
+/** Objetivos de campanha disponíveis no dropdown e no filtro */
+export const CAMPAIGN_TYPES = [
+  { key: "LEADS", label: "Leads" },
+  { key: "VENDAS", label: "Vendas" },
+  { key: "ENGAJAMENTO", label: "Engajamento" },
+  { key: "RECONHECIMENTO", label: "Reconhecimento" },
+  { key: "TRAFEGO", label: "Tráfego" },
+  { key: "OUTRO", label: "Outro" },
+] as const;
+const campaignTypeLabel = (key: string | null) => CAMPAIGN_TYPES.find((t) => t.key === key)?.label ?? "—";
 
 export type PerfConfig = { convPercent: number; commissionPercent: number };
 
@@ -134,6 +147,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [period, setPeriod] = useState<PeriodKey>("30");
   const [source, setSource] = useState<string>("TODAS");
   const [campaign, setCampaign] = useState<string>("");
+  const [campaignType, setCampaignType] = useState<string>("");
   const [from, setFrom] = useState(() => iso(new Date(Date.now() - 29 * dayMs)));
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
@@ -275,9 +289,9 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const { current, currentAll, previous, rangeLabel, range } = useMemo(() => {
     const all = rows ?? [];
     const bySource = (list: PerfRow[]) =>
-      (source === "TODAS" ? list : list.filter((r) => r.source === source)).filter(
-        (r) => !campaign || (r.campaign ?? "") === campaign
-      );
+      (source === "TODAS" ? list : list.filter((r) => r.source === source))
+        .filter((r) => !campaign || (r.campaign ?? "") === campaign)
+        .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType);
     if (period === "tudo") {
       return {
         current: bySource(all),
@@ -308,7 +322,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       rangeLabel: `${start.split("-").reverse().join("/")} a ${end.split("-").reverse().join("/")}`,
       range: { start, end },
     };
-  }, [rows, period, from, to, source, campaign]);
+  }, [rows, period, from, to, source, campaign, campaignType]);
 
   const t = totalsOf(current, cfg);
   const pt = totalsOf(previous, cfg);
@@ -342,8 +356,9 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       [...(rows ?? [])]
         .filter((r) => source === "TODAS" || r.source === source)
         .filter((r) => !campaign || (r.campaign ?? "") === campaign)
+        .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType)
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [rows, source, campaign]
+    [rows, source, campaign, campaignType]
   );
 
   /* Campanhas conhecidas + comparativo por campanha no período */
@@ -351,12 +366,17 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     () => [...new Set((rows ?? []).map((r) => r.campaign?.trim()).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "pt-BR")),
     [rows]
   );
+  const typesInUse = useMemo(
+    () => CAMPAIGN_TYPES.filter((t) => (rows ?? []).some((r) => r.campaignType === t.key)),
+    [rows]
+  );
   const byCampaign = useMemo(
     () =>
       campaignNames
         .map((name) => {
           const cRows = currentAll.filter((r) => (r.campaign ?? "") === name);
-          return { name, count: cRows.length, k: kpisOf(totalsOf(cRows, cfg)), t: totalsOf(cRows, cfg) };
+          const types = [...new Set(cRows.map((r) => campaignTypeLabel(r.campaignType)).filter((l) => l !== "—"))];
+          return { name, types, count: cRows.length, k: kpisOf(totalsOf(cRows, cfg)), t: totalsOf(cRows, cfg) };
         })
         .filter((c) => c.count > 0),
     [campaignNames, currentAll, cfg]
@@ -582,6 +602,27 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         </div>
       )}
 
+      {/* Filtro por objetivo da campanha */}
+      {typesInUse.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tipo:</span>
+          {[{ key: "", label: "Todos" }, ...typesInUse].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setCampaignType(t.key)}
+              className={cn(
+                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                campaignType === t.key
+                  ? "border-warn/40 bg-warn/15 text-warn"
+                  : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Visão geral — leitura estratégica: tendências e alertas, sem números crus */}
       <div className="card p-5">
         <div className="mb-1 flex items-center gap-2">
@@ -745,6 +786,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2 font-medium">Campanha</th>
+                  <th className="px-2 py-2 font-medium">Tipo</th>
                   <th className="px-2 py-2 font-medium">Investimento</th>
                   <th className="px-2 py-2 font-medium">Leads</th>
                   <th className="px-2 py-2 font-medium">Vendas</th>
@@ -758,6 +800,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                 {byCampaign.map((c) => (
                   <tr key={c.name} className="border-b border-line/50">
                     <td className="px-2 py-2.5 font-semibold text-slate-200">{c.name}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{c.types.length > 0 ? c.types.join(" · ") : "—"}</td>
                     <td className="px-2 py-2.5 text-slate-300">{brl(c.t.investment)}</td>
                     <td className="px-2 py-2.5 text-slate-300">{num(c.t.leads)}</td>
                     <td className="px-2 py-2.5 text-slate-300">{num(c.t.sales)}</td>
@@ -946,12 +989,13 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1480px] text-sm">
+            <table className="w-full min-w-[1600px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
                   <th className="px-2 py-2.5 font-medium">Origem</th>
                   <th className="px-2 py-2.5 font-medium">Campanha</th>
+                  <th className="px-2 py-2.5 font-medium">Tipo</th>
                   <th className="px-2 py-2.5 font-medium">Investimento</th>
                   <th className="px-2 py-2.5 font-medium">Leads</th>
                   <th className="px-2 py-2.5 font-medium">Vendas</th>
@@ -1007,6 +1051,21 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               onChange={(e) => edit(r.id, { campaign: e.target.value })}
                               className={cn(inputCls, "min-w-[130px]")}
                             />
+                          </td>
+                          <td className="px-1 py-1">
+                            <select
+                              defaultValue={r.campaignType ?? ""}
+                              onChange={(e) => edit(r.id, { campaignType: e.target.value || null })}
+                              className={cn(inputCls, "min-w-[120px] cursor-pointer")}
+                              title="Objetivo da campanha"
+                            >
+                              <option value="" className="bg-ink-900">Tipo…</option>
+                              {CAMPAIGN_TYPES.map((t) => (
+                                <option key={t.key} value={t.key} className="bg-ink-900">
+                                  {t.label}
+                                </option>
+                              ))}
+                            </select>
                           </td>
                           {(["investment", "leads", "sales", "revenue"] as const).map((field) => {
                             // Com vendas detalhadas, Vendas e Receita bruta vêm delas (não editar direto)
@@ -1072,6 +1131,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                           <td className="px-2 py-2.5 text-slate-300">{r.date.split("-").reverse().join("/")}</td>
                           <td className="px-2 py-2.5 text-slate-400">{sourceLabel(r.source)}</td>
                           <td className="px-2 py-2.5 text-slate-400">{r.campaign ?? "—"}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{campaignTypeLabel(r.campaignType)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
                           <td className="px-2 py-2.5 text-slate-300">
