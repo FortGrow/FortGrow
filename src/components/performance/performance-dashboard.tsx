@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   Compass,
   LineChart as LineChartIcon,
   Minus,
@@ -245,6 +246,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [source, setSource] = useState<string>("TODAS");
   const [campaign, setCampaign] = useState<string>("");
   const [campaignType, setCampaignType] = useState<string>("");
+  // Filtros recolhidos por padrão — menos poluição visual; abrem só quando o usuário clica
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [from, setFrom] = useState(() => iso(new Date(Date.now() - 29 * dayMs)));
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
@@ -633,105 +636,141 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     }
   }
 
+  /* Resumo dos filtros ativos — período sempre aparece; os demais só quando fogem do padrão */
+  const filterSummary = [
+    PERIODS.find((p) => p.key === period)?.label,
+    source !== "TODAS" ? sourceLabel(source) : null,
+    campaign || null,
+    campaignType ? campaignTypeLabel(campaignType) : null,
+  ].filter(Boolean) as string[];
+  const activeFilterCount = (source !== "TODAS" ? 1 : 0) + (campaign ? 1 : 0) + (campaignType ? 1 : 0);
+
   return (
     <div className="space-y-5">
-      {/* Filtro de período — KPIs e gráficos seguem a janela; a tabela mostra tudo */}
+      {/* Filtros: recolhidos por padrão — abrem só ao clicar, pra não poluir a tela */}
       <div className="flex flex-wrap items-center gap-2">
-        {PERIODS.map((pd) => (
-          <button
-            key={pd.key}
-            onClick={() => setPeriod(pd.key)}
-            className={cn(
-              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-              period === pd.key
-                ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
-                : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
-            )}
-          >
-            {pd.label}
-          </button>
-        ))}
-        {period === "custom" && (
-          <span className="flex items-center gap-2 text-xs text-slate-400">
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
-            até
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
-          </span>
+        <button
+          onClick={() => setFiltersOpen((o) => !o)}
+          className={cn(
+            "flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+            filtersOpen || activeFilterCount > 0
+              ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
+              : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+          )}
+        >
+          <SlidersHorizontal size={13} />
+          Filtros
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-brand-500/25 px-1.5 py-0.5 text-[10px] font-bold">{activeFilterCount}</span>
+          )}
+          <ChevronDown size={13} className={cn("transition-transform", filtersOpen && "rotate-180")} />
+        </button>
+        {!filtersOpen && filterSummary.length > 0 && (
+          <span className="truncate text-xs text-slate-500">{filterSummary.join(" · ")}</span>
         )}
         <span className="ml-auto text-xs text-slate-500">
           Comparando com o período anterior · {rangeLabel}
         </span>
       </div>
 
-      {/* Filtro por origem de lead — KPIs, gráficos e tabela seguem a seleção */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Origem:</span>
-        {[{ key: "TODAS", label: "Todas" }, ...SOURCES].map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setSource(s.key)}
-            className={cn(
-              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-              source === s.key
-                ? "border-grow-500/40 bg-grow-500/15 text-grow-400"
-                : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+      {filtersOpen && (
+        <div className="space-y-3 rounded-2xl border border-line/60 bg-ink-900/40 p-3.5">
+          {/* Filtro de período — KPIs e gráficos seguem a janela; a tabela mostra tudo */}
+          <div className="flex flex-wrap items-center gap-2">
+            {PERIODS.map((pd) => (
+              <button
+                key={pd.key}
+                onClick={() => setPeriod(pd.key)}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                  period === pd.key
+                    ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
+                    : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                )}
+              >
+                {pd.label}
+              </button>
+            ))}
+            {period === "custom" && (
+              <span className="flex items-center gap-2 text-xs text-slate-400">
+                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
+                até
+                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
+              </span>
             )}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+          </div>
 
-      {/* Filtro por campanha — definida na coluna Campanha da tabela */}
-      {campaignNames.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Campanha:</span>
-          <button
-            onClick={() => setCampaign("")}
-            className={cn(
-              "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-              campaign === ""
-                ? "border-violet/40 bg-violet/15 text-violet"
-                : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
-            )}
-          >
-            Todas
-          </button>
-          {campaignNames.map((name) => (
-            <button
-              key={name}
-              onClick={() => setCampaign(name)}
-              className={cn(
-                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-                campaign === name
-                  ? "border-violet/40 bg-violet/15 text-violet"
-                  : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
-              )}
-            >
-              {name} ({(rows ?? []).filter((r) => (r.campaign ?? "") === name).length})
-            </button>
-          ))}
-        </div>
-      )}
+          {/* Filtro por origem de lead — KPIs, gráficos e tabela seguem a seleção */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Origem:</span>
+            {[{ key: "TODAS", label: "Todas" }, ...SOURCES].map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setSource(s.key)}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                  source === s.key
+                    ? "border-grow-500/40 bg-grow-500/15 text-grow-400"
+                    : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
 
-      {/* Filtro por objetivo da campanha */}
-      {typesInUse.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tipo:</span>
-          {[{ key: "", label: "Todos" }, ...typesInUse].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setCampaignType(t.key)}
-              className={cn(
-                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-                campaignType === t.key
-                  ? "border-warn/40 bg-warn/15 text-warn"
-                  : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+          {/* Filtro por campanha — definida na coluna Campanha da tabela */}
+          {campaignNames.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Campanha:</span>
+              <button
+                onClick={() => setCampaign("")}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                  campaign === ""
+                    ? "border-violet/40 bg-violet/15 text-violet"
+                    : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                )}
+              >
+                Todas
+              </button>
+              {campaignNames.map((name) => (
+                <button
+                  key={name}
+                  onClick={() => setCampaign(name)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                    campaign === name
+                      ? "border-violet/40 bg-violet/15 text-violet"
+                      : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                  )}
+                >
+                  {name} ({(rows ?? []).filter((r) => (r.campaign ?? "") === name).length})
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Filtro por objetivo da campanha */}
+          {typesInUse.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Tipo:</span>
+              {[{ key: "", label: "Todos" }, ...typesInUse].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setCampaignType(t.key)}
+                  className={cn(
+                    "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+                    campaignType === t.key
+                      ? "border-warn/40 bg-warn/15 text-warn"
+                      : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
