@@ -2,8 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Td } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
-import { brl, fullDate } from "@/lib/utils";
+import { fullDate } from "@/lib/utils";
 import { PlansPanel } from "./plans-panel";
+import { ServicesPanel } from "./services-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -31,16 +32,18 @@ export default async function ServicosPage() {
         }))}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {services.map((s) => (
-          <div key={s.id} className="card p-4">
-            <p className="text-sm font-semibold text-slate-200">{s.name}</p>
-            <p className="mt-1 text-xs text-slate-500">
-              {s._count.clients} cliente(s) · a partir de {brl(s.basePrice)}
-            </p>
-          </div>
-        ))}
-      </div>
+      <ServicesPanel
+        services={services.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          pricingModel: s.pricingModel,
+          basePrice: Number(s.basePrice),
+          variablePercent: s.variablePercent === null ? null : Number(s.variablePercent),
+          variableBasis: s.variableBasis,
+          clientCount: s._count.clients,
+        }))}
+      />
 
       <h2 className="mb-3 text-sm font-bold text-slate-300">Serviços em execução</h2>
       <DataTable headers={["Cliente", "Serviço", "Responsável", "Início", "Prazo", "Checklist", "Status"]}>

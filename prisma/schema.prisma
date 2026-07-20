@@ -240,11 +240,23 @@ model Proposal {
 
 // ─────────────────────────────── Serviços & Contratos ───────────────────────────────
 
+enum ServicePricingModel {
+  FIXO
+  VARIAVEL
+  HIBRIDO
+}
+
 model Service {
   id          String          @id @default(cuid())
   name        String          @unique
   description String?
+  pricingModel ServicePricingModel @default(FIXO)
+  /// Valor fixo mensal — usado quando pricingModel é FIXO ou HIBRIDO
   basePrice   Decimal         @default(0) @db.Decimal(12, 2)
+  /// Percentual variável (0–100) — usado quando pricingModel é VARIAVEL ou HIBRIDO
+  variablePercent Decimal?    @db.Decimal(6, 3)
+  /// Descreve sobre o que incide o percentual variável (ex.: "sobre investimento em mídia")
+  variableBasis String?
   active      Boolean         @default(true)
   clients     ClientService[]
   createdAt   DateTime        @default(now())
