@@ -782,6 +782,11 @@ model PerformanceEntry {
   campaign   String?
   /// Objetivo da campanha: LEADS | VENDAS | ENGAJAMENTO | RECONHECIMENTO | TRAFEGO | OUTRO
   campaignType String?
+  /// Métricas de mídia — usadas por campanhas de Tráfego/Engajamento/Reconhecimento
+  views        Int @default(0)
+  clicks       Int @default(0)
+  reach        Int @default(0)
+  interactions Int @default(0)
 
   salesDetails PerformanceSale[]
   createdAt  DateTime @default(now())
