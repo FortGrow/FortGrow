@@ -17,6 +17,7 @@ import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integratio
 import { ContentCalendarPanel } from "./content-calendar";
 import { StaffCommissionsPanel } from "./staff-commissions";
 import { EditClientForm } from "./edit-client-form";
+import { ClientServicesPanel } from "./client-services-panel";
 import { BillingPanel } from "./billing-panel";
 import { DeleteClientButton } from "../delete-client-button";
 
@@ -65,11 +66,15 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
   });
   if (!client) notFound();
 
-  const staff = await prisma.user.findMany({
-    where: { active: true, role: { not: "CLIENTE" } },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  const [staff, plans, catalogServices] = await Promise.all([
+    prisma.user.findMany({
+      where: { active: true, role: { not: "CLIENTE" } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.plan.findMany({ where: { active: true }, orderBy: { price: "asc" } }),
+    prisma.service.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+  ]);
 
   const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries] = await Promise.all([
     prisma.invoice.aggregate({ where: { clientId: client.id, status: "PAGO" }, _sum: { amount: true } }),
@@ -189,6 +194,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             email: client.email,
             phone: client.phone,
             status: client.status,
+            planId: client.planId,
             plan: client.plan,
             billingType: client.billingType,
             monthlyValue: Number(client.monthlyValue),
@@ -201,6 +207,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             strategicNotes: client.strategicNotes,
             notes: client.notes,
           }}
+          plans={plans.map((p) => ({ id: p.id, name: p.name, price: Number(p.price) }))}
         />
         <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
@@ -355,19 +362,18 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-300">Serviços contratados</h2>
-          <DataTable headers={["Serviço", "Responsável", "Prazo", "Status"]}>
-            {client.services.map((s) => (
-              <tr key={s.id}>
-                <Td className="font-medium text-slate-200">{s.service.name}</Td>
-                <Td>{s.responsible ?? "—"}</Td>
-                <Td className="text-slate-500">{fullDate(s.deadline)}</Td>
-                <Td><StatusBadge status={s.status} /></Td>
-              </tr>
-            ))}
-          </DataTable>
-        </div>
+        <ClientServicesPanel
+          clientId={client.id}
+          items={client.services.map((s) => ({
+            id: s.id,
+            serviceId: s.serviceId,
+            serviceName: s.service.name,
+            responsible: s.responsible,
+            deadline: s.deadline?.toISOString() ?? null,
+            status: s.status,
+          }))}
+          services={catalogServices.map((s) => ({ id: s.id, name: s.name }))}
+        />
         <BillingPanel
           clientId={client.id}
           subscriptions={client.subscriptions.map((s) => ({

@@ -41,7 +41,7 @@ export default async function ClientesPage() {
         title="Clientes"
         subtitle={restricted ? `${clients.length} cliente(s) vinculados a você por comissão` : `${clients.length} contas na carteira`}
       >
-        {!restricted && <NewClientForm plans={plans.map((p) => ({ name: p.name, price: Number(p.price) }))} />}
+        {!restricted && <NewClientForm plans={plans.map((p) => ({ id: p.id, name: p.name, price: Number(p.price) }))} />}
       </PageHeader>
       <ClientsBoard
         clients={clients.map((c) => ({

@@ -17,6 +17,7 @@ export type EditableClient = {
   email: string | null;
   phone: string | null;
   status: string;
+  planId: string | null;
   plan: string | null;
   billingType: string;
   monthlyValue: number;
@@ -40,17 +41,21 @@ const TEXT_FIELDS: { name: keyof EditableClient; label: string; type?: string }[
   { name: "instagram", label: "Instagram" },
   { name: "city", label: "Cidade" },
   { name: "state", label: "UF" },
-  { name: "plan", label: "Plano / descrição do contrato" },
   { name: "contractStart", label: "Início do contrato", type: "date" },
   { name: "contractMonths", label: "Tempo de contrato (meses)", type: "number" },
   { name: "projectStatus", label: "Status do projeto" },
   { name: "operationType", label: "Tipo de operação" },
 ];
 
+export type PlanOption = { id: string; name: string; price: number };
+
 /** Edição completa do cliente — formulário populado com os dados atuais. */
-export function EditClientForm({ client }: { client: EditableClient }) {
+export function EditClientForm({ client, plans = [] }: { client: EditableClient; plans?: PlanOption[] }) {
   const [open, setOpen] = useState(false);
   const [billingType, setBillingType] = useState(client.billingType);
+  // Plano: pré-seleciona o plano do catálogo vinculado; sem vínculo mas com texto
+  // livre, cai em "personalizado"; sem nada, fica vazio ("Nenhum plano").
+  const [planChoice, setPlanChoice] = useState(client.planId ?? (client.plan ? "__custom" : ""));
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +171,35 @@ export function EditClientForm({ client }: { client: EditableClient }) {
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="mb-4">
+              <label className="label" htmlFor="ec-plan">Plano FortGrow</label>
+              <select id="ec-plan" value={planChoice} onChange={(e) => setPlanChoice(e.target.value)} className="input">
+                <option value="">Nenhum plano do catálogo</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+                <option value="__custom">Personalizado (digitar)</option>
+              </select>
+              {planChoice === "__custom" ? (
+                <input
+                  name="plan"
+                  defaultValue={client.plan ?? ""}
+                  className="input mt-2"
+                  placeholder="Descreva o plano/contrato"
+                />
+              ) : (
+                <>
+                  <input type="hidden" name="planId" value={planChoice} />
+                  <input type="hidden" name="plan" value={plans.find((p) => p.id === planChoice)?.name ?? ""} />
+                </>
+              )}
+              <p className="mt-1 text-xs text-slate-600">
+                Ligue este cliente a um plano do catálogo em{" "}
+                <span className="font-semibold text-slate-400">Serviços &amp; Planos</span>, ou descreva um contrato
+                personalizado.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

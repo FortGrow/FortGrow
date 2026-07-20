@@ -9,6 +9,7 @@ import { allowedClientIds, canSeeClient } from "@/lib/client-scope";
 const createSchema = z.object({
   companyName: z.string().min(2),
   segment: z.string().max(80).optional(),
+  planId: z.string().max(60).optional(),
   plan: z.string().max(80).optional(),
   billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
   monthlyValue: z.coerce.number().min(0).optional(),
@@ -147,6 +148,7 @@ const updateSchema = z.object({
   email: z.string().email().nullish().or(z.literal("")),
   phone: nullableStr(30),
   status: z.enum(["ATIVO", "PAUSADO", "INATIVO", "ONBOARDING"]).optional(),
+  planId: nullableStr(60),
   plan: nullableStr(120),
   billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
   monthlyValue: z.coerce.number().min(0).optional(),
