@@ -108,9 +108,10 @@ export type PerfConfig = { convPercent: number; commissionPercent: number };
 /* ————— Cálculos (estilo planilha: tudo derivado, nada armazenado) ————— */
 
 type Totals = {
+  /** Investimento total — soma de TODAS as campanhas (leads, vendas, tráfego,
+      engajamento, reconhecimento...). O custo real de um lead/venda leva em
+      conta o funil inteiro, não só a campanha que "fechou" o lead. */
   investment: number;
-  /** Só o investimento das campanhas de conversão — base de CAC/CPL/ROI */
-  convInvestment: number;
   leads: number;
   sales: number;
   revenue: number;
@@ -124,21 +125,20 @@ function realOf(r: PerfRow, cfg: PerfConfig) {
   return r.revenue * (conv / 100) * (comm / 100);
 }
 
-/** Leads/Vendas/Receita só contam nas linhas de conversão; mídia entra em mediaOf */
+/** Investimento soma tudo; Leads/Vendas/Receita só vêm das linhas de conversão (mídia entra em mediaOf) */
 function totalsOf(rows: PerfRow[], cfg: PerfConfig): Totals {
   return rows.reduce(
     (t, r) => {
       const conv = isConversionType(r.campaignType);
       return {
         investment: t.investment + r.investment,
-        convInvestment: t.convInvestment + (conv ? r.investment : 0),
         leads: t.leads + (conv ? r.leads : 0),
         sales: t.sales + (conv ? r.sales : 0),
         revenue: t.revenue + (conv ? r.revenue : 0),
         real: t.real + (conv ? realOf(r, cfg) : 0),
       };
     },
-    { investment: 0, convInvestment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
+    { investment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
   );
 }
 
@@ -146,15 +146,18 @@ const ratio = (a: number, b: number) => (b > 0 ? a / b : null);
 
 function kpisOf(t: Totals) {
   return {
-    cac: ratio(t.convInvestment, t.sales),
-    cpl: ratio(t.convInvestment, t.leads),
-    custoConv: ratio(t.convInvestment, t.sales),
+    // CAC/CPL/valor por lead/ROI usam o investimento TOTAL (blended): tráfego,
+    // engajamento e reconhecimento também custam e alimentam o funil que gera
+    // o lead/venda, então entram na conta do custo real.
+    cac: ratio(t.investment, t.sales),
+    cpl: ratio(t.investment, t.leads),
+    custoConv: ratio(t.investment, t.sales),
     ticket: ratio(t.revenue, t.sales),
-    // Valor por lead = valor gasto / leads gerados (pedido do cliente)
-    valorLead: ratio(t.convInvestment, t.leads),
+    // Valor por lead = valor gasto (em tudo) / leads gerados (pedido do cliente)
+    valorLead: ratio(t.investment, t.leads),
     real: t.real,
-    // ROI sobre a receita REAL (não a bruta), em % — só sobre investimento de conversão
-    roi: t.convInvestment > 0 ? ((t.real - t.convInvestment) / t.convInvestment) * 100 : null,
+    // ROI sobre a receita REAL (não a bruta), em % — sobre o investimento total
+    roi: t.investment > 0 ? ((t.real - t.investment) / t.investment) * 100 : null,
   };
 }
 
@@ -534,7 +537,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const cmpConvPrev = cpt.leads > 0 ? (cpt.sales / cpt.leads) * 100 : null;
   const dConv = delta(cmpConvCur, cmpConvPrev);
   const dRoi = delta(ck.roi, cpv.roi);
-  const returnPerReal = t.convInvestment > 0 ? k.real / t.convInvestment : null;
+  const returnPerReal = t.investment > 0 ? k.real / t.investment : null;
 
   /* Métricas de mídia do período (tráfego / engajamento / reconhecimento) */
   const hasMediaRows = current.some((r) => !isConversionType(r.campaignType));
@@ -580,8 +583,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   if (dCpl !== undefined && dCpl > 20) alerts.push({ tone: "warn", msg: `CPL subiu ${absPct(dCpl)} — cada lead está custando mais caro.` });
   if (dConv !== undefined && dConv < -20) alerts.push({ tone: "danger", msg: `Queda de ${absPct(dConv)} na conversão de leads em vendas.` });
   if (k.roi !== null && k.roi < 0) alerts.push({ tone: "danger", msg: "ROI negativo: o investimento superou a receita real no período." });
-  if (t.convInvestment > 0 && t.leads === 0)
-    alerts.push({ tone: "warn", msg: "Há investimento em campanhas de conversão sem nenhum lead registrado no período." });
+  if (t.investment > 0 && t.leads === 0)
+    alerts.push({ tone: "warn", msg: "Há investimento no período sem nenhum lead registrado." });
   // Crescimento positivo também é alerta — boas notícias em destaque
   if (dCac !== undefined && dCac < -15) alerts.push({ tone: "ok", msg: `Bom sinal: o CAC caiu ${absPct(dCac)} (${cmpNote}).` });
   if (dCpl !== undefined && dCpl < -15) alerts.push({ tone: "ok", msg: `Leads mais baratos: o CPL caiu ${absPct(dCpl)}.` });
@@ -806,7 +809,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
 
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Performance</p>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-          <StatCard label="CAC" value={fmtBrl(k.cac)} delta={delta(k.cac, p.cac)} hint="investimento / vendas" accent="brand" lowerIsBetter />
+          <StatCard
+            label="CAC"
+            value={fmtBrl(k.cac)}
+            delta={delta(k.cac, p.cac)}
+            hint="investimento total (todas as campanhas) / vendas"
+            accent="brand"
+            lowerIsBetter
+          />
           <StatCard
             label="Conversão de leads"
             value={fmtPct(convRate)}
@@ -818,7 +828,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             label="Custo por conversão"
             value={fmtBrl(k.custoConv)}
             delta={delta(k.custoConv, p.custoConv)}
-            hint="investimento / vendas"
+            hint="investimento total (todas as campanhas) / vendas"
             accent="warn"
             lowerIsBetter
           />
@@ -827,7 +837,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             label="Valor por lead"
             value={fmtBrl(k.valorLead)}
             delta={delta(k.valorLead, p.valorLead)}
-            hint="valor gasto / leads gerados"
+            hint="investimento total (todas as campanhas) / leads gerados"
             accent="grow"
             lowerIsBetter
           />
