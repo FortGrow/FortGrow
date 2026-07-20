@@ -3,12 +3,10 @@ import { Bell } from "lucide-react";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import type { SessionPayload } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { initials } from "@/lib/utils";
-import { NavLinks, type NavItem } from "./nav";
+import type { NavItem } from "./nav";
 import { FxLayer } from "./fx";
 import { GlobalSearch } from "./global-search";
-import { MobileMenu } from "./mobile-menu";
-import { LogoutButton } from "./logout-button";
+import { SidebarDrawer } from "./sidebar-drawer";
 
 /** Shell compartilhado entre área administrativa e portal do cliente. */
 export async function AppShell({
@@ -32,43 +30,10 @@ export async function AppShell({
   return (
     <div className="relative flex min-h-screen">
       <FxLayer />
-      {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-ink-900/80 backdrop-blur lg:flex">
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <FgMark size={38} />
-          <div>
-            <p className="text-sm">
-              <FgWordmark />
-            </p>
-            <p className="text-[11px] text-slate-500">{areaLabel}</p>
-          </div>
-        </div>
-        <NavLinks items={items} />
-        <div className="border-t border-line p-3">
-          <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-            <Link href={profileHref} title="Meu perfil" className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80">
-              {me?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={me.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-line" />
-              ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-bold text-brand-300">
-                  {initials(displayName)}
-                </span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-200">{displayName}</p>
-                <p className="truncate text-[11px] text-slate-500">{session.role.replaceAll("_", " ")} · editar perfil</p>
-              </div>
-            </Link>
-            <LogoutButton />
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col lg:pl-60">
+      {/* Main — o menu fica recolhido em gaveta (SidebarDrawer), sem ocupar espaço fixo */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-ink-950/70 px-4 py-3 backdrop-blur sm:px-6">
-          <MobileMenu
+          <SidebarDrawer
             items={items}
             areaLabel={areaLabel}
             profileHref={profileHref}
@@ -76,6 +41,10 @@ export async function AppShell({
             role={session.role}
             avatarUrl={me?.avatarUrl ?? null}
           />
+          <Link href={profileHref === "/portal/perfil" ? "/portal" : "/admin"} className="hidden shrink-0 items-center gap-2 sm:flex">
+            <FgMark size={26} />
+            <span className="text-sm"><FgWordmark /></span>
+          </Link>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2">
             <Link

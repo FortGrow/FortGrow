@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { CalendarDays, Loader2, User } from "lucide-react";
+import { CalendarDays, ChevronDown, Loader2, SlidersHorizontal, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   LEAD_SOURCES,
@@ -49,6 +49,8 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
   const [status, setStatus] = useState("");
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [busy, setBusy] = useState<string | null>(null);
+  // Filtros recolhidos por padrão — menos poluição visual; abrem só quando o usuário clica
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const STATUSES = mode === "prospeccao" ? PROSPECT_STATUSES : FUNNEL_STAGES;
   const statusOf = (l: UnifiedLead) => (mode === "prospeccao" ? l.prospectStatus : l.stage);
@@ -128,16 +130,38 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
   const fieldCls =
     "w-full rounded-lg border border-white/10 bg-black/25 px-2.5 py-1.5 text-xs text-white placeholder-white/45 outline-none transition focus:border-white/40 focus:bg-black/40";
 
+  /* Resumo dos filtros ativos (só os que fogem do padrão) — some no botão quando recolhido */
+  const activeSummary = [
+    period > 0 ? PERIODS.find((p) => p.dias === period)?.label : null,
+    source ? LEAD_SOURCES.find((s) => s.key === source)?.label : null,
+    status ? STATUSES.find((s) => s.key === status)?.label : null,
+  ].filter(Boolean) as string[];
+
   return (
     <div className="space-y-4">
-      {/* Filtros: período · origem · status */}
+      {/* Filtros: recolhidos por padrão — abrem só ao clicar, pra não poluir a tela */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Período:</span>
-        {PERIODS.map((p) => (
-          <button key={p.dias} onClick={() => setPeriod(p.dias)} className={chip(period === p.dias)}>
-            {p.label}
-          </button>
-        ))}
+        <button
+          onClick={() => setFiltersOpen((o) => !o)}
+          className={cn(
+            "flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+            filtersOpen || activeSummary.length > 0
+              ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
+              : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+          )}
+        >
+          <SlidersHorizontal size={13} />
+          Filtros
+          {activeSummary.length > 0 && (
+            <span className="rounded-full bg-brand-500/25 px-1.5 py-0.5 text-[10px] font-bold">
+              {activeSummary.length}
+            </span>
+          )}
+          <ChevronDown size={13} className={cn("transition-transform", filtersOpen && "rotate-180")} />
+        </button>
+        {!filtersOpen && activeSummary.length > 0 && (
+          <span className="truncate text-xs text-slate-500">{activeSummary.join(" · ")}</span>
+        )}
         <span
           className={cn("ml-auto text-xs", save === "error" ? "font-semibold text-danger" : "text-slate-500")}
         >
@@ -146,25 +170,38 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
           {save === "error" && "Erro ao salvar — tente novamente."}
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Origem:</span>
-        <button onClick={() => setSource("")} className={chip(source === "")}>Todas</button>
-        {LEAD_SOURCES.map((s) => (
-          <button key={s.key} onClick={() => setSource(s.key)} className={chip(source === s.key)}>
-            {s.label} ({leads.filter((l) => normalizeLeadSource(l.source) === s.key).length})
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Status:</span>
-        <button onClick={() => setStatus("")} className={chip(status === "")}>Todos</button>
-        {STATUSES.map((s) => (
-          <button key={s.key} onClick={() => setStatus(s.key)} className={chip(status === s.key)}>
-            <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-            {s.label} ({leads.filter((l) => statusOf(l) === s.key).length})
-          </button>
-        ))}
-      </div>
+
+      {filtersOpen && (
+        <div className="space-y-3 rounded-2xl border border-line/60 bg-ink-900/40 p-3.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Período:</span>
+            {PERIODS.map((p) => (
+              <button key={p.dias} onClick={() => setPeriod(p.dias)} className={chip(period === p.dias)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Origem:</span>
+            <button onClick={() => setSource("")} className={chip(source === "")}>Todas</button>
+            {LEAD_SOURCES.map((s) => (
+              <button key={s.key} onClick={() => setSource(s.key)} className={chip(source === s.key)}>
+                {s.label} ({leads.filter((l) => normalizeLeadSource(l.source) === s.key).length})
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Status:</span>
+            <button onClick={() => setStatus("")} className={chip(status === "")}>Todos</button>
+            {STATUSES.map((s) => (
+              <button key={s.key} onClick={() => setStatus(s.key)} className={chip(status === s.key)}>
+                <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+                {s.label} ({leads.filter((l) => statusOf(l) === s.key).length})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Cards coloridos pelo status — mesmo layout nas duas seções */}
       {visible.length === 0 ? (

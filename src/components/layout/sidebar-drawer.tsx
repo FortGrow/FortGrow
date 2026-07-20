@@ -8,11 +8,15 @@ import { Menu, X } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { NavLinks, type NavItem } from "./nav";
-import { initials } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 
 /* eslint-disable @next/next/no-img-element */
-/** Menu de navegação mobile — hambúrguer com gaveta lateral. */
-export function MobileMenu({
+/**
+ * Menu de navegação em gaveta — recolhido por padrão em qualquer tamanho de
+ * tela; abre deslizando da esquerda só quando o usuário clica no hambúrguer,
+ * para não ocupar espaço fixo na lateral.
+ */
+export function SidebarDrawer({
   items,
   areaLabel,
   profileHref,
@@ -45,19 +49,26 @@ export function MobileMenu({
   }, [open]);
 
   return (
-    <div className="lg:hidden">
+    <>
       <button
         onClick={() => setOpen(true)}
         aria-label="Abrir menu"
+        title="Menu"
         className="rounded-xl border border-line p-2.5 text-slate-400 transition hover:bg-ink-800 hover:text-slate-200"
       >
         <Menu size={16} />
       </button>
 
-      {/* Portal no body: o backdrop-blur do header criaria um containing block e prenderia o fixed */}
-      {open && mounted && createPortal(
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex w-72 max-w-[85vw] flex-col border-r border-line bg-ink-900">
+      {/* Portal no body: o backdrop-blur do header criaria um containing block e prenderia o fixed.
+          Sempre montado (quando client-side) para a gaveta deslizar suavemente ao abrir/fechar. */}
+      {mounted && createPortal(
+        <div className={cn("fixed inset-0 z-50 flex", !open && "pointer-events-none")} aria-hidden={!open}>
+          <div
+            className={cn(
+              "flex w-72 max-w-[85vw] flex-col border-r border-line bg-ink-900 shadow-2xl transition-transform duration-300 ease-out",
+              open ? "translate-x-0" : "-translate-x-full"
+            )}
+          >
             <div className="flex items-center justify-between px-4 py-4">
               <div className="flex items-center gap-2.5">
                 <FgMark size={34} />
@@ -98,10 +109,17 @@ export function MobileMenu({
               </div>
             </div>
           </div>
-          <button aria-label="Fechar menu" onClick={() => setOpen(false)} className="flex-1 bg-ink-950/70 backdrop-blur-sm" />
+          <button
+            aria-label="Fechar menu"
+            onClick={() => setOpen(false)}
+            className={cn(
+              "flex-1 bg-ink-950/70 backdrop-blur-sm transition-opacity duration-300",
+              open ? "opacity-100" : "opacity-0"
+            )}
+          />
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 }
