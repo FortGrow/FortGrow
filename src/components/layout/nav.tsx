@@ -202,7 +202,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
 
       {preview && (
         <div
-          className="nav-preview fixed left-[248px] z-50 hidden w-60 rounded-2xl border border-line-strong bg-ink-900/95 p-4 shadow-2xl ring-1 ring-brand-500/10 backdrop-blur-md lg:block"
+          className="nav-preview fixed left-[296px] z-50 hidden w-60 rounded-2xl border border-line-strong bg-ink-900/95 p-4 shadow-2xl ring-1 ring-brand-500/10 backdrop-blur-md lg:block"
           style={{ top: Math.min(preview.top, typeof window !== "undefined" ? window.innerHeight - 240 : preview.top) }}
           onMouseLeave={leave}
         >
