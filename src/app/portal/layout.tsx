@@ -7,17 +7,17 @@ export const dynamic = "force-dynamic";
 
 const ITEMS: NavItem[] = [
   { href: "/portal", label: "Visão geral", icon: "visao" },
-  { href: "/portal/resultados", label: "Resultados", icon: "resultados" },
-  { href: "/portal/calendario", label: "Calendário", icon: "calendario" },
-  { href: "/portal/google-ads", label: "Google Ads", icon: "google-ads" },
-  { href: "/portal/meta-ads", label: "Meta Ads", icon: "meta-ads" },
-  { href: "/portal/instagram", label: "Instagram", icon: "instagram" },
-  { href: "/portal/seo", label: "SEO", icon: "seo" },
-  { href: "/portal/financeiro", label: "Financeiro", icon: "portalfinanceiro" },
-  { href: "/portal/documentos", label: "Documentos", icon: "documentos" },
-  { href: "/portal/dados", label: "Dados do Cliente", icon: "dados" },
-  { href: "/portal/treinamentos", label: "Treinamentos", icon: "treinamentos" },
-  { href: "/portal/chamados", label: "Chamados", icon: "portalchamados" },
+  { href: "/portal/resultados", label: "Resultados", icon: "resultados", group: "Canais & Resultados" },
+  { href: "/portal/google-ads", label: "Google Ads", icon: "google-ads", group: "Canais & Resultados" },
+  { href: "/portal/meta-ads", label: "Meta Ads", icon: "meta-ads", group: "Canais & Resultados" },
+  { href: "/portal/instagram", label: "Instagram", icon: "instagram", group: "Canais & Resultados" },
+  { href: "/portal/seo", label: "SEO", icon: "seo", group: "Canais & Resultados" },
+  { href: "/portal/financeiro", label: "Financeiro", icon: "portalfinanceiro", group: "Financeiro" },
+  { href: "/portal/documentos", label: "Documentos", icon: "documentos", group: "Financeiro" },
+  { href: "/portal/calendario", label: "Calendário", icon: "calendario", group: "Minha empresa" },
+  { href: "/portal/dados", label: "Dados do Cliente", icon: "dados", group: "Minha empresa" },
+  { href: "/portal/treinamentos", label: "Treinamentos", icon: "treinamentos", group: "Minha empresa" },
+  { href: "/portal/chamados", label: "Chamados", icon: "portalchamados", group: "Minha empresa" },
 ];
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {

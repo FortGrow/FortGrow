@@ -27,6 +27,35 @@ export const MODULES = {
 
 export type ModuleKey = keyof typeof MODULES;
 
+/**
+ * Agrupamento visual do menu lateral — cada grupo vira uma seção suspensa
+ * (colapsável) para reduzir a poluição visual. Módulos sem grupo (ex.:
+ * dashboard) ficam soltos, sempre visíveis no topo.
+ */
+export const MODULE_NAV_GROUP: Record<ModuleKey, string | undefined> = {
+  dashboard: undefined,
+  agenda: undefined,
+  crm: "Comercial",
+  prospeccao: "Comercial",
+  clientes: "Comercial",
+  campanhas: "Comercial",
+  servicos: "Operação",
+  contratos: "Operação",
+  projetos: "Operação",
+  tarefas: "Operação",
+  financeiro: "Financeiro",
+  comissoes: "Financeiro",
+  custos: "Financeiro",
+  treinamentos: "Equipe",
+  equipe: "Equipe",
+  ia: "Sistema",
+  relatorios: "Sistema",
+  chamados: "Sistema",
+  automacoes: "Sistema",
+  integracoes: "Sistema",
+  auditoria: "Sistema",
+};
+
 /** Permissões padrão por papel — o admin pode sobrescrever por usuário. */
 export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   ADMIN: Object.keys(MODULES) as ModuleKey[],

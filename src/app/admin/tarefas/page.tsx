@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
-import { type KanbanColumn } from "@/components/kanban/kanban";
-import { shortDate } from "@/lib/utils";
 import { TaskBoard } from "./task-board";
 import { NewTaskForm } from "./new-task-form";
 
@@ -27,21 +25,6 @@ export default async function TarefasPage() {
     }),
   ]);
 
-  const columns: KanbanColumn[] = COLUMNS.map((c) => ({
-    ...c,
-    cards: tasks
-      .filter((t) => t.status === c.key)
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        subtitle: [t.assignee?.name, t.project?.name].filter(Boolean).join(" · ") || undefined,
-        meta: t.dueDate ? `até ${shortDate(t.dueDate)}` : undefined,
-        badge: t.priority,
-        badgeTone: t.priority === "URGENTE" ? "danger" : t.priority === "ALTA" ? "warn" : "slate",
-        color: t.color,
-      })),
-  }));
-
   const tasksDto = tasks.map((t) => ({
     id: t.id,
     title: t.title,
@@ -49,6 +32,8 @@ export default async function TarefasPage() {
     priority: t.priority,
     dueDate: t.dueDate?.toISOString() ?? null,
     assigneeId: t.assigneeId,
+    assigneeName: t.assignee?.name ?? null,
+    projectName: t.project?.name ?? null,
     color: t.color,
     status: t.status,
   }));
@@ -58,7 +43,7 @@ export default async function TarefasPage() {
       <PageHeader title="Tarefas" subtitle="Delegue, acompanhe prazos e conclua · arraste para mudar o status">
         <NewTaskForm users={users} />
       </PageHeader>
-      <TaskBoard columns={columns} tasks={tasksDto} users={users} />
+      <TaskBoard columns={COLUMNS} tasks={tasksDto} users={users} />
     </>
   );
 }

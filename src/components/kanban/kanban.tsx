@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +71,9 @@ export function KanbanBoard({
   const [overCol, setOverCol] = useState<string | null>(null);
   const [paletteFor, setPaletteFor] = useState<string | null>(null);
   const router = useRouter();
+
+  // Re-sincroniza quando o pai manda novas colunas (ex.: filtro por responsável)
+  useEffect(() => setBoard(columns), [columns]);
 
   async function moveCard(cardId: string, toCol: string) {
     const fromCol = board.find((c) => c.cards.some((k) => k.id === cardId));

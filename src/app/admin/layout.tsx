@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { verifyLiveSession } from "@/lib/api-guard";
-import { allowedModules, MODULES } from "@/lib/rbac";
+import { allowedModules, MODULES, MODULE_NAV_GROUP } from "@/lib/rbac";
 import { AppShell } from "@/components/layout/shell";
 import type { NavItem } from "@/components/layout/nav";
 
@@ -19,6 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     href: key === "dashboard" ? "/admin" : `/admin/${key}`,
     label: MODULES[key],
     icon: key,
+    group: MODULE_NAV_GROUP[key],
   }));
 
   return (
