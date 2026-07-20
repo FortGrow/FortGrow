@@ -77,6 +77,7 @@ const createSchema = z.object({
   clicks: z.coerce.number().int().min(0).default(0),
   reach: z.coerce.number().int().min(0).default(0),
   interactions: z.coerce.number().int().min(0).default(0),
+  profileVisits: z.coerce.number().int().min(0).default(0),
 });
 
 export async function POST(req: NextRequest) {
@@ -122,6 +123,7 @@ const updateSchema = z.object({
   clicks: z.coerce.number().int().min(0).optional(),
   reach: z.coerce.number().int().min(0).optional(),
   interactions: z.coerce.number().int().min(0).optional(),
+  profileVisits: z.coerce.number().int().min(0).optional(),
 });
 
 export async function PATCH(req: NextRequest) {

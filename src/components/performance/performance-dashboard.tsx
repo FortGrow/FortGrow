@@ -42,6 +42,8 @@ export type PerfRow = {
   clicks: number;
   reach: number;
   interactions: number;
+  /** Visitas ao perfil — métrica principal de campanhas de Tráfego */
+  profileVisits: number;
   /** Vendas detalhadas (quem vendeu etc.); quando existem, Vendas e Receita bruta vêm delas */
   salesDetails: SaleDetail[];
 };
@@ -81,15 +83,18 @@ const campaignTypeLabel = (key: string | null) => CAMPAIGN_TYPES.find((t) => t.k
    Tráfego = visualizações e cliques; Engajamento = visualizações, alcance e
    interações; Reconhecimento = visualizações e alcance. */
 
-type MediaField = "views" | "clicks" | "reach" | "interactions";
+type MediaField = "views" | "clicks" | "reach" | "interactions" | "profileVisits";
 const MEDIA_FIELD_META: { key: MediaField; label: string }[] = [
   { key: "views", label: "Visualizações" },
   { key: "clicks", label: "Cliques" },
+  { key: "profileVisits", label: "Visitas ao perfil" },
   { key: "reach", label: "Alcance" },
   { key: "interactions", label: "Interações" },
 ];
 const MEDIA_TYPE_FIELDS: Record<string, readonly MediaField[]> = {
-  TRAFEGO: ["views", "clicks"],
+  // Tráfego: objetivo é levar gente ao perfil — Visitas ao perfil é a métrica principal
+  TRAFEGO: ["views", "clicks", "profileVisits"],
+  // Engajamento: reengajamento com uma publicação — Interações é a métrica principal
   ENGAJAMENTO: ["views", "reach", "interactions"],
   RECONHECIMENTO: ["views", "reach"],
 };
@@ -162,15 +167,18 @@ function mediaOf(rows: PerfRow[]) {
   const clicks = sum("clicks");
   const reach = sum("reach");
   const interactions = sum("interactions");
+  const profileVisits = sum("profileVisits");
   return {
     views,
     clicks,
     reach,
     interactions,
+    profileVisits,
     cpv: ratio(inv("views"), views),
     cpc: ratio(inv("clicks"), clicks),
     custoInteracao: ratio(inv("interactions"), interactions),
     custoAlcance: ratio(inv("reach"), reach),
+    custoVisitaPerfil: ratio(inv("profileVisits"), profileVisits),
   };
 }
 
@@ -188,9 +196,9 @@ function mainResultOf(rows: PerfRow[], cfg: PerfConfig) {
     case "VENDAS":
       return { label: `${num(t.sales)} vendas`, cost: kpisOf(t).cac, costLabel: "CAC" };
     case "TRAFEGO":
-      return { label: `${num(m.views)} visualizações`, cost: m.cpv, costLabel: "custo por visualização" };
+      return { label: `${num(m.profileVisits)} visitas ao perfil`, cost: m.custoVisitaPerfil, costLabel: "custo por visita" };
     case "ENGAJAMENTO":
-      return { label: `${num(m.interactions)} interações`, cost: m.custoInteracao, costLabel: "custo por interação" };
+      return { label: `${num(m.interactions)} reengajamentos`, cost: m.custoInteracao, costLabel: "custo por reengajamento" };
     case "RECONHECIMENTO":
       return { label: `${num(m.reach)} alcançados`, cost: m.custoAlcance, costLabel: "custo por alcance" };
     default:
@@ -830,28 +838,27 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Tráfego e engajamento
             </p>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+              <StatCard
+                label="Visitas ao perfil"
+                value={num(m.profileVisits)}
+                delta={delta(m.profileVisits, pm.profileVisits)}
+                hint={m.custoVisitaPerfil === null ? "métrica principal de Tráfego" : `custo por visita ${fmtBrl(m.custoVisitaPerfil)}`}
+                accent="brand"
+              />
               <StatCard
                 label="Visualizações"
                 value={num(m.views)}
                 delta={delta(m.views, pm.views)}
                 hint="campanhas de tráfego, engajamento e reconhecimento"
-                accent="brand"
-              />
-              <StatCard
-                label="Custo por visualização"
-                value={fmtBrl(m.cpv)}
-                delta={delta(m.cpv, pm.cpv)}
-                hint="investimento / visualizações"
-                accent="warn"
-                lowerIsBetter
+                accent="violet"
               />
               <StatCard
                 label="Cliques"
                 value={num(m.clicks)}
                 delta={delta(m.clicks, pm.clicks)}
                 hint={m.cpc === null ? "campanhas de tráfego" : `custo por clique ${fmtBrl(m.cpc)}`}
-                accent="violet"
+                accent="warn"
               />
               <StatCard
                 label="Alcance"
@@ -861,10 +868,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                 accent="grow"
               />
               <StatCard
-                label="Interações"
+                label="Reengajamentos"
                 value={num(m.interactions)}
                 delta={delta(m.interactions, pm.interactions)}
-                hint={m.custoInteracao === null ? "campanhas de engajamento" : `custo por interação ${fmtBrl(m.custoInteracao)}`}
+                hint={m.custoInteracao === null ? "reengajamento com publicações" : `custo por reengajamento ${fmtBrl(m.custoInteracao)}`}
                 accent="brand"
               />
             </div>
@@ -1137,30 +1144,37 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             {editable ? "Nenhum lançamento ainda. Clique em “Adicionar linha” para começar." : "Nenhum dado de performance lançado ainda."}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[2080px] text-sm">
+          <>
+          <p className="mb-2 text-[11px] text-slate-600">
+            Cabeçalho e as colunas Data/Origem/Campanha/Tipo ficam fixos enquanto você rola a tabela.
+          </p>
+          <div className="max-h-[560px] overflow-auto rounded-xl border border-line/40">
+            <table className="w-full min-w-[2220px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
-                  <th className="px-2 py-2.5 font-medium">Data</th>
-                  <th className="px-2 py-2.5 font-medium">Origem</th>
-                  <th className="px-2 py-2.5 font-medium">Campanha</th>
-                  <th className="px-2 py-2.5 font-medium">Tipo</th>
-                  <th className="px-2 py-2.5 font-medium">Investimento</th>
-                  <th className="px-2 py-2.5 font-medium">Leads</th>
-                  <th className="px-2 py-2.5 font-medium">Vendas</th>
-                  <th className="px-2 py-2.5 font-medium">Receita bruta</th>
-                  <th className="px-2 py-2.5 font-medium">% Conv.</th>
-                  <th className="px-2 py-2.5 font-medium">% Com.</th>
-                  <th className="px-2 py-2.5 font-medium text-violet">Visualiz.</th>
-                  <th className="px-2 py-2.5 font-medium text-violet">Cliques</th>
-                  <th className="px-2 py-2.5 font-medium text-violet">Alcance</th>
-                  <th className="px-2 py-2.5 font-medium text-violet">Interações</th>
-                  <th className="px-2 py-2.5 font-medium text-slate-600">CAC</th>
-                  <th className="px-2 py-2.5 font-medium text-slate-600">CPL</th>
-                  <th className="px-2 py-2.5 font-medium text-slate-600">Ticket</th>
-                  <th className="px-2 py-2.5 font-medium text-grow-500">Receita real</th>
-                  <th className="px-2 py-2.5 font-medium text-slate-600">ROI</th>
-                  {editable && <th className="w-10" />}
+                  <th className="sticky top-0 left-0 z-20 w-[140px] bg-ink-800 px-2 py-2.5 font-medium">Data</th>
+                  <th className="sticky top-0 left-[140px] z-20 w-[130px] bg-ink-800 px-2 py-2.5 font-medium">Origem</th>
+                  <th className="sticky top-0 left-[270px] z-20 w-[145px] bg-ink-800 px-2 py-2.5 font-medium shadow-[4px_0_8px_-4px_rgba(0,0,0,0.4)]">
+                    Campanha
+                  </th>
+                  <th className="sticky top-0 left-[415px] z-20 w-[132px] bg-ink-800 px-2 py-2.5 font-medium">Tipo</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">Investimento</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">Leads</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">Vendas</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">Receita bruta</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">% Conv.</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium">% Com.</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-violet">Visualiz.</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-violet">Cliques</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-violet">Visitas perfil</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-violet">Alcance</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-violet">Interações</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-slate-600">CAC</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-slate-600">CPL</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-slate-600">Ticket</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-grow-500">Receita real</th>
+                  <th className="sticky top-0 z-10 bg-ink-800 px-2 py-2.5 font-medium text-slate-600">ROI</th>
+                  {editable && <th className="sticky top-0 z-10 w-10 bg-ink-800" />}
                 </tr>
               </thead>
               <tbody>
@@ -1175,7 +1189,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                     >
                       {editable ? (
                         <>
-                          <td className="px-1 py-1">
+                          <td className="sticky left-0 z-10 w-[140px] bg-ink-900 px-1 py-1">
                             <input
                               type="date"
                               defaultValue={r.date}
@@ -1183,7 +1197,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               className={cn(inputCls, "min-w-[128px]")}
                             />
                           </td>
-                          <td className="px-1 py-1">
+                          <td className="sticky left-[140px] z-10 w-[130px] bg-ink-900 px-1 py-1">
                             <select
                               defaultValue={r.source}
                               onChange={(e) => edit(r.id, { source: e.target.value })}
@@ -1196,7 +1210,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               ))}
                             </select>
                           </td>
-                          <td className="px-1 py-1">
+                          <td className="sticky left-[270px] z-10 w-[145px] bg-ink-900 px-1 py-1 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.4)]">
                             <input
                               list="perf-campanhas"
                               defaultValue={r.campaign ?? ""}
@@ -1206,7 +1220,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               className={cn(inputCls, "min-w-[130px]")}
                             />
                           </td>
-                          <td className="px-1 py-1">
+                          <td className="sticky left-[415px] z-10 w-[132px] bg-ink-900 px-1 py-1">
                             <select
                               defaultValue={r.campaignType ?? ""}
                               onChange={(e) => edit(r.id, { campaignType: e.target.value || null })}
@@ -1325,10 +1339,18 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                         </>
                       ) : (
                         <>
-                          <td className="px-2 py-2.5 text-slate-300">{r.date.split("-").reverse().join("/")}</td>
-                          <td className="px-2 py-2.5 text-slate-400">{sourceLabel(r.source)}</td>
-                          <td className="px-2 py-2.5 text-slate-400">{r.campaign ?? "—"}</td>
-                          <td className="px-2 py-2.5 text-slate-400">{campaignTypeLabel(r.campaignType)}</td>
+                          <td className="sticky left-0 z-10 w-[140px] bg-ink-900 px-2 py-2.5 text-slate-300">
+                            {r.date.split("-").reverse().join("/")}
+                          </td>
+                          <td className="sticky left-[140px] z-10 w-[130px] bg-ink-900 px-2 py-2.5 text-slate-400">
+                            {sourceLabel(r.source)}
+                          </td>
+                          <td className="sticky left-[270px] z-10 w-[145px] bg-ink-900 px-2 py-2.5 text-slate-400 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.4)]">
+                            {r.campaign ?? "—"}
+                          </td>
+                          <td className="sticky left-[415px] z-10 w-[132px] bg-ink-900 px-2 py-2.5 text-slate-400">
+                            {campaignTypeLabel(r.campaignType)}
+                          </td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{isConv ? num(r.leads) : "—"}</td>
                           <td className="px-2 py-2.5 text-slate-300">
@@ -1378,6 +1400,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
               </tbody>
             </table>
           </div>
+          </>
         )}
         <datalist id="perf-campanhas">
           {campaignNames.map((name) => (

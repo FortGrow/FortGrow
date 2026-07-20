@@ -35,6 +35,7 @@ export function serializeEntry(e: {
   clicks: number;
   reach: number;
   interactions: number;
+  profileVisits: number;
   salesDetails?: SaleRecord[];
 }) {
   return {
@@ -53,6 +54,7 @@ export function serializeEntry(e: {
     clicks: e.clicks,
     reach: e.reach,
     interactions: e.interactions,
+    profileVisits: e.profileVisits,
     salesDetails: (e.salesDetails ?? []).map(serializeSale),
   };
 }

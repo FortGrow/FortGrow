@@ -787,6 +787,8 @@ model PerformanceEntry {
   clicks       Int @default(0)
   reach        Int @default(0)
   interactions Int @default(0)
+  /// Visitas ao perfil — métrica principal de campanhas de Tráfego
+  profileVisits Int @default(0)
 
   salesDetails PerformanceSale[]
   createdAt  DateTime @default(now())
