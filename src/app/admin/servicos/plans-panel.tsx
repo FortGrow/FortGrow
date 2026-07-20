@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Package, Plus, Trash2 } from "lucide-react";
+import { Check, Loader2, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 
@@ -35,19 +35,33 @@ function pricingLabel(p: Pick<PlanDTO, "pricingModel" | "price" | "variablePerce
 /** Planos/pacotes da FortGrow — fixo, variável (% sobre algo) ou híbrido; usados no cadastro de clientes. */
 export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<PlanDTO | null>(null);
   const [pricingModel, setPricingModel] = useState<"FIXO" | "VARIAVEL" | "HIBRIDO">("FIXO");
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  function openCreate() {
+    setEditing(null);
+    setPricingModel("FIXO");
+    setOpen(true);
+  }
+
+  function openEdit(p: PlanDTO) {
+    setEditing(p);
+    setPricingModel(p.pricingModel);
+    setOpen(true);
+  }
+
   function closeModal() {
     setOpen(false);
+    setEditing(null);
     setPricingModel("FIXO");
     setError(null);
   }
 
-  async function onCreate(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -56,19 +70,20 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
+    const payload = {
+      name: form.get("name"),
+      description: form.get("description") || undefined,
+      pricingModel,
+      price: form.get("price") || undefined,
+      variablePercent: form.get("variablePercent") || undefined,
+      variableBasis: form.get("variableBasis") || undefined,
+      deliverables,
+    };
     try {
       const res = await fetch("/api/plans", {
-        method: "POST",
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.get("name"),
-          description: form.get("description") || undefined,
-          pricingModel,
-          price: form.get("price") || undefined,
-          variablePercent: form.get("variablePercent") || undefined,
-          variableBasis: form.get("variableBasis") || undefined,
-          deliverables,
-        }),
+        body: JSON.stringify(editing ? { id: editing.id, ...payload } : payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -104,7 +119,7 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
             plano ao cadastrar/editar clientes e no portal de cada cliente.
           </p>
         </div>
-        <button onClick={() => setOpen(true)} className="btn-primary">
+        <button onClick={openCreate} className="btn-primary">
           <Plus size={15} /> Novo plano
         </button>
       </div>
@@ -119,14 +134,23 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
             <div key={p.id} className="card flex flex-col p-5">
               <div className="mb-1 flex items-start justify-between gap-2">
                 <p className="font-bold text-slate-100">{p.name}</p>
-                <button
-                  onClick={() => remove(p.id)}
-                  disabled={removing === p.id}
-                  title="Excluir plano"
-                  className="rounded-lg p-1.5 text-slate-600 transition hover:bg-danger/10 hover:text-danger"
-                >
-                  {removing === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => openEdit(p)}
+                    title="Editar plano"
+                    className="rounded-lg p-1.5 text-slate-600 transition hover:bg-brand-500/10 hover:text-brand-400"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => remove(p.id)}
+                    disabled={removing === p.id}
+                    title="Excluir plano"
+                    className="rounded-lg p-1.5 text-slate-600 transition hover:bg-danger/10 hover:text-danger"
+                  >
+                    {removing === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                  </button>
+                </div>
               </div>
               <p className="text-lg font-bold text-brand-400">{pricingLabel(p)}</p>
               <span
@@ -156,12 +180,20 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
 
       {open && (
         <Overlay>
-          <form onSubmit={onCreate} className="card w-full max-w-lg animate-fade-up p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-100">Novo plano FortGrow</h2>
+          <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
+            <h2 className="mb-4 text-lg font-bold text-slate-100">{editing ? `Editar ${editing.name}` : "Novo plano FortGrow"}</h2>
             <div className="space-y-4">
               <div>
                 <label className="label" htmlFor="pl-name">Nome do plano *</label>
-                <input id="pl-name" name="name" required minLength={2} className="input" placeholder="Ex.: Growth Plus" />
+                <input
+                  id="pl-name"
+                  name="name"
+                  required
+                  minLength={2}
+                  defaultValue={editing?.name ?? ""}
+                  className="input"
+                  placeholder="Ex.: Growth Plus"
+                />
               </div>
 
               <div>
@@ -189,7 +221,17 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
               {(pricingModel === "FIXO" || pricingModel === "HIBRIDO") && (
                 <div>
                   <label className="label" htmlFor="pl-price">Valor fixo mensal (R$) *</label>
-                  <input id="pl-price" name="price" type="number" min="0" step="0.01" required className="input" placeholder="8500" />
+                  <input
+                    id="pl-price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    defaultValue={editing?.price || ""}
+                    className="input"
+                    placeholder="8500"
+                  />
                 </div>
               )}
 
@@ -205,20 +247,33 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
                       max="100"
                       step="0.1"
                       required
+                      defaultValue={editing?.variablePercent ?? ""}
                       className="input"
                       placeholder="10"
                     />
                   </div>
                   <div>
                     <label className="label" htmlFor="pl-basis">Sobre o quê?</label>
-                    <input id="pl-basis" name="variableBasis" className="input" placeholder="sobre investimento em mídia" />
+                    <input
+                      id="pl-basis"
+                      name="variableBasis"
+                      defaultValue={editing?.variableBasis ?? ""}
+                      className="input"
+                      placeholder="sobre investimento em mídia"
+                    />
                   </div>
                 </div>
               )}
 
               <div>
                 <label className="label" htmlFor="pl-desc">Descrição</label>
-                <input id="pl-desc" name="description" className="input" placeholder="Para quem é este pacote" />
+                <input
+                  id="pl-desc"
+                  name="description"
+                  defaultValue={editing?.description ?? ""}
+                  className="input"
+                  placeholder="Para quem é este pacote"
+                />
               </div>
               <div>
                 <label className="label" htmlFor="pl-deliv">Entregas incluídas (uma por linha)</label>
@@ -226,6 +281,7 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
                   id="pl-deliv"
                   name="deliverables"
                   rows={6}
+                  defaultValue={editing?.deliverables.join("\n") ?? ""}
                   className="input"
                   placeholder={"Gestão de tráfego (Google + Meta)\n12 posts/mês no Instagram\n4 Reels/mês\nRelatório mensal de resultados\nReunião quinzenal de alinhamento"}
                 />
@@ -235,7 +291,7 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={closeModal} className="btn-ghost">Cancelar</button>
               <button type="submit" disabled={loading} className="btn-primary">
-                {loading && <Loader2 size={15} className="animate-spin" />} Criar plano
+                {loading && <Loader2 size={15} className="animate-spin" />} {editing ? "Salvar alterações" : "Criar plano"}
               </button>
             </div>
           </form>

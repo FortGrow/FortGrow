@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Layers, Loader2, Plus, Trash2 } from "lucide-react";
+import { Layers, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { cn } from "@/lib/utils";
 
@@ -35,35 +35,50 @@ function pricingLabel(s: Pick<ServiceDTO, "pricingModel" | "basePrice" | "variab
 /** Catálogo de serviços da FortGrow — fixo, variável (% sobre algo) ou híbrido (fixo + variável). */
 export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<ServiceDTO | null>(null);
   const [pricingModel, setPricingModel] = useState<"FIXO" | "VARIAVEL" | "HIBRIDO">("FIXO");
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  function openCreate() {
+    setEditing(null);
+    setPricingModel("FIXO");
+    setOpen(true);
+  }
+
+  function openEdit(s: ServiceDTO) {
+    setEditing(s);
+    setPricingModel(s.pricingModel);
+    setOpen(true);
+  }
+
   function closeModal() {
     setOpen(false);
+    setEditing(null);
     setPricingModel("FIXO");
     setError(null);
   }
 
-  async function onCreate(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     const form = new FormData(e.currentTarget);
+    const payload = {
+      name: form.get("name"),
+      description: form.get("description") || undefined,
+      pricingModel,
+      basePrice: form.get("basePrice") || undefined,
+      variablePercent: form.get("variablePercent") || undefined,
+      variableBasis: form.get("variableBasis") || undefined,
+    };
     try {
       const res = await fetch("/api/services", {
-        method: "POST",
+        method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.get("name"),
-          description: form.get("description") || undefined,
-          pricingModel,
-          basePrice: form.get("basePrice") || undefined,
-          variablePercent: form.get("variablePercent") || undefined,
-          variableBasis: form.get("variableBasis") || undefined,
-        }),
+        body: JSON.stringify(editing ? { id: editing.id, ...payload } : payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -103,7 +118,7 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
             Serviços fixos, variáveis (% sobre algo, ex.: investimento em mídia) ou híbridos (fixo + variável).
           </p>
         </div>
-        <button onClick={() => setOpen(true)} className="btn-primary">
+        <button onClick={openCreate} className="btn-primary">
           <Plus size={15} /> Novo serviço
         </button>
       </div>
@@ -116,14 +131,23 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
             <div key={s.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-semibold text-slate-200">{s.name}</p>
-                <button
-                  onClick={() => remove(s.id)}
-                  disabled={removing === s.id}
-                  title="Excluir serviço"
-                  className="shrink-0 rounded-lg p-1 text-slate-600 transition hover:bg-danger/10 hover:text-danger"
-                >
-                  {removing === s.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => openEdit(s)}
+                    title="Editar serviço"
+                    className="rounded-lg p-1 text-slate-600 transition hover:bg-brand-500/10 hover:text-brand-400"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => remove(s.id)}
+                    disabled={removing === s.id}
+                    title="Excluir serviço"
+                    className="rounded-lg p-1 text-slate-600 transition hover:bg-danger/10 hover:text-danger"
+                  >
+                    {removing === s.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  </button>
+                </div>
               </div>
               <p className="mt-1 text-xs text-slate-500">{s.clientCount} cliente(s) · {pricingLabel(s)}</p>
               <span
@@ -143,12 +167,20 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
 
       {open && (
         <Overlay>
-          <form onSubmit={onCreate} className="card w-full max-w-lg animate-fade-up p-6">
-            <h2 className="mb-4 text-lg font-bold text-slate-100">Novo serviço</h2>
+          <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
+            <h2 className="mb-4 text-lg font-bold text-slate-100">{editing ? `Editar ${editing.name}` : "Novo serviço"}</h2>
             <div className="space-y-4">
               <div>
                 <label className="label" htmlFor="sv-name">Nome do serviço *</label>
-                <input id="sv-name" name="name" required minLength={2} className="input" placeholder="Ex.: Gestão de Tráfego" />
+                <input
+                  id="sv-name"
+                  name="name"
+                  required
+                  minLength={2}
+                  defaultValue={editing?.name ?? ""}
+                  className="input"
+                  placeholder="Ex.: Gestão de Tráfego"
+                />
               </div>
 
               <div>
@@ -183,6 +215,7 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
                     min="0"
                     step="0.01"
                     required
+                    defaultValue={editing?.basePrice || ""}
                     className="input"
                     placeholder="2500"
                   />
@@ -201,6 +234,7 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
                       max="100"
                       step="0.1"
                       required
+                      defaultValue={editing?.variablePercent ?? ""}
                       className="input"
                       placeholder="10"
                     />
@@ -210,6 +244,7 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
                     <input
                       id="sv-basis"
                       name="variableBasis"
+                      defaultValue={editing?.variableBasis ?? ""}
                       className="input"
                       placeholder="sobre investimento em mídia"
                     />
@@ -219,14 +254,20 @@ export function ServicesPanel({ services }: { services: ServiceDTO[] }) {
 
               <div>
                 <label className="label" htmlFor="sv-desc">Descrição</label>
-                <input id="sv-desc" name="description" className="input" placeholder="Do que se trata este serviço" />
+                <input
+                  id="sv-desc"
+                  name="description"
+                  defaultValue={editing?.description ?? ""}
+                  className="input"
+                  placeholder="Do que se trata este serviço"
+                />
               </div>
             </div>
             {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={closeModal} className="btn-ghost">Cancelar</button>
               <button type="submit" disabled={loading} className="btn-primary">
-                {loading && <Loader2 size={15} className="animate-spin" />} Criar serviço
+                {loading && <Loader2 size={15} className="animate-spin" />} {editing ? "Salvar alterações" : "Criar serviço"}
               </button>
             </div>
           </form>
