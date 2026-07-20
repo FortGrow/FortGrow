@@ -73,6 +73,10 @@ const createSchema = z.object({
   source: z.enum(SOURCES).optional(),
   campaign: z.string().max(120).nullish(),
   campaignType: z.enum(CAMPAIGN_TYPES).nullish().or(z.literal("")),
+  views: z.coerce.number().int().min(0).default(0),
+  clicks: z.coerce.number().int().min(0).default(0),
+  reach: z.coerce.number().int().min(0).default(0),
+  interactions: z.coerce.number().int().min(0).default(0),
 });
 
 export async function POST(req: NextRequest) {
@@ -114,6 +118,10 @@ const updateSchema = z.object({
   source: z.enum(SOURCES).optional(),
   campaign: z.string().max(120).nullish(),
   campaignType: z.enum(CAMPAIGN_TYPES).nullish().or(z.literal("")),
+  views: z.coerce.number().int().min(0).optional(),
+  clicks: z.coerce.number().int().min(0).optional(),
+  reach: z.coerce.number().int().min(0).optional(),
+  interactions: z.coerce.number().int().min(0).optional(),
 });
 
 export async function PATCH(req: NextRequest) {

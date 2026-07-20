@@ -31,6 +31,10 @@ export function serializeEntry(e: {
   source: string;
   campaign: string | null;
   campaignType: string | null;
+  views: number;
+  clicks: number;
+  reach: number;
+  interactions: number;
   salesDetails?: SaleRecord[];
 }) {
   return {
@@ -45,6 +49,10 @@ export function serializeEntry(e: {
     source: e.source,
     campaign: e.campaign,
     campaignType: e.campaignType,
+    views: e.views,
+    clicks: e.clicks,
+    reach: e.reach,
+    interactions: e.interactions,
     salesDetails: (e.salesDetails ?? []).map(serializeSale),
   };
 }

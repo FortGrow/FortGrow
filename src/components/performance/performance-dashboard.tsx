@@ -37,6 +37,11 @@ export type PerfRow = {
   campaign: string | null;
   /** Objetivo da campanha (chave de CAMPAIGN_TYPES) */
   campaignType: string | null;
+  /** Métricas de mídia — preenchidas por campanhas de Tráfego/Engajamento/Reconhecimento */
+  views: number;
+  clicks: number;
+  reach: number;
+  interactions: number;
   /** Vendas detalhadas (quem vendeu etc.); quando existem, Vendas e Receita bruta vêm delas */
   salesDetails: SaleDetail[];
 };
@@ -70,11 +75,42 @@ export const CAMPAIGN_TYPES = [
 ] as const;
 const campaignTypeLabel = (key: string | null) => CAMPAIGN_TYPES.find((t) => t.key === key)?.label ?? "—";
 
+/* ————— Métricas por tipo de campanha —————
+   Campanhas de conversão (Leads, Vendas, Outro ou sem tipo) lançam
+   Leads/Vendas/Receita; campanhas de mídia lançam as métricas do seu objetivo:
+   Tráfego = visualizações e cliques; Engajamento = visualizações, alcance e
+   interações; Reconhecimento = visualizações e alcance. */
+
+type MediaField = "views" | "clicks" | "reach" | "interactions";
+const MEDIA_FIELD_META: { key: MediaField; label: string }[] = [
+  { key: "views", label: "Visualizações" },
+  { key: "clicks", label: "Cliques" },
+  { key: "reach", label: "Alcance" },
+  { key: "interactions", label: "Interações" },
+];
+const MEDIA_TYPE_FIELDS: Record<string, readonly MediaField[]> = {
+  TRAFEGO: ["views", "clicks"],
+  ENGAJAMENTO: ["views", "reach", "interactions"],
+  RECONHECIMENTO: ["views", "reach"],
+};
+/** Sem tipo, Leads, Vendas e Outro seguem o fluxo de conversão (leads → vendas → receita) */
+const isConversionType = (t: string | null) => !t || !(t in MEDIA_TYPE_FIELDS);
+const mediaFieldsOf = (t: string | null): readonly MediaField[] => (t && MEDIA_TYPE_FIELDS[t]) || [];
+const rowHasMedia = (r: PerfRow, f: MediaField) => mediaFieldsOf(r.campaignType).includes(f);
+
 export type PerfConfig = { convPercent: number; commissionPercent: number };
 
 /* ————— Cálculos (estilo planilha: tudo derivado, nada armazenado) ————— */
 
-type Totals = { investment: number; leads: number; sales: number; revenue: number; real: number };
+type Totals = {
+  investment: number;
+  /** Só o investimento das campanhas de conversão — base de CAC/CPL/ROI */
+  convInvestment: number;
+  leads: number;
+  sales: number;
+  revenue: number;
+  real: number;
+};
 
 /** Receita Real da linha = bruta × % conversão real × % comissão (override ou padrão) */
 function realOf(r: PerfRow, cfg: PerfConfig) {
@@ -83,16 +119,21 @@ function realOf(r: PerfRow, cfg: PerfConfig) {
   return r.revenue * (conv / 100) * (comm / 100);
 }
 
+/** Leads/Vendas/Receita só contam nas linhas de conversão; mídia entra em mediaOf */
 function totalsOf(rows: PerfRow[], cfg: PerfConfig): Totals {
   return rows.reduce(
-    (t, r) => ({
-      investment: t.investment + r.investment,
-      leads: t.leads + r.leads,
-      sales: t.sales + r.sales,
-      revenue: t.revenue + r.revenue,
-      real: t.real + realOf(r, cfg),
-    }),
-    { investment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
+    (t, r) => {
+      const conv = isConversionType(r.campaignType);
+      return {
+        investment: t.investment + r.investment,
+        convInvestment: t.convInvestment + (conv ? r.investment : 0),
+        leads: t.leads + (conv ? r.leads : 0),
+        sales: t.sales + (conv ? r.sales : 0),
+        revenue: t.revenue + (conv ? r.revenue : 0),
+        real: t.real + (conv ? realOf(r, cfg) : 0),
+      };
+    },
+    { investment: 0, convInvestment: 0, leads: 0, sales: 0, revenue: 0, real: 0 }
   );
 }
 
@@ -100,16 +141,61 @@ const ratio = (a: number, b: number) => (b > 0 ? a / b : null);
 
 function kpisOf(t: Totals) {
   return {
-    cac: ratio(t.investment, t.sales),
-    cpl: ratio(t.investment, t.leads),
-    custoConv: ratio(t.investment, t.sales),
+    cac: ratio(t.convInvestment, t.sales),
+    cpl: ratio(t.convInvestment, t.leads),
+    custoConv: ratio(t.convInvestment, t.sales),
     ticket: ratio(t.revenue, t.sales),
     // Valor por lead = valor gasto / leads gerados (pedido do cliente)
-    valorLead: ratio(t.investment, t.leads),
+    valorLead: ratio(t.convInvestment, t.leads),
     real: t.real,
-    // ROI sobre a receita REAL (não a bruta), em %
-    roi: t.investment > 0 ? ((t.real - t.investment) / t.investment) * 100 : null,
+    // ROI sobre a receita REAL (não a bruta), em % — só sobre investimento de conversão
+    roi: t.convInvestment > 0 ? ((t.real - t.convInvestment) / t.convInvestment) * 100 : null,
   };
+}
+
+/** Totais e custos das campanhas de mídia (cada custo usa só o investimento
+    das linhas cujo tipo lança aquela métrica). */
+function mediaOf(rows: PerfRow[]) {
+  const sum = (f: MediaField) => rows.reduce((s, r) => s + (rowHasMedia(r, f) ? r[f] : 0), 0);
+  const inv = (f: MediaField) => rows.reduce((s, r) => s + (rowHasMedia(r, f) ? r.investment : 0), 0);
+  const views = sum("views");
+  const clicks = sum("clicks");
+  const reach = sum("reach");
+  const interactions = sum("interactions");
+  return {
+    views,
+    clicks,
+    reach,
+    interactions,
+    cpv: ratio(inv("views"), views),
+    cpc: ratio(inv("clicks"), clicks),
+    custoInteracao: ratio(inv("interactions"), interactions),
+    custoAlcance: ratio(inv("reach"), reach),
+  };
+}
+
+/** Resultado principal de um conjunto de linhas, guiado pelo tipo mais frequente */
+function mainResultOf(rows: PerfRow[], cfg: PerfConfig) {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const key = r.campaignType ?? "";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const t = totalsOf(rows, cfg);
+  const m = mediaOf(rows);
+  switch (top) {
+    case "VENDAS":
+      return { label: `${num(t.sales)} vendas`, cost: kpisOf(t).cac, costLabel: "CAC" };
+    case "TRAFEGO":
+      return { label: `${num(m.views)} visualizações`, cost: m.cpv, costLabel: "custo por visualização" };
+    case "ENGAJAMENTO":
+      return { label: `${num(m.interactions)} interações`, cost: m.custoInteracao, costLabel: "custo por interação" };
+    case "RECONHECIMENTO":
+      return { label: `${num(m.reach)} alcançados`, cost: m.custoAlcance, costLabel: "custo por alcance" };
+    default:
+      return { label: `${num(t.leads)} leads`, cost: kpisOf(t).cpl, costLabel: "CPL" };
+  }
 }
 
 const fmtBrl = (v: number | null) => (v === null ? "—" : brl(v));
@@ -376,7 +462,16 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         .map((name) => {
           const cRows = currentAll.filter((r) => (r.campaign ?? "") === name);
           const types = [...new Set(cRows.map((r) => campaignTypeLabel(r.campaignType)).filter((l) => l !== "—"))];
-          return { name, types, count: cRows.length, k: kpisOf(totalsOf(cRows, cfg)), t: totalsOf(cRows, cfg) };
+          const hasConv = cRows.some((r) => isConversionType(r.campaignType));
+          return {
+            name,
+            types,
+            count: cRows.length,
+            hasConv,
+            main: mainResultOf(cRows, cfg),
+            k: kpisOf(totalsOf(cRows, cfg)),
+            t: totalsOf(cRows, cfg),
+          };
         })
         .filter((c) => c.count > 0),
     [campaignNames, currentAll, cfg]
@@ -431,7 +526,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const cmpConvPrev = cpt.leads > 0 ? (cpt.sales / cpt.leads) * 100 : null;
   const dConv = delta(cmpConvCur, cmpConvPrev);
   const dRoi = delta(ck.roi, cpv.roi);
-  const returnPerReal = t.investment > 0 ? k.real / t.investment : null;
+  const returnPerReal = t.convInvestment > 0 ? k.real / t.convInvestment : null;
+
+  /* Métricas de mídia do período (tráfego / engajamento / reconhecimento) */
+  const hasMediaRows = current.some((r) => !isConversionType(r.campaignType));
+  const m = mediaOf(current);
+  const pm = mediaOf(previous);
 
   const trendPhrase = (d: number | undefined, up: string, down: string, flat: string, atual: string) =>
     d === undefined ? atual : d >= 1 ? up : d <= -1 ? down : flat;
@@ -472,7 +572,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   if (dCpl !== undefined && dCpl > 20) alerts.push({ tone: "warn", msg: `CPL subiu ${absPct(dCpl)} — cada lead está custando mais caro.` });
   if (dConv !== undefined && dConv < -20) alerts.push({ tone: "danger", msg: `Queda de ${absPct(dConv)} na conversão de leads em vendas.` });
   if (k.roi !== null && k.roi < 0) alerts.push({ tone: "danger", msg: "ROI negativo: o investimento superou a receita real no período." });
-  if (t.investment > 0 && t.leads === 0) alerts.push({ tone: "warn", msg: "Há investimento no período sem nenhum lead registrado." });
+  if (t.convInvestment > 0 && t.leads === 0)
+    alerts.push({ tone: "warn", msg: "Há investimento em campanhas de conversão sem nenhum lead registrado no período." });
   // Crescimento positivo também é alerta — boas notícias em destaque
   if (dCac !== undefined && dCac < -15) alerts.push({ tone: "ok", msg: `Bom sinal: o CAC caiu ${absPct(dCac)} (${cmpNote}).` });
   if (dCpl !== undefined && dCpl < -15) alerts.push({ tone: "ok", msg: `Leads mais baratos: o CPL caiu ${absPct(dCpl)}.` });
@@ -724,6 +825,52 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           />
         </div>
 
+        {hasMediaRows && (
+          <>
+            <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Tráfego e engajamento
+            </p>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+              <StatCard
+                label="Visualizações"
+                value={num(m.views)}
+                delta={delta(m.views, pm.views)}
+                hint="campanhas de tráfego, engajamento e reconhecimento"
+                accent="brand"
+              />
+              <StatCard
+                label="Custo por visualização"
+                value={fmtBrl(m.cpv)}
+                delta={delta(m.cpv, pm.cpv)}
+                hint="investimento / visualizações"
+                accent="warn"
+                lowerIsBetter
+              />
+              <StatCard
+                label="Cliques"
+                value={num(m.clicks)}
+                delta={delta(m.clicks, pm.clicks)}
+                hint={m.cpc === null ? "campanhas de tráfego" : `custo por clique ${fmtBrl(m.cpc)}`}
+                accent="violet"
+              />
+              <StatCard
+                label="Alcance"
+                value={num(m.reach)}
+                delta={delta(m.reach, pm.reach)}
+                hint={m.custoAlcance === null ? "pessoas alcançadas" : `custo por alcance ${fmtBrl(m.custoAlcance)}`}
+                accent="grow"
+              />
+              <StatCard
+                label="Interações"
+                value={num(m.interactions)}
+                delta={delta(m.interactions, pm.interactions)}
+                hint={m.custoInteracao === null ? "campanhas de engajamento" : `custo por interação ${fmtBrl(m.custoInteracao)}`}
+                accent="brand"
+              />
+            </div>
+          </>
+        )}
+
         <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Financeiro</p>
         <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <StatCard
@@ -782,16 +929,16 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         <div className="card p-5">
           <h2 className="mb-3 text-sm font-bold text-slate-200">Métricas por campanha</h2>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[980px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2 font-medium">Campanha</th>
                   <th className="px-2 py-2 font-medium">Tipo</th>
                   <th className="px-2 py-2 font-medium">Investimento</th>
+                  <th className="px-2 py-2 font-medium">Resultado principal</th>
+                  <th className="px-2 py-2 font-medium">Custo por resultado</th>
                   <th className="px-2 py-2 font-medium">Leads</th>
                   <th className="px-2 py-2 font-medium">Vendas</th>
-                  <th className="px-2 py-2 font-medium">CPL</th>
-                  <th className="px-2 py-2 font-medium">CAC</th>
                   <th className="px-2 py-2 font-medium">Receita real</th>
                   <th className="px-2 py-2 font-medium">ROI</th>
                 </tr>
@@ -802,12 +949,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                     <td className="px-2 py-2.5 font-semibold text-slate-200">{c.name}</td>
                     <td className="px-2 py-2.5 text-slate-400">{c.types.length > 0 ? c.types.join(" · ") : "—"}</td>
                     <td className="px-2 py-2.5 text-slate-300">{brl(c.t.investment)}</td>
-                    <td className="px-2 py-2.5 text-slate-300">{num(c.t.leads)}</td>
-                    <td className="px-2 py-2.5 text-slate-300">{num(c.t.sales)}</td>
-                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(c.k.cpl)}</td>
-                    <td className="px-2 py-2.5 text-slate-400">{fmtBrl(c.k.cac)}</td>
-                    <td className="px-2 py-2.5 font-semibold text-grow-400">{brl(c.k.real)}</td>
-                    <td className="px-2 py-2.5 text-slate-400">{fmtPct(c.k.roi)}</td>
+                    <td className="px-2 py-2.5 font-semibold text-slate-200">{c.main.label}</td>
+                    <td className="px-2 py-2.5 text-slate-400">
+                      {fmtBrl(c.main.cost)} <span className="text-xs text-slate-600">({c.main.costLabel})</span>
+                    </td>
+                    <td className="px-2 py-2.5 text-slate-300">{c.hasConv ? num(c.t.leads) : "—"}</td>
+                    <td className="px-2 py-2.5 text-slate-300">{c.hasConv ? num(c.t.sales) : "—"}</td>
+                    <td className="px-2 py-2.5 font-semibold text-grow-400">{c.hasConv ? brl(c.k.real) : "—"}</td>
+                    <td className="px-2 py-2.5 text-slate-400">{c.hasConv ? fmtPct(c.k.roi) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -989,7 +1138,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1600px] text-sm">
+            <table className="w-full min-w-[2080px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-2 py-2.5 font-medium">Data</th>
@@ -1002,6 +1151,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                   <th className="px-2 py-2.5 font-medium">Receita bruta</th>
                   <th className="px-2 py-2.5 font-medium">% Conv.</th>
                   <th className="px-2 py-2.5 font-medium">% Com.</th>
+                  <th className="px-2 py-2.5 font-medium text-violet">Visualiz.</th>
+                  <th className="px-2 py-2.5 font-medium text-violet">Cliques</th>
+                  <th className="px-2 py-2.5 font-medium text-violet">Alcance</th>
+                  <th className="px-2 py-2.5 font-medium text-violet">Interações</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">CAC</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">CPL</th>
                   <th className="px-2 py-2.5 font-medium text-slate-600">Ticket</th>
@@ -1014,6 +1167,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                 {table.map((r) => {
                   const rk = kpisOf(totalsOf([r], cfg));
                   const hasSales = r.salesDetails.length > 0;
+                  const isConv = isConversionType(r.campaignType);
                   return (
                     <tr
                       key={`${r.id}-v${rowVersion[r.id] ?? 0}`}
@@ -1057,7 +1211,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               defaultValue={r.campaignType ?? ""}
                               onChange={(e) => edit(r.id, { campaignType: e.target.value || null })}
                               className={cn(inputCls, "min-w-[120px] cursor-pointer")}
-                              title="Objetivo da campanha"
+                              title="Objetivo da campanha — define quais métricas fazem sentido lançar"
                             >
                               <option value="" className="bg-ink-900">Tipo…</option>
                               {CAMPAIGN_TYPES.map((t) => (
@@ -1067,9 +1221,24 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               ))}
                             </select>
                           </td>
-                          {(["investment", "leads", "sales", "revenue"] as const).map((field) => {
+                          <td className="px-1 py-1">
+                            <input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              defaultValue={r.investment || ""}
+                              placeholder="0"
+                              onChange={(e) => {
+                                const v = Number(e.target.value);
+                                edit(r.id, { investment: Number.isFinite(v) && v >= 0 ? v : 0 });
+                              }}
+                              className={cn(inputCls, "min-w-[90px]")}
+                            />
+                          </td>
+                          {(["leads", "sales", "revenue"] as const).map((field) => {
                             // Com vendas detalhadas, Vendas e Receita bruta vêm delas (não editar direto)
                             const synced = hasSales && (field === "sales" || field === "revenue");
+                            const disabled = !isConv || synced;
                             return (
                               <td key={field} className="px-1 py-1">
                                 <div className="flex items-center gap-1">
@@ -1078,16 +1247,22 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                                     min={0}
                                     step={field === "leads" || field === "sales" ? 1 : 0.01}
                                     defaultValue={r[field] || ""}
-                                    placeholder="0"
-                                    disabled={synced}
-                                    title={synced ? "Calculado pelas vendas detalhadas — clique no ícone ao lado" : undefined}
+                                    placeholder={isConv ? "0" : "—"}
+                                    disabled={disabled}
+                                    title={
+                                      !isConv
+                                        ? "Campanha desse tipo não lança leads/vendas/receita"
+                                        : synced
+                                          ? "Calculado pelas vendas detalhadas — clique no ícone ao lado"
+                                          : undefined
+                                    }
                                     onChange={(e) => {
                                       const v = Number(e.target.value);
                                       edit(r.id, { [field]: Number.isFinite(v) && v >= 0 ? v : 0 });
                                     }}
-                                    className={cn(inputCls, "min-w-[90px]", synced && "opacity-70")}
+                                    className={cn(inputCls, "min-w-[90px]", disabled && "opacity-40")}
                                   />
-                                  {field === "sales" && (
+                                  {field === "sales" && isConv && (
                                     <button
                                       onClick={() => setSalesEntryId(r.id)}
                                       title="Detalhar vendas: quem vendeu, valor, comprador…"
@@ -1114,17 +1289,39 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                                 max={100}
                                 step={0.1}
                                 defaultValue={r[field] ?? ""}
-                                placeholder={String(field === "convPercent" ? cfg.convPercent : cfg.commissionPercent)}
-                                title="Vazio = usa o padrão da base de cálculo"
+                                placeholder={isConv ? String(field === "convPercent" ? cfg.convPercent : cfg.commissionPercent) : "—"}
+                                disabled={!isConv}
+                                title={!isConv ? "Campanha desse tipo não usa base de cálculo" : "Vazio = usa o padrão da base de cálculo"}
                                 onChange={(e) => {
                                   if (e.target.value === "") return edit(r.id, { [field]: null });
                                   const v = Number(e.target.value);
                                   edit(r.id, { [field]: Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : null });
                                 }}
-                                className={cn(inputCls, "min-w-[64px]")}
+                                className={cn(inputCls, "min-w-[64px]", !isConv && "opacity-40")}
                               />
                             </td>
                           ))}
+                          {MEDIA_FIELD_META.map(({ key }) => {
+                            const applies = rowHasMedia(r, key);
+                            return (
+                              <td key={key} className="px-1 py-1">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  defaultValue={r[key] || ""}
+                                  placeholder={applies ? "0" : "—"}
+                                  disabled={!applies}
+                                  title={!applies ? "Campanha desse tipo não usa esta métrica" : undefined}
+                                  onChange={(e) => {
+                                    const v = Number(e.target.value);
+                                    edit(r.id, { [key]: Number.isFinite(v) && v >= 0 ? v : 0 });
+                                  }}
+                                  className={cn(inputCls, "min-w-[80px]", !applies && "opacity-40")}
+                                />
+                              </td>
+                            );
+                          })}
                         </>
                       ) : (
                         <>
@@ -1133,10 +1330,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                           <td className="px-2 py-2.5 text-slate-400">{r.campaign ?? "—"}</td>
                           <td className="px-2 py-2.5 text-slate-400">{campaignTypeLabel(r.campaignType)}</td>
                           <td className="px-2 py-2.5 text-slate-300">{brl(r.investment)}</td>
-                          <td className="px-2 py-2.5 text-slate-300">{num(r.leads)}</td>
+                          <td className="px-2 py-2.5 text-slate-300">{isConv ? num(r.leads) : "—"}</td>
                           <td className="px-2 py-2.5 text-slate-300">
                             <span className="flex items-center gap-1.5">
-                              {num(r.sales)}
+                              {isConv ? num(r.sales) : "—"}
                               {hasSales && (
                                 <button
                                   onClick={() => setSalesEntryId(r.id)}
@@ -1149,9 +1346,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
                               )}
                             </span>
                           </td>
-                          <td className="px-2 py-2.5 text-slate-300">{brl(r.revenue)}</td>
-                          <td className="px-2 py-2.5 text-slate-400">{r.convPercent ?? cfg.convPercent}%</td>
-                          <td className="px-2 py-2.5 text-slate-400">{r.commissionPercent ?? cfg.commissionPercent}%</td>
+                          <td className="px-2 py-2.5 text-slate-300">{isConv ? brl(r.revenue) : "—"}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{isConv ? `${r.convPercent ?? cfg.convPercent}%` : "—"}</td>
+                          <td className="px-2 py-2.5 text-slate-400">{isConv ? `${r.commissionPercent ?? cfg.commissionPercent}%` : "—"}</td>
+                          {MEDIA_FIELD_META.map(({ key }) => (
+                            <td key={key} className="px-2 py-2.5 text-slate-300">
+                              {rowHasMedia(r, key) ? num(r[key]) : "—"}
+                            </td>
+                          ))}
                         </>
                       )}
                       <td className="px-2 py-2.5 text-xs text-slate-500">{fmtBrl(rk.cac)}</td>
