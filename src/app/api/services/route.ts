@@ -49,6 +49,57 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ service }, { status: 201 });
 }
 
+const updateSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(2).max(80),
+    description: z.string().max(500).optional(),
+    pricingModel: z.enum(PRICING_MODELS).default("FIXO"),
+    basePrice: z.coerce.number().min(0).optional(),
+    variablePercent: z.coerce.number().min(0).max(100).optional(),
+    variableBasis: z.string().max(120).optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((d) => d.pricingModel === "FIXO" || (d.variablePercent ?? 0) > 0, {
+    message: "Informe o percentual variável.",
+    path: ["variablePercent"],
+  });
+
+/** Edita um serviço do catálogo — nome, modelo de precificação, valores e descrição. */
+export async function PATCH(req: NextRequest) {
+  const session = await requireStaff("servicos", "edit");
+  if (isResponse(session)) return session;
+
+  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  const { id, name, description, pricingModel, basePrice, variablePercent, variableBasis, active } = parsed.data;
+
+  const exists = await prisma.service.findFirst({ where: { name, NOT: { id } } });
+  if (exists) return NextResponse.json({ error: "Já existe outro serviço com este nome." }, { status: 409 });
+
+  const service = await prisma.service
+    .update({
+      where: { id },
+      data: {
+        name,
+        description: description || null,
+        pricingModel,
+        basePrice: pricingModel === "VARIAVEL" ? 0 : basePrice ?? 0,
+        variablePercent: pricingModel === "FIXO" ? null : variablePercent ?? null,
+        variableBasis: pricingModel === "FIXO" ? null : variableBasis || null,
+        ...(active !== undefined ? { active } : {}),
+      },
+    })
+    .catch(() => null);
+  if (!service) return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
+
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "service.update", entity: "Service", entityId: service.id },
+  });
+
+  return NextResponse.json({ ok: true, service });
+}
+
 /** Remove um serviço do catálogo (id pela querystring); bloqueado se houver clientes vinculados. */
 export async function DELETE(req: NextRequest) {
   const session = await requireStaff("servicos", "delete");
