@@ -4,24 +4,48 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Package, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { cn } from "@/lib/utils";
 
 export type PlanDTO = {
   id: string;
   name: string;
+  pricingModel: "FIXO" | "VARIAVEL" | "HIBRIDO";
   price: number;
+  variablePercent: number | null;
+  variableBasis: string | null;
   description: string | null;
   deliverables: string[];
 };
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-/** Planos/pacotes da FortGrow — personalizáveis, usados no cadastro de clientes. */
+const PRICING_MODELS = [
+  { key: "FIXO", label: "Fixo", hint: "valor fechado por mês" },
+  { key: "VARIAVEL", label: "Variável", hint: "percentual sobre algo (ex.: investimento em mídia)" },
+  { key: "HIBRIDO", label: "Fixo + Variável", hint: "uma parte fixa e uma parte percentual" },
+] as const;
+
+function pricingLabel(p: Pick<PlanDTO, "pricingModel" | "price" | "variablePercent" | "variableBasis">) {
+  const pct = p.variablePercent !== null ? `${p.variablePercent}%${p.variableBasis ? ` ${p.variableBasis}` : ""}` : null;
+  if (p.pricingModel === "FIXO") return `${brl(p.price)}/mês`;
+  if (p.pricingModel === "VARIAVEL") return pct ?? "variável";
+  return `${brl(p.price)}/mês + ${pct ?? "variável"}`;
+}
+
+/** Planos/pacotes da FortGrow — fixo, variável (% sobre algo) ou híbrido; usados no cadastro de clientes. */
 export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
   const [open, setOpen] = useState(false);
+  const [pricingModel, setPricingModel] = useState<"FIXO" | "VARIAVEL" | "HIBRIDO">("FIXO");
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  function closeModal() {
+    setOpen(false);
+    setPricingModel("FIXO");
+    setError(null);
+  }
 
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,8 +62,11 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.get("name"),
-          price: form.get("price") || undefined,
           description: form.get("description") || undefined,
+          pricingModel,
+          price: form.get("price") || undefined,
+          variablePercent: form.get("variablePercent") || undefined,
+          variableBasis: form.get("variableBasis") || undefined,
           deliverables,
         }),
       });
@@ -48,7 +75,7 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
         setError(data.error ?? "Não foi possível salvar.");
         return;
       }
-      setOpen(false);
+      closeModal();
       router.refresh();
     } finally {
       setLoading(false);
@@ -73,8 +100,8 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
             <Package size={15} className="text-brand-400" /> Planos FortGrow
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Seus pacotes comerciais com as entregas incluídas — aparecem na seleção de plano ao cadastrar clientes e no
-            portal de cada cliente.
+            Pacotes fixos, variáveis (% sobre algo) ou híbridos, com as entregas incluídas — aparecem na seleção de
+            plano ao cadastrar/editar clientes e no portal de cada cliente.
           </p>
         </div>
         <button onClick={() => setOpen(true)} className="btn-primary">
@@ -101,8 +128,18 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
                   {removing === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                 </button>
               </div>
-              {p.price > 0 && <p className="text-lg font-bold text-brand-400">{brl(p.price)}<span className="text-xs font-medium text-slate-500">/mês</span></p>}
-              {p.description && <p className="mt-1 text-xs text-slate-500">{p.description}</p>}
+              <p className="text-lg font-bold text-brand-400">{pricingLabel(p)}</p>
+              <span
+                className={cn(
+                  "mt-1.5 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  p.pricingModel === "FIXO" && "bg-brand-500/15 text-brand-300",
+                  p.pricingModel === "VARIAVEL" && "bg-warn/15 text-warn",
+                  p.pricingModel === "HIBRIDO" && "bg-violet/15 text-violet"
+                )}
+              >
+                {PRICING_MODELS.find((m) => m.key === p.pricingModel)?.label}
+              </span>
+              {p.description && <p className="mt-2 text-xs text-slate-500">{p.description}</p>}
               {p.deliverables.length > 0 && (
                 <ul className="mt-3 space-y-1.5 border-t border-line pt-3">
                   {p.deliverables.map((d, i) => (
@@ -122,16 +159,63 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
           <form onSubmit={onCreate} className="card w-full max-w-lg animate-fade-up p-6">
             <h2 className="mb-4 text-lg font-bold text-slate-100">Novo plano FortGrow</h2>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label" htmlFor="pl-name">Nome do plano *</label>
-                  <input id="pl-name" name="name" required minLength={2} className="input" placeholder="Ex.: Growth Plus" />
-                </div>
-                <div>
-                  <label className="label" htmlFor="pl-price">Valor mensal (R$)</label>
-                  <input id="pl-price" name="price" type="number" min="0" step="0.01" className="input" />
+              <div>
+                <label className="label" htmlFor="pl-name">Nome do plano *</label>
+                <input id="pl-name" name="name" required minLength={2} className="input" placeholder="Ex.: Growth Plus" />
+              </div>
+
+              <div>
+                <label className="label">Modelo de precificação *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {PRICING_MODELS.map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => setPricingModel(m.key)}
+                      className={cn(
+                        "rounded-xl border px-2.5 py-2 text-left text-xs transition",
+                        pricingModel === m.key
+                          ? "border-brand-500/50 bg-brand-500/10 text-brand-300"
+                          : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                      )}
+                    >
+                      <span className="block font-semibold">{m.label}</span>
+                      <span className="mt-0.5 block text-[10px] text-slate-500">{m.hint}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {(pricingModel === "FIXO" || pricingModel === "HIBRIDO") && (
+                <div>
+                  <label className="label" htmlFor="pl-price">Valor fixo mensal (R$) *</label>
+                  <input id="pl-price" name="price" type="number" min="0" step="0.01" required className="input" placeholder="8500" />
+                </div>
+              )}
+
+              {(pricingModel === "VARIAVEL" || pricingModel === "HIBRIDO") && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label" htmlFor="pl-pct">Percentual variável (%) *</label>
+                    <input
+                      id="pl-pct"
+                      name="variablePercent"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      required
+                      className="input"
+                      placeholder="10"
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="pl-basis">Sobre o quê?</label>
+                    <input id="pl-basis" name="variableBasis" className="input" placeholder="sobre investimento em mídia" />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="label" htmlFor="pl-desc">Descrição</label>
                 <input id="pl-desc" name="description" className="input" placeholder="Para quem é este pacote" />
@@ -149,7 +233,7 @@ export function PlansPanel({ plans }: { plans: PlanDTO[] }) {
             </div>
             {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setOpen(false)} className="btn-ghost">Cancelar</button>
+              <button type="button" onClick={closeModal} className="btn-ghost">Cancelar</button>
               <button type="submit" disabled={loading} className="btn-primary">
                 {loading && <Loader2 size={15} className="animate-spin" />} Criar plano
               </button>

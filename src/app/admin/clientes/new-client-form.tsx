@@ -18,7 +18,7 @@ const FIELDS: { name: string; label: string; type?: string }[] = [
   { name: "city", label: "Cidade" },
 ];
 
-export type PlanOption = { name: string; price: number };
+export type PlanOption = { id: string; name: string; price: number };
 
 export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
   const [open, setOpen] = useState(false);
@@ -29,9 +29,9 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  function selectPlan(name: string) {
-    setPlanChoice(name);
-    const plan = plans.find((p) => p.name === name);
+  function selectPlan(id: string) {
+    setPlanChoice(id);
+    const plan = plans.find((p) => p.id === id);
     if (plan && plan.price > 0) setMonthly(String(plan.price));
   }
 
@@ -103,15 +103,18 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
             <select id="nc-plan" value={planChoice} onChange={(e) => selectPlan(e.target.value)} className="input">
               <option value="">Selecione um plano…</option>
               {plans.map((p) => (
-                <option key={p.name} value={p.name}>{p.name}</option>
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
               <option value="__custom">Personalizado (digitar)</option>
             </select>
             {planChoice === "__custom" ? (
               <input name="plan" className="input mt-2" placeholder="Descreva o plano/contrato" />
-            ) : (
-              <input type="hidden" name="plan" value={planChoice} />
-            )}
+            ) : planChoice ? (
+              <>
+                <input type="hidden" name="planId" value={planChoice} />
+                <input type="hidden" name="plan" value={plans.find((p) => p.id === planChoice)?.name ?? ""} />
+              </>
+            ) : null}
             <p className="mt-1 text-xs text-slate-600">
               Cadastre e edite seus pacotes em <span className="font-semibold text-slate-400">Serviços &amp; Planos</span>.
             </p>

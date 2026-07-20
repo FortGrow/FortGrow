@@ -19,12 +19,12 @@ export default async function PortalDadosPage() {
       accountManager: { select: { name: true } },
       consultant: { select: { name: true } },
       services: { include: { service: true }, where: { status: { not: "CONCLUIDO" } } },
+      planRef: true,
     },
   });
   if (!client) return null;
 
-  const plan = client.plan ? await prisma.plan.findUnique({ where: { name: client.plan } }) : null;
-  const deliverables = (plan?.deliverables as string[] | undefined) ?? [];
+  const deliverables = (client.planRef?.deliverables as string[] | undefined) ?? [];
 
   const contractEnd =
     client.contractStart && client.contractMonths

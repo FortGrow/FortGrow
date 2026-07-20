@@ -26,7 +26,10 @@ export default async function ServicosPage() {
         plans={plans.map((p) => ({
           id: p.id,
           name: p.name,
+          pricingModel: p.pricingModel,
           price: Number(p.price),
+          variablePercent: p.variablePercent === null ? null : Number(p.variablePercent),
+          variableBasis: p.variableBasis,
           description: p.description,
           deliverables: (p.deliverables as string[]) ?? [],
         }))}

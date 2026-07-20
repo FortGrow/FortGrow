@@ -100,6 +100,10 @@ model Client {
   email          String?
   phone          String?
   status         ClientStatus @default(ATIVO)
+  /// Plano do catálogo contratado pelo cliente (opcional — clientes sem plano padrão usam `plan` livre)
+  planId         String?
+  planRef        Plan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  /// Texto livre — descrição do contrato quando não há um plano do catálogo vinculado
   plan           String?
   billingType    BillingType  @default(FIXO)
   monthlyValue   Decimal      @default(0) @db.Decimal(12, 2)
@@ -240,6 +244,7 @@ model Proposal {
 
 // ─────────────────────────────── Serviços & Contratos ───────────────────────────────
 
+/// Modelo de precificação — compartilhado por Service e Plan
 enum ServicePricingModel {
   FIXO
   VARIAVEL
@@ -250,7 +255,7 @@ model Service {
   id          String          @id @default(cuid())
   name        String          @unique
   description String?
-  pricingModel ServicePricingModel @default(FIXO)
+  pricingModel ServicePricingModel    @default(FIXO)
   /// Valor fixo mensal — usado quando pricingModel é FIXO ou HIBRIDO
   basePrice   Decimal         @default(0) @db.Decimal(12, 2)
   /// Percentual variável (0–100) — usado quando pricingModel é VARIAVEL ou HIBRIDO
@@ -579,12 +584,19 @@ model ContentPost {
 
 /// Planos/pacotes comerciais da FortGrow (personalizáveis pelo admin)
 model Plan {
-  id           String   @id @default(cuid())
-  name         String   @unique
-  price        Decimal  @default(0) @db.Decimal(12, 2)
+  id           String       @id @default(cuid())
+  name         String       @unique
+  pricingModel ServicePricingModel @default(FIXO)
+  /// Valor fixo mensal — usado quando pricingModel é FIXO ou HIBRIDO
+  price        Decimal      @default(0) @db.Decimal(12, 2)
+  /// Percentual variável (0–100) — usado quando pricingModel é VARIAVEL ou HIBRIDO
+  variablePercent Decimal?  @db.Decimal(6, 3)
+  /// Descreve sobre o que incide o percentual variável (ex.: "sobre investimento em mídia")
+  variableBasis String?
   description  String?
   deliverables Json     @default("[]") // lista de entregas do pacote
   active       Boolean  @default(true)
+  clients      Client[]
   createdAt    DateTime @default(now())
 }
 
