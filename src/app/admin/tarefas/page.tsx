@@ -36,6 +36,7 @@ export default async function TarefasPage() {
     projectName: t.project?.name ?? null,
     color: t.color,
     status: t.status,
+    createdAt: t.createdAt.toISOString(),
   }));
 
   return (
