@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  /* Âncoras da Home institucional (e navegação em geral) rolam suave */
+  scroll-behavior: smooth;
+}
+
 :root {
   color-scheme: dark;
   --par-x: 0px;
