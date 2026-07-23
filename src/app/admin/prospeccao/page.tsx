@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Bot } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,6 +23,9 @@ export default async function ProspeccaoPage() {
         title="Prospecção"
         subtitle="Entrada de leads: origem, primeiro contato e status — edite direto no card"
       >
+        <Link href="/admin/prospeccao/sdr" className="btn-ghost">
+          <Bot size={15} /> SDR IA
+        </Link>
         <NewLeadForm />
       </PageHeader>
 
