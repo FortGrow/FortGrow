@@ -10,6 +10,19 @@
   --par2-y: 0px;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+/* Âncoras da home não ficam escondidas atrás do menu fixo */
+section[id] {
+  scroll-margin-top: 80px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   @apply bg-ink-950 text-slate-200 antialiased;
   background-image:

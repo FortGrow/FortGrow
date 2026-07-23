@@ -52,8 +52,9 @@ export async function middleware(req: NextRequest) {
       res.cookies.delete(SESSION_COOKIE);
       return res;
     }
+    // Logado: vai direto para sua área. Deslogado: "/" mostra o site
+    // institucional; "/login" mostra o formulário.
     if (session) return NextResponse.redirect(new URL(home, req.url));
-    if (pathname === "/") return NextResponse.redirect(new URL("/login", req.url));
     return NextResponse.next();
   }
 
