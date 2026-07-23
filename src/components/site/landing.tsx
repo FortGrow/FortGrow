@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   ArrowUpRight,
-  BarChart3,
+  Check,
+  CheckCircle2,
   Compass,
   Gauge,
   LayoutGrid,
@@ -24,7 +25,8 @@ import {
 import { SiteNav } from "./site-nav";
 import { SiteFooter } from "./site-footer";
 import { Reveal, CountUp } from "./motion";
-import { STATS, ctaHref } from "@/lib/site-config";
+import { ContactForm } from "./contact-form";
+import { STATS, PLATFORMS, INCLUDED, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /* ───────────────────────── Hero ───────────────────────── */
 
@@ -84,7 +86,6 @@ function Hero() {
   const cta = ctaHref();
   return (
     <section className="relative overflow-hidden pt-28 pb-20 lg:pt-36 lg:pb-28">
-      {/* fundo: gradientes + grade + linha de crescimento */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="absolute inset-0"
@@ -111,9 +112,9 @@ function Hero() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3.5 py-1.5 text-xs font-semibold text-brand-300"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-300"
           >
-            <Sparkles size={13} /> Estruturação de Marketing e Performance
+            <Sparkles size={13} /> FortGrow é performance
           </motion.span>
 
           <motion.h1
@@ -122,9 +123,9 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="mt-6 text-[2.5rem] font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-6xl"
           >
-            Seu crescimento é a{" "}
+            Marketing que vira{" "}
             <span className="bg-gradient-to-r from-brand-400 via-sky-300 to-grow-400 bg-clip-text text-transparent">
-              nossa métrica
+              venda
             </span>
             .
           </motion.h1>
@@ -136,8 +137,8 @@ function Hero() {
             className="mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg"
           >
             A FortGrow estrutura o marketing da sua empresa de ponta a ponta —
-            do posicionamento da marca ao tráfego pago que vira venda. Estratégia,
-            execução e dados trabalhando juntos para transformar investimento em
+            do posicionamento da marca ao tráfego pago que gera receita.
+            Estratégia, execução e dados para transformar investimento em
             resultado previsível.
           </motion.p>
 
@@ -147,16 +148,11 @@ function Hero() {
             transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-8 flex flex-wrap items-center gap-3"
           >
-            <a
-              href={cta}
-              target={cta.startsWith("http") ? "_blank" : undefined}
-              rel="noreferrer"
-              className="btn-primary text-base"
-            >
+            <a href="#contato" className="btn-primary text-base">
               Quero crescer com a FortGrow <ArrowRight size={16} />
             </a>
-            <a href="#metodo" className="btn-ghost text-base">
-              Conhecer o método
+            <a href="#solucoes" className="btn-ghost text-base">
+              Ver soluções
             </a>
           </motion.div>
 
@@ -177,7 +173,6 @@ function Hero() {
           </motion.div>
         </div>
 
-        {/* painel visual: mockup de dashboard + cards flutuantes */}
         <div className="relative hidden h-[440px] lg:block">
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 20 }}
@@ -256,174 +251,69 @@ function Hero() {
   );
 }
 
-/* ─────────────────────── Resultados (stats) ─────────────────────── */
+/* ─────────────────────── 3 Passos ─────────────────────── */
 
-function Stats() {
-  return (
-    <section id="resultados" className="relative border-y border-white/10 bg-ink-950/60 py-16">
-      <div className="mx-auto max-w-6xl px-5 lg:px-8">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">Resultados</p>
-          <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
-            Marketing que aparece no caixa
-          </h2>
-          <p className="mt-3 text-slate-400">
-            Trabalhamos com metas claras e acompanhamento por dados. Cada real
-            investido é medido — do clique até a venda.
-          </p>
-        </Reveal>
-
-        <div className="mt-12 grid grid-cols-2 gap-5 lg:grid-cols-4">
-          {STATS.map((s, i) => (
-            <Reveal key={s.label} delay={i * 0.08}>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
-                <p className="bg-gradient-to-r from-brand-300 to-grow-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl">
-                  <CountUp
-                    value={s.value}
-                    prefix={s.prefix}
-                    suffix={s.suffix}
-                    decimals={s.decimals ?? 0}
-                  />
-                </p>
-                <p className="mt-3 text-sm text-slate-400">{s.label}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────── Sobre ─────────────────────── */
-
-const ABOUT_POINTS = [
-  {
-    icon: <Compass size={18} />,
-    title: "Estratégia antes de anúncio",
-    text: "Diagnóstico, posicionamento e plano de crescimento — a base que faz a mídia performar.",
-  },
-  {
-    icon: <Gauge size={18} />,
-    title: "Obsessão por performance",
-    text: "Decisões guiadas por dados: CAC, CPL, ROAS e receita medidos em tempo real.",
-  },
-  {
-    icon: <ShieldCheck size={18} />,
-    title: "Parceria de verdade",
-    text: "Um time dedicado ao seu negócio, com transparência total em cada resultado.",
-  },
-];
-
-function About() {
-  return (
-    <section id="sobre" className="relative py-20 lg:py-28">
-      <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 lg:grid-cols-2 lg:px-8">
-        <Reveal>
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">
-            Sobre a FortGrow
-          </p>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
-            Não somos uma agência de anúncios.{" "}
-            <span className="bg-gradient-to-r from-brand-400 to-grow-400 bg-clip-text text-transparent">
-              Somos a estrutura de marketing da sua empresa.
-            </span>
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-slate-400">
-            A FortGrow existe para transformar marketing em máquina de
-            crescimento. Unimos estratégia, execução e tecnologia para que sua
-            empresa venda mais, com previsibilidade e controle de cada etapa —
-            do primeiro contato do lead até o fechamento.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href={ctaHref()} target={ctaHref().startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="btn-primary">
-              Estruturar meu marketing <ArrowRight size={15} />
-            </a>
-          </div>
-        </Reveal>
-
-        <div className="space-y-4">
-          {ABOUT_POINTS.map((p, i) => (
-            <Reveal key={p.title} delay={i * 0.1}>
-              <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
-                  {p.icon}
-                </span>
-                <div>
-                  <h3 className="font-bold text-white">{p.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{p.text}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────── Método ─────────────────────── */
-
-const METHOD = [
+const STEPS = [
   {
     n: "01",
-    icon: <Search size={20} />,
-    title: "Diagnóstico & Estratégia",
-    text: "Mergulhamos no seu negócio, mercado e concorrência para desenhar o plano de crescimento e o posicionamento certo.",
+    icon: <LayoutGrid size={20} />,
+    title: "Conheça as soluções",
+    tag: "O que fazemos",
+    text: "Do posicionamento ao tráfego pago: montamos a estrutura de marketing certa para o momento da sua empresa.",
   },
   {
     n: "02",
-    icon: <LayoutGrid size={20} />,
-    title: "Estruturação",
-    text: "Montamos a máquina: funis, criativos, canais e o CRM que organiza cada lead e cada oportunidade de venda.",
+    icon: <Compass size={20} />,
+    title: "Escolha como vamos executar",
+    tag: "Como fazemos",
+    text: "Definimos juntos o modelo de entrega e as metas. Você acompanha cada etapa com transparência total.",
   },
   {
     n: "03",
     icon: <Rocket size={20} />,
-    title: "Tráfego & Aquisição",
-    text: "Colocamos a mídia paga para rodar com foco em atrair as pessoas certas e gerar leads qualificados de verdade.",
-  },
-  {
-    n: "04",
-    icon: <BarChart3 size={20} />,
-    title: "Otimização por dados",
-    text: "Medimos tudo, cortamos o que não performa e escalamos o que dá resultado. Melhoria contínua, mês após mês.",
+    title: "Comece a crescer",
+    tag: "O próximo passo",
+    text: "Colocamos a máquina para rodar e otimizamos por dados, mês após mês, com foco em vendas.",
   },
 ];
 
-function Method() {
+function Steps() {
   return (
-    <section id="metodo" className="relative border-y border-white/10 bg-ink-950/60 py-20 lg:py-28">
+    <section className="relative border-y border-white/10 bg-ink-950/60 py-20 lg:py-28">
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">O método FortGrow</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">Simples assim</p>
           <h2 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
-            Um processo, quatro passos, resultado previsível
+            Transforme o marketing da sua empresa em{" "}
+            <span className="bg-gradient-to-r from-brand-400 to-grow-400 bg-clip-text text-transparent">
+              3 passos
+            </span>
           </h2>
-          <p className="mt-3 text-slate-400">
-            Marketing não é sorte. É método aplicado com disciplina e medido em
-            cada etapa.
-          </p>
         </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {METHOD.map((m, i) => (
-            <Reveal key={m.n} delay={i * 0.1}>
-              <div className="group relative h-full rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-brand-500/40 hover:bg-white/[0.05]">
-                <div className="flex items-center justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
-                    {m.icon}
-                  </span>
-                  <span className="text-3xl font-extrabold text-white/10 transition group-hover:text-brand-500/30">
-                    {m.n}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-lg font-bold text-white">{m.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{m.text}</p>
+        <div className="mt-14 grid gap-5 md:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <Reveal key={s.n} delay={i * 0.1}>
+              <div className="group relative h-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:border-brand-500/40">
+                <span className="absolute -right-3 -top-4 text-7xl font-extrabold text-white/[0.04] transition group-hover:text-brand-500/10">
+                  {s.n}
+                </span>
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+                  {s.icon}
+                </span>
+                <p className="mt-5 text-[11px] font-bold uppercase tracking-wider text-grow-400">{s.tag}</p>
+                <h3 className="mt-1 text-xl font-bold text-white">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{s.text}</p>
               </div>
             </Reveal>
           ))}
         </div>
+
+        <Reveal delay={0.2} className="mt-10 text-center">
+          <a href="#contato" className="btn-primary text-base">
+            Dar o próximo passo <ArrowRight size={16} />
+          </a>
+        </Reveal>
       </div>
     </section>
   );
@@ -469,9 +359,9 @@ function Solutions() {
     <section id="solucoes" className="relative py-20 lg:py-28">
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">Soluções</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">O que fazemos</p>
           <h2 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
-            Tudo o que sua empresa precisa para crescer
+            Soluções de marketing FortGrow
           </h2>
           <p className="mt-3 text-slate-400">
             Da estratégia à execução, cuidamos de cada engrenagem da sua máquina
@@ -497,50 +387,234 @@ function Solutions() {
   );
 }
 
-/* ─────────────────────── CTA final / Contato ─────────────────────── */
+/* ─────────────────────── O que está incluído ─────────────────────── */
 
-function FinalCta() {
+function Included() {
+  return (
+    <section id="metodo" className="relative border-y border-white/10 bg-ink-950/60 py-20 lg:py-28">
+      <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 lg:grid-cols-2 lg:px-8">
+        <Reveal>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">Como fazemos</p>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+            Uma estrutura completa,{" "}
+            <span className="bg-gradient-to-r from-brand-400 to-grow-400 bg-clip-text text-transparent">
+              trabalhando por você
+            </span>
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-slate-400">
+            Você não contrata um serviço solto — contrata a estrutura de
+            marketing da sua empresa. Um time dedicado cuidando de cada frente,
+            integrado no mesmo lugar, com metas claras e resultado medido.
+          </p>
+          <div className="mt-8">
+            <a href="#contato" className="btn-primary">
+              Montar minha estrutura <ArrowRight size={15} />
+            </a>
+          </div>
+        </Reveal>
+
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Incluído na sua estrutura
+          </p>
+          <ul className="mt-5 space-y-3.5">
+            {INCLUDED.map((item, i) => (
+              <Reveal key={item} delay={i * 0.06}>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-grow-500/15 text-grow-400">
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  <span className="text-sm font-medium text-slate-200">{item}</span>
+                </li>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────── Resultados (stats) ─────────────────────── */
+
+function Stats() {
+  return (
+    <section id="resultados" className="relative py-20 lg:py-24">
+      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">Resultados</p>
+          <h2 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">
+            Marketing que aparece no caixa
+          </h2>
+          <p className="mt-3 text-slate-400">
+            Trabalhamos com metas claras e acompanhamento por dados. Cada real
+            investido é medido — do clique até a venda.
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid grid-cols-2 gap-5 lg:grid-cols-4">
+          {STATS.map((s, i) => (
+            <Reveal key={s.label} delay={i * 0.08}>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
+                <p className="bg-gradient-to-r from-brand-300 to-grow-400 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl">
+                  <CountUp
+                    value={s.value}
+                    prefix={s.prefix}
+                    suffix={s.suffix}
+                    decimals={s.decimals ?? 0}
+                  />
+                </p>
+                <p className="mt-3 text-sm text-slate-400">{s.label}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* Plataformas de mídia */}
+        <Reveal delay={0.1} className="mt-16">
+          <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-500">
+            Gestão nas principais plataformas de mídia
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {PLATFORMS.map((p) => (
+              <span
+                key={p}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-slate-300"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────── Sobre ─────────────────────── */
+
+const ABOUT_POINTS = [
+  {
+    icon: <Compass size={18} />,
+    title: "Estratégia antes de anúncio",
+    text: "Diagnóstico, posicionamento e plano de crescimento — a base que faz a mídia performar.",
+  },
+  {
+    icon: <Gauge size={18} />,
+    title: "Obsessão por performance",
+    text: "Decisões guiadas por dados: CAC, CPL, ROAS e receita medidos em tempo real.",
+  },
+  {
+    icon: <ShieldCheck size={18} />,
+    title: "Parceria de verdade",
+    text: "Um time dedicado ao seu negócio, com transparência total em cada resultado.",
+  },
+];
+
+function About() {
+  return (
+    <section id="sobre" className="relative border-t border-white/10 py-20 lg:py-28">
+      <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 lg:grid-cols-2 lg:px-8">
+        <Reveal>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-300">
+            Sobre a FortGrow
+          </p>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+            Não somos uma agência de anúncios.{" "}
+            <span className="bg-gradient-to-r from-brand-400 to-grow-400 bg-clip-text text-transparent">
+              Somos a estrutura de marketing da sua empresa.
+            </span>
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-slate-400">
+            A FortGrow existe para transformar marketing em máquina de
+            crescimento. Unimos estratégia, execução e tecnologia para que sua
+            empresa venda mais, com previsibilidade e controle de cada etapa —
+            do primeiro contato do lead até o fechamento.
+          </p>
+          <div className="mt-8">
+            <a href="#contato" className="btn-primary">
+              Estruturar meu marketing <ArrowRight size={15} />
+            </a>
+          </div>
+        </Reveal>
+
+        <div className="space-y-4">
+          {ABOUT_POINTS.map((p, i) => (
+            <Reveal key={p.title} delay={i * 0.1}>
+              <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
+                  {p.icon}
+                </span>
+                <div>
+                  <h3 className="font-bold text-white">{p.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{p.text}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────── Contato (formulário) ─────────────────────── */
+
+const CONTACT_BENEFITS = [
+  "Diagnóstico do seu momento atual",
+  "Análise do potencial de crescimento",
+  "Sem compromisso e sem custo",
+];
+
+function Contact() {
   const cta = ctaHref();
   return (
-    <section id="contato" className="relative py-20 lg:py-28">
-      <div className="mx-auto max-w-5xl px-5 lg:px-8">
+    <section id="contato" className="relative overflow-hidden border-t border-white/10 py-20 lg:py-28">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(700px 400px at 10% 0%, rgba(2,132,199,0.14), transparent 60%)," +
+            "radial-gradient(600px 400px at 90% 100%, rgba(5,150,105,0.12), transparent 60%)",
+        }}
+      />
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-2 lg:px-8">
         <Reveal>
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-ink-900/70 p-10 text-center shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)] lg:p-16">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(600px 300px at 20% 0%, rgba(2,132,199,0.20), transparent 60%)," +
-                  "radial-gradient(500px 300px at 90% 100%, rgba(5,150,105,0.16), transparent 60%)",
-              }}
-            />
-            <div className="relative">
-              <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3.5 py-1.5 text-xs font-semibold text-brand-300">
-                <TrendingUp size={13} /> Vamos crescer juntos
-              </span>
-              <h2 className="mx-auto mt-6 max-w-2xl text-3xl font-extrabold leading-tight text-white sm:text-4xl">
-                Pronto para estruturar o marketing da sua empresa?
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-slate-400">
-                Fale com um especialista da FortGrow e receba um diagnóstico do
-                seu momento atual e do potencial de crescimento do seu negócio.
-              </p>
-              <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-                <a
-                  href={cta}
-                  target={cta.startsWith("http") ? "_blank" : undefined}
-                  rel="noreferrer"
-                  className="btn-primary text-base"
-                >
-                  <MessageCircle size={16} /> Falar com especialista
-                </a>
-                <Link href="/login" className="btn-ghost text-base">
-                  Acessar a plataforma
-                </Link>
-              </div>
-            </div>
-          </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-3.5 py-1.5 text-xs font-semibold text-brand-300">
+            <TrendingUp size={13} /> Vamos crescer juntos
+          </span>
+          <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+            Dar o próximo passo leva{" "}
+            <span className="bg-gradient-to-r from-brand-400 to-grow-400 bg-clip-text text-transparent">
+              menos de um minuto
+            </span>
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-slate-400">
+            Preencha o formulário e um especialista da FortGrow entra em contato
+            para entender seu negócio e mostrar como podemos crescer juntos.
+          </p>
+          <ul className="mt-7 space-y-3">
+            {CONTACT_BENEFITS.map((b) => (
+              <li key={b} className="flex items-center gap-3 text-sm text-slate-300">
+                <CheckCircle2 size={18} className="shrink-0 text-grow-400" /> {b}
+              </li>
+            ))}
+          </ul>
+          {cta.startsWith("http") && (
+            <a
+              href={cta}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost mt-8 inline-flex"
+            >
+              <MessageCircle size={16} /> Prefiro chamar no WhatsApp
+            </a>
+          )}
+        </Reveal>
+
+        <Reveal delay={0.12}>
+          <ContactForm />
         </Reveal>
       </div>
     </section>
@@ -552,14 +626,15 @@ function FinalCta() {
 export function Landing() {
   return (
     <div className="min-h-screen bg-ink-950 text-slate-200">
-      <SiteNav />
+      <SiteNav slogan={SLOGAN} />
       <main>
         <Hero />
-        <Stats />
-        <Method />
+        <Steps />
         <Solutions />
+        <Included />
+        <Stats />
         <About />
-        <FinalCta />
+        <Contact />
       </main>
       <SiteFooter />
     </div>

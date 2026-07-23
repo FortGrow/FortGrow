@@ -6,7 +6,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { NAV_LINKS, ctaHref } from "@/lib/site-config";
 
-export function SiteNav() {
+export function SiteNav({ slogan }: { slogan?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -36,12 +36,19 @@ export function SiteNav() {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
-        <Link href="/" className="flex items-center gap-2.5" aria-label="FortGrow">
-          <FgMark size={34} className="drop-shadow-[0_0_14px_rgba(56,189,248,0.35)]" />
-          <span className="text-lg">
-            <FgWordmark />
-          </span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="FortGrow">
+            <FgMark size={34} className="drop-shadow-[0_0_14px_rgba(56,189,248,0.35)]" />
+            <span className="text-lg">
+              <FgWordmark />
+            </span>
+          </Link>
+          {slogan && (
+            <span className="hidden whitespace-nowrap border-l border-white/10 pl-3 text-xs font-medium text-slate-400 2xl:inline">
+              {slogan}
+            </span>
+          )}
+        </div>
 
         {/* Menu desktop */}
         <div className="hidden items-center gap-1 md:flex">
@@ -63,7 +70,7 @@ export function SiteNav() {
           >
             Entrar
           </Link>
-          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="btn-primary">
+          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="btn-primary shrink-0 whitespace-nowrap">
             Falar com especialista <ArrowUpRight size={15} />
           </a>
         </div>
