@@ -17,6 +17,10 @@ services:
         generateValue: true
       - key: NODE_VERSION
         value: "22"
+      # Chave da OpenAI — ativa o SDR IA (Prospecção) e os resumos executivos
+      # de Inteligência. Valor definido manualmente no painel do Render.
+      - key: OPENAI_API_KEY
+        sync: false
     disk:
       name: fortgrow-uploads
       mountPath: /opt/render/project/src/uploads
