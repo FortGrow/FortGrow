@@ -44,6 +44,9 @@ export const NAV_LINKS = [
   { label: "Contato", href: "#contato" },
 ];
 
+/** Slogan curto da marca (aparece no topo). */
+export const SLOGAN = "Nosso negócio é fazer o seu crescer";
+
 /**
  * Números de prova exibidos na home.
  * ⚠️ Ajuste para os números reais da FortGrow.
@@ -53,4 +56,24 @@ export const STATS = [
   { value: 8, prefix: "R$ ", suffix: "M+", label: "Investimento em mídia gerido" },
   { value: 4.7, suffix: "x", label: "ROAS médio nas contas ativas", decimals: 1 },
   { value: 95, suffix: "%", label: "Clientes que renovam o contrato" },
+];
+
+/** Plataformas de mídia em que a FortGrow opera. */
+export const PLATFORMS = [
+  "Meta Ads",
+  "Google Ads",
+  "Instagram",
+  "TikTok Ads",
+  "LinkedIn Ads",
+  "YouTube",
+];
+
+/** O que entra na estrutura entregue ao cliente (mirror do quadro de entrega). */
+export const INCLUDED = [
+  "Gestão de tráfego pago",
+  "Criativos e conteúdo",
+  "Páginas e landing pages",
+  "CRM e gestão de vendas",
+  "Dashboards de performance",
+  "Relatórios e acompanhamento",
 ];
