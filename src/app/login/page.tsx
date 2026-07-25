@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowUpRight, BadgeCheck, BarChart3, Instagram, Loader2, Lock, Mail, Megaphone, MousePointerClick, Search, ShoppingCart, Target, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BadgeCheck, BarChart3, Instagram, Loader2, Lock, Mail, Megaphone, MousePointerClick, Search, ShoppingCart, Target, TrendingUp, Users } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 
@@ -506,6 +507,14 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-ink-950">
       <Backdrop />
+
+      {/* Voltar para o site institucional */}
+      <Link
+        href="/"
+        className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-ink-900/60 px-3.5 py-2 text-sm font-medium text-slate-300 backdrop-blur-md transition hover:border-white/20 hover:bg-ink-800/70 hover:text-white sm:left-6 sm:top-6"
+      >
+        <ArrowLeft size={16} /> Voltar ao site
+      </Link>
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
         {/* Lado visual: marca + frase de impacto */}
