@@ -112,3 +112,25 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ lead });
 }
+
+const deleteSchema = z.object({ id: z.string().min(1) });
+
+/** Exclui um lead (e seu histórico em cascata: atividades e propostas). */
+export async function DELETE(req: NextRequest) {
+  const session = await requireStaff("crm", "edit");
+  if (isResponse(session)) return session;
+
+  const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return invalidResponse(parsed.error);
+
+  const existing = await prisma.lead.findUnique({ where: { id: parsed.data.id } });
+  if (!existing) return NextResponse.json({ error: "Lead não encontrado." }, { status: 404 });
+
+  await prisma.lead.delete({ where: { id: parsed.data.id } });
+
+  await prisma.activityLog.create({
+    data: { userId: session.sub, action: "lead.delete", entity: "Lead", entityId: parsed.data.id },
+  });
+
+  return NextResponse.json({ ok: true });
+}

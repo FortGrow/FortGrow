@@ -11,6 +11,7 @@ import {
   cardGradient,
 } from "@/lib/lead-taxonomy";
 import { EditLeadForm, type EditableLead } from "@/app/admin/prospeccao/edit-lead-form";
+import { DeleteLeadButton } from "@/app/admin/prospeccao/delete-lead-button";
 
 export type UnifiedLead = EditableLead & {
   stage: string;
@@ -90,6 +91,12 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
     pending.current.set(id, { ...pending.current.get(id), ...patch });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(flush, immediate ? 50 : 700);
+  }
+
+  /* Remove o card da tela após a exclusão no servidor */
+  function removeLead(id: string) {
+    setLeads((prev) => prev.filter((l) => l.id !== id));
+    pending.current.delete(id);
   }
 
   async function setPotential(id: string, potential: string) {
@@ -223,7 +230,10 @@ export function LeadCardGrid({ leads: initial, mode }: { leads: UnifiedLead[]; m
                       {[l.contactName, l.segment].filter(Boolean).join(" · ") || "—"}
                     </p>
                   </div>
-                  <EditLeadForm lead={l} light />
+                  <div className="flex shrink-0 items-center gap-1">
+                    <EditLeadForm lead={l} light />
+                    <DeleteLeadButton id={l.id} name={l.companyName} light onDeleted={removeLead} />
+                  </div>
                 </div>
 
                 <div className="mt-3 space-y-2">
