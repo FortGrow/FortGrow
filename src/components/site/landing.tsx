@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -46,6 +46,56 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7fb0f8]">{children}</p>
+  );
+}
+
+
+/**
+ * Card com moldura neon colorida — dá cor à página mantendo o fundo escuro.
+ * O brilho e a borda intensificam no hover.
+ */
+function NeonCard({
+  color,
+  icon,
+  title,
+  text,
+  className,
+}: {
+  color: string;
+  icon: ReactNode;
+  title: string;
+  text: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`group relative h-full overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 ${className ?? ""}`}
+      style={{
+        background: `linear-gradient(155deg, ${color}1f, rgba(255,255,255,0.02) 55%)`,
+        border: `1px solid ${color}66`,
+        boxShadow: `0 0 18px -6px ${color}55, inset 0 1px 0 ${color}22`,
+      }}
+    >
+      {/* halo de canto */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: `radial-gradient(circle, ${color}40, transparent 70%)` }}
+      />
+      <span
+        className="relative flex h-12 w-12 items-center justify-center rounded-xl"
+        style={{
+          background: `${color}1f`,
+          border: `1px solid ${color}55`,
+          color,
+          boxShadow: `0 0 16px -4px ${color}80`,
+        }}
+      >
+        {icon}
+      </span>
+      <h3 className="relative mt-5 text-lg font-bold text-white">{title}</h3>
+      <p className="relative mt-2 text-sm leading-relaxed text-slate-300/90">{text}</p>
+    </div>
   );
 }
 
@@ -292,16 +342,19 @@ function Clients() {
 const PROBLEMS = [
   {
     icon: <ShieldCheck size={20} />,
+    color: "#f43f5e",
     title: "Perda de Autoridade",
     text: "Um posicionamento visual fraco afasta clientes de alto valor.",
   },
   {
     icon: <Wallet size={20} />,
+    color: "#f59e0b",
     title: "Desperdício de Capital",
     text: "Investir em anúncios sem uma estratégia de retenção clara. O tempo que você perde tentando fazer sozinho é o faturamento que você deixa de ganhar.",
   },
   {
     icon: <Radar size={20} />,
+    color: "#8b5cf6",
     title: "Distribuição sem Estratégia",
     text: "Não basta ter um vídeo de cinema se ele não for visto por quem tem poder de compra. Usamos inteligência de dados para colocar sua marca no radar de quem realmente converte.",
   },
@@ -324,13 +377,7 @@ function Problem() {
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {PROBLEMS.map((p, i) => (
             <Reveal key={p.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:border-[#2d7ef2]/40">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
-                  {p.icon}
-                </span>
-                <h3 className="mt-5 text-lg font-bold text-white">{p.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{p.text}</p>
-              </div>
+              <NeonCard color={p.color} icon={p.icon} title={p.title} text={p.text} />
             </Reveal>
           ))}
         </div>
@@ -346,16 +393,19 @@ const SOLUTION_STEPS = [
     icon: <BrainCircuit size={20} />,
     title: "Diagnóstico Estratégico",
     text: "Mapeamos seu público e o posicionamento único da sua marca.",
+    color: "#3b82f6",
   },
   {
     icon: <Film size={20} />,
     title: "Produção Audiovisual",
     text: "Criamos o ativo (vídeo/foto) com foco total em retenção.",
+    color: "#22d3ee",
   },
   {
     icon: <Crosshair size={20} />,
     title: "Distribuição Inteligente",
     text: "Levamos sua mensagem para quem realmente tem potencial de compra.",
+    color: "#8b5cf6",
   },
 ];
 
@@ -380,30 +430,29 @@ function Solution() {
           </h2>
         </Reveal>
 
-        {/* Ecossistema da metodologia: pentágono em camadas (destaque central) */}
-        <Reveal delay={0.05} className="mt-14">
-          <MethodologyPentagon />
-          <p className="mx-auto mt-8 max-w-md text-center text-xs text-slate-500">
-            Cada camada é uma frente da metodologia, girando em conjunto.
-            Passe o mouse em uma delas para explorar.
-          </p>
-        </Reveal>
+        <div className="mt-14 grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
+          {/* Cards à esquerda */}
+          <div className="space-y-5">
+            {SOLUTION_STEPS.map((step, i) => (
+              <Reveal key={step.title} delay={i * 0.1}>
+                <NeonCard
+                  color={step.color}
+                  icon={step.icon}
+                  title={step.title}
+                  text={step.text}
+                />
+              </Reveal>
+            ))}
+          </div>
 
-        {/* Os 3 passos */}
-        <div className="mt-16 grid gap-5 md:grid-cols-3">
-          {SOLUTION_STEPS.map((s, i) => (
-            <Reveal key={s.title} delay={i * 0.1}>
-              <div className="flex h-full gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-[#2d7ef2]/40">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
-                  {s.icon}
-                </span>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{s.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{s.text}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
+          {/* Ecossistema da metodologia à direita */}
+          <Reveal delay={0.05}>
+            <MethodologyPentagon />
+            <p className="mx-auto mt-8 max-w-sm text-center text-xs text-slate-500">
+              Cada camada é uma frente da metodologia, girando em conjunto.
+              Aproxime o mouse de uma delas para explorar.
+            </p>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -415,16 +464,19 @@ function Solution() {
 const RETENTION = [
   {
     icon: <Mic2 size={18} />,
+    color: "#22d3ee",
     title: "Direção de Postura",
     text: "Orientamos sua fala e o cenário para transmitir autoridade.",
   },
   {
     icon: <Scissors size={18} />,
+    color: "#8b5cf6",
     title: "Edição Dinâmica",
     text: "Cortes estratégicos que impedem o usuário de “passar” o vídeo.",
   },
   {
     icon: <Zap size={18} />,
+    color: "#f59e0b",
     title: "Roteiros com Gancho",
     text: "Capturamos a atenção nos primeiros 3 segundos.",
   },
@@ -447,11 +499,26 @@ function Retention() {
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {RETENTION.map((r, i) => (
             <Reveal key={r.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 text-center transition hover:border-[#2d7ef2]/40">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#2d7ef2]/15 px-4 py-2 text-sm font-bold text-[#7fb0f8]">
+              <div
+                className="group h-full rounded-2xl p-7 text-center transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: `linear-gradient(155deg, ${r.color}1a, rgba(255,255,255,0.02) 55%)`,
+                  border: `1px solid ${r.color}55`,
+                  boxShadow: `0 0 18px -6px ${r.color}50`,
+                }}
+              >
+                <span
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold"
+                  style={{
+                    background: `${r.color}1f`,
+                    border: `1px solid ${r.color}66`,
+                    color: r.color,
+                    boxShadow: `0 0 18px -5px ${r.color}90`,
+                  }}
+                >
                   {r.icon} {r.title}
                 </span>
-                <p className="mt-4 text-sm leading-relaxed text-slate-400">{r.text}</p>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300/90">{r.text}</p>
               </div>
             </Reveal>
           ))}
@@ -466,21 +533,25 @@ function Retention() {
 const TARGETS = [
   {
     icon: <Target size={18} />,
+    color: "#f43f5e",
     title: "Segmentação Precisa",
     text: "Encontramos seu cliente ideal com base em dados reais.",
   },
   {
     icon: <Snowflake size={18} />,
+    color: "#22d3ee",
     title: "Efeito Bola de Neve",
     text: "Reimpactamos interessados até que a venda aconteça.",
   },
   {
     icon: <BadgeCheck size={18} />,
+    color: "#10b981",
     title: "Autoridade & Conversão",
     text: "Unimos vídeos de alto nível à estratégia de anúncios para aumentar sua taxa de fechamento.",
   },
   {
     icon: <Eye size={18} />,
+    color: "#8b5cf6",
     title: "Previsibilidade",
     text: "Você saberá exatamente quanto investir para crescer.",
   },
@@ -533,13 +604,28 @@ function Targeting() {
         <div className="space-y-4">
           {TARGETS.map((t, i) => (
             <Reveal key={t.title} delay={i * 0.08}>
-              <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#2d7ef2]/40">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
+              <div
+                className="flex gap-4 rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: `linear-gradient(155deg, ${t.color}18, rgba(255,255,255,0.02) 55%)`,
+                  border: `1px solid ${t.color}55`,
+                  boxShadow: `0 0 16px -7px ${t.color}55`,
+                }}
+              >
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{
+                    background: `${t.color}1f`,
+                    border: `1px solid ${t.color}55`,
+                    color: t.color,
+                    boxShadow: `0 0 16px -5px ${t.color}90`,
+                  }}
+                >
                   {t.icon}
                 </span>
                 <div>
                   <h3 className="font-bold text-white">{t.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{t.text}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-300/90">{t.text}</p>
                 </div>
               </div>
             </Reveal>
@@ -555,16 +641,19 @@ function Targeting() {
 const WHY = [
   {
     icon: <Clapperboard size={20} />,
+    color: "#22d3ee",
     title: "Expertise Técnica e Criativa",
     text: "Unimos o padrão estético do cinema à inteligência de dados, garantindo que sua marca tenha autoridade imediata no mercado.",
   },
   {
     icon: <Gauge size={20} />,
+    color: "#10b981",
     title: "Economia de Tempo e Recursos",
     text: "Cuidamos de todo o processo — do roteiro à gestão de tráfego — para você focar no seu negócio enquanto sua máquina de vendas roda no automático.",
   },
   {
     icon: <Users size={20} />,
+    color: "#2d7ef2",
     title: "Suporte e Consultoria Estratégica",
     text: "Não somos apenas executores: somos parceiros de crescimento que analisam métricas e otimizam resultados continuamente para garantir o seu ROI.",
   },
@@ -585,13 +674,7 @@ function Why() {
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {WHY.map((w, i) => (
             <Reveal key={w.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:-translate-y-1 hover:border-[#2d7ef2]/40 hover:bg-white/[0.05]">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2d7ef2]/20 to-[#5093f5]/10 text-[#7fb0f8]">
-                  {w.icon}
-                </span>
-                <h3 className="mt-5 text-lg font-bold text-white">{w.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{w.text}</p>
-              </div>
+              <NeonCard color={w.color} icon={w.icon} title={w.title} text={w.text} />
             </Reveal>
           ))}
         </div>
