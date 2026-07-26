@@ -227,7 +227,7 @@ function Hero() {
           Não é sobre ter vídeos bonitos.
           <br />
           É sobre construir uma máquina{" "}
-          <span className="inline-block -skew-x-3 bg-[#2d7ef2] px-2.5 py-0.5 text-white shadow-[0_0_34px_rgba(45,126,242,0.5)]">
+          <span className="inline-block -skew-x-3 bg-[#2d7ef2] px-2.5 py-0.5 italic text-white shadow-[0_0_34px_rgba(45,126,242,0.5)]">
             previsível de vendas
           </span>
         </motion.h1>
@@ -318,7 +318,7 @@ function Clients() {
         <Reveal className="text-center">
           <h2 className="text-2xl font-extrabold uppercase tracking-[0.08em] text-white sm:text-3xl">
             Mais de{" "}
-            <span className="bg-[#2d7ef2] px-2 text-white">100 empresas</span>{" "}
+            <span className="bg-[#2d7ef2] px-2 italic text-white">100 empresas</span>{" "}
             impactadas!
           </h2>
           <p className="mt-3 text-sm text-slate-500">
@@ -369,7 +369,7 @@ function Problem() {
           <Kicker>O problema</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Por que o seu investimento em marketing{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
               não traz retorno?
             </span>
           </h2>
@@ -425,7 +425,7 @@ function Solution() {
           <Kicker>A solução</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Como a FortGrow{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
               resolve esses problemas
             </span>
           </h2>
@@ -491,7 +491,7 @@ function Retention() {
           <Kicker>Estética de cinema</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Direção de imagem e{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
               engenharia de retenção
             </span>
           </h2>
@@ -566,7 +566,7 @@ function Targeting() {
           <Kicker>Tráfego com inteligência</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             O alvo certo para o{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
               seu investimento
             </span>
           </h2>
@@ -668,7 +668,7 @@ function Why() {
           <Kicker>Diferenciais</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Por que escolher a{" "}
-            <span className="bg-[#2d7ef2] px-2 text-white">FortGrow?</span>
+            <span className="bg-[#2d7ef2] px-2 italic text-white">FortGrow?</span>
           </h2>
         </Reveal>
 
@@ -712,7 +712,7 @@ function Contact() {
           </span>
           <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Pronto para construir sua{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
               máquina previsível de vendas?
             </span>
           </h2>
