@@ -18,8 +18,19 @@ export function FgMark({ size = 36, className }: { size?: number; className?: st
   );
 }
 
-/** Wordmark FORTGROW — FORT em cinza, GROW em azul (cores do monograma oficial). */
-export function FgWordmark({ className }: { className?: string }) {
+/**
+ * Wordmark FORTGROW — FORT em cinza, GROW em azul (cores do monograma oficial).
+ * `light` deixa a marca toda em branco, para uso sobre fundo azul.
+ */
+export function FgWordmark({ className, light = false }: { className?: string; light?: boolean }) {
+  if (light) {
+    return (
+      <span className={className}>
+        <span className="font-black tracking-tight text-white/85">FORT</span>
+        <span className="font-black tracking-tight text-white">GROW</span>
+      </span>
+    );
+  }
   return (
     <span className={className}>
       <span className="font-black tracking-tight text-slate-300">FORT</span>
