@@ -135,7 +135,8 @@ export function ImportReportPanel({
   // campos que apareceram na planilha (na ordem oficial) para montar a prévia
   const shownFields: ImportFieldKey[] = useMemo(() => {
     if (!build) return [];
-    return IMPORT_FIELDS.map((f) => f.key).filter((k) => build.match.byField[k]);
+    // "source" sempre aparece na prévia (preenchida automaticamente como Tráfego pago)
+    return IMPORT_FIELDS.map((f) => f.key).filter((k) => build.match.byField[k] || k === "source");
   }, [build]);
 
   const previewRows = build?.rows.slice(0, 8) ?? [];
@@ -239,6 +240,11 @@ export function ImportReportPanel({
                     {build.match.unmatched.length > 0 && (
                       <>Não reconhecidas: {build.match.unmatched.join(", ")}.</>
                     )}
+                  </p>
+                )}
+                {!build.match.byField.source && (
+                  <p className="mt-2 text-[11px] text-brand-300/90">
+                    Origem preenchida automaticamente como <b>Tráfego pago</b> (ajustável depois na tabela).
                   </p>
                 )}
               </div>

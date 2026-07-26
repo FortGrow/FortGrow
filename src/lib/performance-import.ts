@@ -92,6 +92,18 @@ export const DERIVED_COLUMNS = ["cpc", "cpm", "ctr", "cpa", "cpl", "roas", "roi"
 export const CAMPAIGN_TYPES = ["LEADS", "VENDAS", "ENGAJAMENTO", "RECONHECIMENTO", "TRAFEGO", "OUTRO"] as const;
 export const SOURCES = ["INDICACAO", "TRAFEGO_PAGO", "ORGANICO", "SOCIAL", "OUTRO"] as const;
 
+/** Origem padrão das linhas importadas (relatórios de campanha = mídia paga). */
+export const DEFAULT_IMPORT_SOURCE = "TRAFEGO_PAGO";
+
+/** Rótulos amigáveis das origens (para exibição na prévia). */
+export const SOURCE_LABELS: Record<string, string> = {
+  INDICACAO: "Indicação",
+  TRAFEGO_PAGO: "Tráfego pago",
+  ORGANICO: "Orgânico",
+  SOCIAL: "Social",
+  OUTRO: "Outro",
+};
+
 /* ───────────────────────── utilidades de texto ───────────────────────── */
 
 /** Remove acentos, pontuação e espaços extras; deixa minúsculo. */
@@ -422,13 +434,15 @@ export function buildImportRows(aoa: unknown[][]): BuildResult {
         display.campaignType = t;
       }
     }
+    // Origem: relatórios de campanha vêm de mídia paga, então o padrão da
+    // importação é "Tráfego pago". Só muda se a planilha tiver uma coluna de
+    // origem com outro valor reconhecível.
+    payload.source = DEFAULT_IMPORT_SOURCE;
     if (match.byField.source) {
       const s = mapSource(cells[match.byField.source.index]);
-      if (s) {
-        payload.source = s;
-        display.source = s;
-      }
+      if (s) payload.source = s;
     }
+    display.source = SOURCE_LABELS[payload.source] ?? payload.source;
 
     const ok = errors.length === 0 && payload.date;
     if (ok) validCount++;
