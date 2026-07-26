@@ -54,15 +54,37 @@ export function ctaHref(): string {
 
 /** Itens do menu — âncoras das seções da home. */
 export const NAV_LINKS = [
-  { label: "Método", href: "#metodo" },
-  { label: "Soluções", href: "#solucoes" },
-  { label: "Resultados", href: "#resultados" },
-  { label: "Sobre", href: "#sobre" },
+  { label: "O problema", href: "#problema" },
+  { label: "Como funciona", href: "#metodo" },
+  { label: "Diferenciais", href: "#diferenciais" },
+  { label: "Clientes", href: "#clientes" },
   { label: "Contato", href: "#contato" },
 ];
 
 /** Slogan curto da marca (aparece no topo). */
-export const SLOGAN = "Nosso negócio é fazer o seu crescer";
+export const SLOGAN = "Estruturação de Marketing";
+
+/** Empresas impactadas (prova social — nomes da apresentação oficial). */
+export const CLIENTS = [
+  "IOA Boutique",
+  "DSM Multimarcas",
+  "Realbrand",
+  "DED Garage",
+  "Conecte Visto",
+  "Santos Autos",
+  "Strike Fire",
+  "Cacau Show",
+  "AutoCash",
+  "RB Transportes",
+  "Lopes Gold",
+  "Casa Refacto",
+  "UniPizza",
+  "Seals Consultoria",
+  "Beatriz Sprada",
+  "Zahara",
+  "Raro",
+  "Programa Estética Pró",
+];
 
 /**
  * Números de prova exibidos na home.
