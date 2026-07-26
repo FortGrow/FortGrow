@@ -197,33 +197,61 @@ function Hero() {
 
 /* ─────────────────── Prova social (100+ empresas) ─────────────────── */
 
-function Clients() {
+/** Faixa do carrossel: logos duplicadas para o loop infinito ser contínuo. */
+/* eslint-disable @next/next/no-img-element */
+function MarqueeRow({ items, reverse = false }: { items: typeof CLIENTS; reverse?: boolean }) {
+  const doubled = [...items, ...items];
   return (
-    <section id="clientes" className="relative border-y border-white/10 bg-black/30 py-16">
-      <div className="mx-auto max-w-6xl px-5 lg:px-8">
+    <div className="logo-marquee overflow-hidden">
+      <div className={`logo-marquee-track flex items-center gap-16 pr-16 ${reverse ? "reverse" : ""}`}>
+        {doubled.map((c, i) => (
+          <img
+            key={`${c.slug}-${i}`}
+            src={`/site/clients/${c.slug}.png`}
+            alt={c.name}
+            title={c.name}
+            loading="lazy"
+            className="w-auto max-w-[200px] shrink-0 object-contain opacity-75 transition hover:opacity-100"
+            style={{ height: "2.9rem" }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Clients() {
+  const half = Math.ceil(CLIENTS.length / 2);
+  return (
+    <section id="clientes" className="relative overflow-hidden border-y border-white/10 bg-black/30 py-16">
+      {/* brilho azul suave atrás do carrossel (gradiente do slide) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(900px 420px at 50% 120%, rgba(45,126,242,0.10), transparent 65%)",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="text-center">
-          <h2 className="text-2xl font-extrabold uppercase tracking-tight text-white sm:text-3xl">
+          <h2 className="text-2xl font-extrabold uppercase tracking-[0.08em] text-white sm:text-3xl">
             Mais de{" "}
             <span className="bg-[#2d7ef2] px-2 text-white">100 empresas</span>{" "}
-            impactadas
+            impactadas!
           </h2>
           <p className="mt-3 text-sm text-slate-500">
             Marcas que confiaram sua estruturação de marketing à FortGrow.
           </p>
         </Reveal>
-        <Reveal delay={0.1}>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-2.5">
-            {CLIENTS.map((c) => (
-              <span
-                key={c}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-400 transition hover:border-[#2d7ef2]/40 hover:text-slate-200"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-        </Reveal>
       </div>
+
+      {/* Carrossel infinito em duas faixas (sentidos opostos) */}
+      <Reveal delay={0.1}>
+        <div className="mt-12 space-y-10">
+          <MarqueeRow items={CLIENTS.slice(0, half)} />
+          <MarqueeRow items={CLIENTS.slice(half)} reverse />
+        </div>
+      </Reveal>
     </section>
   );
 }

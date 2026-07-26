@@ -64,26 +64,31 @@ export const NAV_LINKS = [
 /** Slogan curto da marca (aparece no topo). */
 export const SLOGAN = "Estruturação de Marketing";
 
-/** Empresas impactadas (prova social — nomes da apresentação oficial). */
-export const CLIENTS = [
-  "IOA Boutique",
-  "DSM Multimarcas",
-  "Realbrand",
-  "DED Garage",
-  "Conecte Visto",
-  "Santos Autos",
-  "Strike Fire",
-  "Cacau Show",
-  "AutoCash",
-  "RB Transportes",
-  "Lopes Gold",
-  "Casa Refacto",
-  "UniPizza",
-  "Seals Consultoria",
-  "Beatriz Sprada",
-  "Zahara",
-  "Raro",
-  "Programa Estética Pró",
+/**
+ * Empresas impactadas (prova social — logos extraídas da apresentação
+ * oficial, em /public/site/clients). name = alt/title da imagem.
+ */
+export const CLIENTS: { slug: string; name: string }[] = [
+  { slug: "ioa-boutique", name: "IOA Boutique" },
+  { slug: "dsm-multimarcas", name: "DSM Multimarcas" },
+  { slug: "realbrand", name: "Realbrand Negócios Imobiliários" },
+  { slug: "ded-garage", name: "DED Garage" },
+  { slug: "conectevisto", name: "Conecte Visto" },
+  { slug: "santos-autos", name: "Santos Autos" },
+  { slug: "strike-fire", name: "Strike Fire" },
+  { slug: "escola", name: "Escola" },
+  { slug: "cacau-show", name: "Cacau Show" },
+  { slug: "autocash", name: "AutoCash Soluções Financeiras" },
+  { slug: "rb-transportes", name: "RB Transportes" },
+  { slug: "lopes-gold", name: "Lopes Gold" },
+  { slug: "casa-refacto", name: "Casa Refacto" },
+  { slug: "unipizza", name: "UniPizza" },
+  { slug: "seals-consultoria", name: "Seals Consultoria" },
+  { slug: "beatriz-sprada", name: "Beatriz Sprada" },
+  { slug: "zahara", name: "Zahara" },
+  { slug: "poder-consignacao", name: "O Poder da Consignação" },
+  { slug: "raro-veiculos", name: "Raro Veículos" },
+  { slug: "estetica-pro", name: "Programa Estética Pró" },
 ];
 
 /**
