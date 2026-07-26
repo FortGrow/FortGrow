@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { CheckCircle2, Loader2, Send } from "lucide-react";
+import { Loader2, MessageCircle, Send } from "lucide-react";
+import { REVENUE_RANGES, whatsappUrl } from "@/lib/site-config";
 
 export function ContactForm() {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ export function ContactForm() {
     phone: "",
     email: "",
     segment: "",
+    revenue: "",
     message: "",
     website: "", // honeypot (escondido)
   });
@@ -36,7 +38,9 @@ export function ContactForm() {
         setError(data.error ?? "Não foi possível enviar. Tente novamente.");
         return;
       }
+      // Lead salvo → leva a pessoa direto para o WhatsApp
       setDone(true);
+      window.location.href = whatsappUrl();
     } catch {
       setError("Erro de conexão. Tente novamente.");
     } finally {
@@ -48,13 +52,16 @@ export function ContactForm() {
     return (
       <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-grow-500/25 bg-grow-500/5 p-10 text-center">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-grow-500/15 text-grow-400">
-          <CheckCircle2 size={30} />
+          <MessageCircle size={30} />
         </span>
         <h3 className="mt-5 text-xl font-bold text-white">Recebemos seu contato!</h3>
         <p className="mt-2 max-w-xs text-sm text-slate-400">
-          Um especialista da FortGrow vai falar com você em breve para entender
-          seu momento e o potencial de crescimento do seu negócio.
+          Estamos te levando para o WhatsApp para falar com um especialista da
+          FortGrow…
         </p>
+        <a href={whatsappUrl()} className="btn-primary mt-6">
+          <MessageCircle size={16} /> Abrir o WhatsApp
+        </a>
       </div>
     );
   }
@@ -122,15 +129,32 @@ export function ContactForm() {
         </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="cf-segment">Segmento do negócio</label>
-        <input
-          id="cf-segment"
-          value={form.segment}
-          onChange={(e) => set("segment", e.target.value)}
-          placeholder="Ex.: imóveis, e-commerce, serviços…"
-          className="input"
-        />
+      <div className="grid gap-3.5 sm:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="cf-segment">Segmento do negócio</label>
+          <input
+            id="cf-segment"
+            value={form.segment}
+            onChange={(e) => set("segment", e.target.value)}
+            placeholder="Ex.: imóveis, e-commerce, serviços…"
+            className="input"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="cf-revenue">Faturamento mensal *</label>
+          <select
+            id="cf-revenue"
+            required
+            value={form.revenue}
+            onChange={(e) => set("revenue", e.target.value)}
+            className="input cursor-pointer"
+          >
+            <option value="" disabled>Selecione…</option>
+            {REVENUE_RANGES.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>
@@ -153,7 +177,7 @@ export function ContactForm() {
 
       <button type="submit" disabled={loading} className="btn-primary w-full text-base">
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-        Quero falar com um especialista
+        Falar com um especialista no WhatsApp
       </button>
       <p className="text-center text-[11px] text-slate-500">
         Resposta rápida · Sem compromisso
