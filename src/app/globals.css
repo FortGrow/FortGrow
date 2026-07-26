@@ -131,6 +131,90 @@ body {
     }
   }
 
+  /*
+   * Logo "Estruturação Estratégica" com aspecto 3D: camadas empilhadas da
+   * mesma arte criam a extrusão (relevo), com luz por cima e sombra
+   * projetada embaixo — como um patch bordado/costurado em alto-relevo.
+   */
+  .logo-3d {
+    position: relative;
+    display: inline-block;
+    perspective: 900px;
+    animation: logo-3d-float 7s ease-in-out infinite;
+  }
+  .logo-3d-stack {
+    position: relative;
+    transform: rotateX(9deg) rotateY(-5deg);
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .logo-3d:hover .logo-3d-stack {
+    transform: rotateX(4deg) rotateY(3deg) scale(1.02);
+  }
+  /* Camadas de extrusão (profundidade) — ficam atrás da arte principal */
+  .logo-3d-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  /* Arte principal, com luz de cima e sombra projetada */
+  .logo-3d-face {
+    position: relative;
+    filter:
+      drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25))
+      drop-shadow(0 14px 22px rgba(0, 0, 0, 0.55))
+      drop-shadow(0 3px 10px rgba(45, 126, 242, 0.35));
+  }
+  /* Brilho de luz varrendo o relevo */
+  .logo-3d-shine {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.22) 48%,
+      transparent 60%
+    );
+    mix-blend-mode: screen;
+    -webkit-mask-image: var(--logo-mask);
+    mask-image: var(--logo-mask);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    animation: logo-3d-shine 6s ease-in-out infinite;
+  }
+  @keyframes logo-3d-float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-7px);
+    }
+  }
+  @keyframes logo-3d-shine {
+    0%, 100% {
+      transform: translateX(-45%);
+      opacity: 0;
+    }
+    45% {
+      opacity: 1;
+    }
+    75%, 100% {
+      transform: translateX(45%);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .logo-3d,
+    .logo-3d-shine {
+      animation: none;
+    }
+  }
+
   /* Carrossel infinito de logos (home institucional) */
   .logo-marquee {
     mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
