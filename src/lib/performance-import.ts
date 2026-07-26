@@ -287,16 +287,38 @@ function isoFromParts(y: number, mo: number, d: number): string | null {
 
 /* ───────────────────────── normalização das linhas ───────────────────────── */
 
+/**
+ * Reconhece o tipo de campanha a partir de um texto (nome da campanha ou
+ * coluna de objetivo). Retorna null quando nenhuma palavra-chave é encontrada
+ * — assim o nome da campanha só define o tipo quando há um sinal claro.
+ */
+export function detectCampaignType(raw: unknown): string | null {
+  const n = normalizeHeader(raw);
+  if (!n) return null;
+  if (/(^|\b)(lead|leads|cadastro|captacao|formulario)/.test(n)) return "LEADS";
+  if (/(venda|convers|compra|checkout|sale|purchase|roas|remarketing)/.test(n)) return "VENDAS";
+  if (/(engaj|engagement|interac|curtida|comentario|seguidor|mensagem|whatsapp|direct)/.test(n)) return "ENGAJAMENTO";
+  if (/(reconhec|awareness|alcance|marca|branding|brand|institucional|topo de funil|topo funil)/.test(n)) return "RECONHECIMENTO";
+  if (/(trafego|traffic|clique|link|visita|acesso ao site|landing|site)/.test(n)) return "TRAFEGO";
+  return null;
+}
+
+/** Valor da coluna de Tipo/Objetivo → enum (com fallback OUTRO se houver texto). */
 function mapCampaignType(raw: unknown): string | null {
   const n = normalizeHeader(raw);
   if (!n) return null;
-  if (/lead|cadastro/.test(n)) return "LEADS";
-  if (/venda|conversa|converso|compra|sale|purchase/.test(n)) return "VENDAS";
-  if (/engaj|engagement|interac/.test(n)) return "ENGAJAMENTO";
-  if (/reconhec|awareness|marca|brand|alcance/.test(n)) return "RECONHECIMENTO";
-  if (/trafego|traffic|clique|link/.test(n)) return "TRAFEGO";
-  return "OUTRO";
+  return detectCampaignType(raw) ?? "OUTRO";
 }
+
+/** Rótulos amigáveis dos tipos de campanha (para exibição na prévia). */
+export const CAMPAIGN_TYPE_LABELS: Record<string, string> = {
+  LEADS: "Leads",
+  VENDAS: "Vendas",
+  ENGAJAMENTO: "Engajamento",
+  RECONHECIMENTO: "Reconhecimento",
+  TRAFEGO: "Tráfego",
+  OUTRO: "Outro",
+};
 
 function mapSource(raw: unknown): string | null {
   const n = normalizeHeader(raw);
@@ -427,12 +449,19 @@ export function buildImportRows(aoa: unknown[][]): BuildResult {
         display.campaign = payload.campaign;
       }
     }
+    // Tipo de campanha: primeiro a coluna de Tipo/Objetivo (se houver); se não
+    // vier, reconhece automaticamente pelo NOME da campanha (tráfego,
+    // reconhecimento, engajamento, leads, vendas…).
     if (match.byField.campaignType) {
       const t = mapCampaignType(cells[match.byField.campaignType.index]);
-      if (t) {
-        payload.campaignType = t;
-        display.campaignType = t;
-      }
+      if (t) payload.campaignType = t;
+    }
+    if (!payload.campaignType && payload.campaign) {
+      const inferred = detectCampaignType(payload.campaign);
+      if (inferred) payload.campaignType = inferred;
+    }
+    if (payload.campaignType) {
+      display.campaignType = CAMPAIGN_TYPE_LABELS[payload.campaignType] ?? payload.campaignType;
     }
     // Origem: relatórios de campanha vêm de mídia paga, então o padrão da
     // importação é "Tráfego pago". Só muda se a planilha tiver uma coluna de
