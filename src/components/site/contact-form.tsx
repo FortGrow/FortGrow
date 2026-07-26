@@ -50,8 +50,8 @@ export function ContactForm() {
 
   if (done) {
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-teal-400/25 bg-teal-400/5 p-10 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-400/15 text-teal-300">
+      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-[#2d7ef2]/25 bg-[#2d7ef2]/5 p-10 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2d7ef2]/15 text-[#7fb0f8]">
           <MessageCircle size={30} />
         </span>
         <h3 className="mt-5 text-xl font-bold text-white">Recebemos seu contato!</h3>
@@ -59,7 +59,7 @@ export function ContactForm() {
           Estamos te levando para o WhatsApp para falar com um especialista da
           FortGrow…
         </p>
-        <a href={whatsappUrl()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-teal-400 px-5 py-2.5 text-sm font-bold text-ink-950 transition hover:bg-teal-300">
+        <a href={whatsappUrl()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#2d7ef2] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#4f92f7]">
           <MessageCircle size={16} /> Abrir o WhatsApp
         </a>
       </div>
@@ -175,7 +175,7 @@ export function ContactForm() {
         </p>
       )}
 
-      <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 py-3 text-base font-bold text-ink-950 shadow-[0_6px_26px_-6px_rgba(45,212,191,0.55)] transition hover:bg-teal-300 active:scale-[0.98] disabled:opacity-50">
+      <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d7ef2] px-4 py-3 text-base font-bold text-white shadow-[0_6px_26px_-6px_rgba(45,126,242,0.55)] transition hover:bg-[#4f92f7] active:scale-[0.98] disabled:opacity-50">
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         Falar com um especialista no WhatsApp
       </button>

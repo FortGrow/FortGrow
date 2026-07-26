@@ -36,16 +36,16 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /*
  * Home institucional — identidade da apresentação oficial "Estruturação de
- * Marketing": fundo escuro esfumaçado, neon teal/ciano, manchetes em caixa
+ * Marketing": fundo escuro esfumaçado, azul neon da logo, manchetes em caixa
  * alta com a frase-chave destacada, cards de vidro e o hexágono FG neon.
  */
 
 /* ───────────────────────── blocos de apoio ───────────────────────── */
 
-/** Rótulo de seção (pequeno, uppercase, teal). */
+/** Rótulo de seção (pequeno, uppercase, azul da logo). */
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-bold uppercase tracking-[0.25em] text-teal-300">{children}</p>
+    <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7fb0f8]">{children}</p>
   );
 }
 
@@ -65,20 +65,20 @@ function NeonHex({ size = 190 }: { size?: number }) {
         </defs>
         <polygon
           points="50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5"
-          fill="rgba(4,14,15,0.9)"
-          stroke="#2dd4bf"
+          fill="rgba(5,9,15,0.9)"
+          stroke="#2d7ef2"
           strokeWidth="2.2"
           filter="url(#hexGlow)"
         />
         <polygon
           points="50,10 85,30 85,70 50,90 15,70 15,30"
           fill="none"
-          stroke="rgba(45,212,191,0.35)"
+          stroke="rgba(45,126,242,0.35)"
           strokeWidth="0.8"
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <FgMark size={Math.round(size * 0.42)} className="drop-shadow-[0_0_22px_rgba(45,212,191,0.65)]" />
+        <FgMark size={Math.round(size * 0.42)} className="drop-shadow-[0_0_22px_rgba(45,126,242,0.65)]" />
       </div>
     </div>
   );
@@ -90,15 +90,15 @@ function Hero() {
   const cta = ctaHref();
   return (
     <section className="relative overflow-hidden pt-32 pb-24 lg:pt-40 lg:pb-32">
-      {/* fundo esfumaçado teal da apresentação */}
+      {/* fundo esfumaçado azul (paleta da logo) */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(1000px 620px at 18% -5%, rgba(20,184,166,0.16), transparent 62%)," +
-              "radial-gradient(800px 520px at 92% 12%, rgba(45,212,191,0.10), transparent 60%)," +
-              "radial-gradient(700px 540px at 55% 105%, rgba(13,148,136,0.12), transparent 58%)",
+              "radial-gradient(1000px 620px at 18% -5%, rgba(45,126,242,0.16), transparent 62%)," +
+              "radial-gradient(800px 520px at 92% 12%, rgba(45,126,242,0.10), transparent 60%)," +
+              "radial-gradient(700px 540px at 55% 105%, rgba(37,99,235,0.12), transparent 58%)",
           }}
         />
         {/* malha de linhas (rede) */}
@@ -106,7 +106,7 @@ function Hero() {
           className="absolute inset-0 opacity-[0.35]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(45,212,191,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.055) 1px, transparent 1px)",
+              "linear-gradient(rgba(45,126,242,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(45,126,242,0.055) 1px, transparent 1px)",
             backgroundSize: "56px 56px",
             maskImage: "radial-gradient(900px 640px at 50% 20%, black, transparent 78%)",
           }}
@@ -118,7 +118,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-teal-300"
+          className="inline-flex items-center gap-2 rounded-full border border-[#2d7ef2]/30 bg-[#2d7ef2]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#7fb0f8]"
         >
           <Sparkles size={13} /> {SLOGAN}
         </motion.span>
@@ -132,7 +132,7 @@ function Hero() {
           Não é sobre ter vídeos bonitos.
           <br />
           É sobre construir uma máquina{" "}
-          <span className="inline-block -skew-x-3 bg-teal-400 px-2.5 py-0.5 text-ink-950 shadow-[0_0_34px_rgba(45,212,191,0.5)]">
+          <span className="inline-block -skew-x-3 bg-[#2d7ef2] px-2.5 py-0.5 text-white shadow-[0_0_34px_rgba(45,126,242,0.5)]">
             previsível de vendas
           </span>
         </motion.h1>
@@ -155,7 +155,7 @@ function Hero() {
         >
           <a
             href="#contato"
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-400 px-6 py-3 text-base font-bold text-ink-950 shadow-[0_6px_30px_-6px_rgba(45,212,191,0.6)] transition hover:bg-teal-300 hover:shadow-[0_8px_38px_-6px_rgba(45,212,191,0.8)] active:scale-[0.97]"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#2d7ef2] px-6 py-3 text-base font-bold text-white shadow-[0_6px_30px_-6px_rgba(45,126,242,0.6)] transition hover:bg-[#4f92f7] hover:shadow-[0_8px_38px_-6px_rgba(45,126,242,0.8)] active:scale-[0.97]"
           >
             Construir minha máquina de vendas <ArrowRight size={17} />
           </a>
@@ -163,9 +163,9 @@ function Hero() {
             href={cta.startsWith("http") ? cta : "#metodo"}
             target={cta.startsWith("http") ? "_blank" : undefined}
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-6 py-3 text-base font-semibold text-slate-200 transition hover:border-teal-400/50 hover:text-white active:scale-[0.97]"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-6 py-3 text-base font-semibold text-slate-200 transition hover:border-[#2d7ef2]/50 hover:text-white active:scale-[0.97]"
           >
-            <MessageCircle size={16} className="text-teal-300" /> Falar com especialista
+            <MessageCircle size={16} className="text-[#7fb0f8]" /> Falar com especialista
           </a>
         </motion.div>
 
@@ -186,7 +186,7 @@ function Hero() {
               key={c.label}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-[12px] font-semibold text-slate-300"
             >
-              <span className="text-teal-300">{c.icon}</span> {c.label}
+              <span className="text-[#7fb0f8]">{c.icon}</span> {c.label}
             </span>
           ))}
         </motion.div>
@@ -204,7 +204,7 @@ function Clients() {
         <Reveal className="text-center">
           <h2 className="text-2xl font-extrabold uppercase tracking-tight text-white sm:text-3xl">
             Mais de{" "}
-            <span className="bg-teal-400 px-2 text-ink-950">100 empresas</span>{" "}
+            <span className="bg-[#2d7ef2] px-2 text-white">100 empresas</span>{" "}
             impactadas
           </h2>
           <p className="mt-3 text-sm text-slate-500">
@@ -216,7 +216,7 @@ function Clients() {
             {CLIENTS.map((c) => (
               <span
                 key={c}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-400 transition hover:border-teal-400/40 hover:text-slate-200"
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-slate-400 transition hover:border-[#2d7ef2]/40 hover:text-slate-200"
               >
                 {c}
               </span>
@@ -256,7 +256,7 @@ function Problem() {
           <Kicker>O problema</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Por que o seu investimento em marketing{" "}
-            <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
               não traz retorno?
             </span>
           </h2>
@@ -265,8 +265,8 @@ function Problem() {
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {PROBLEMS.map((p, i) => (
             <Reveal key={p.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:border-teal-400/40">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-400/10 text-teal-300">
+              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:border-[#2d7ef2]/40">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
                   {p.icon}
                 </span>
                 <h3 className="mt-5 text-lg font-bold text-white">{p.title}</h3>
@@ -315,7 +315,7 @@ function Solution() {
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(700px 480px at 50% 45%, rgba(20,184,166,0.10), transparent 65%)",
+          background: "radial-gradient(700px 480px at 50% 45%, rgba(45,126,242,0.10), transparent 65%)",
         }}
       />
       <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
@@ -323,7 +323,7 @@ function Solution() {
           <Kicker>A solução</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Como a FortGrow{" "}
-            <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
               resolve esses problemas
             </span>
           </h2>
@@ -337,7 +337,7 @@ function Solution() {
               {ORBIT.map((o) => (
                 <span
                   key={o.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/25 bg-teal-400/[0.07] px-3 py-1.5 text-[11px] font-semibold text-teal-200"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#2d7ef2]/25 bg-[#2d7ef2]/[0.07] px-3 py-1.5 text-[11px] font-semibold text-[#b9d3fb]"
                 >
                   {o.icon} {o.label}
                 </span>
@@ -349,8 +349,8 @@ function Solution() {
           <div className="space-y-4">
             {SOLUTION_STEPS.map((s, i) => (
               <Reveal key={s.title} delay={i * 0.1}>
-                <div className="flex gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal-400/40">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-400/10 text-teal-300">
+                <div className="flex gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-[#2d7ef2]/40">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
                     {s.icon}
                   </span>
                   <div>
@@ -395,7 +395,7 @@ function Retention() {
           <Kicker>Estética de cinema</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Direção de imagem e{" "}
-            <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
               engenharia de retenção
             </span>
           </h2>
@@ -404,8 +404,8 @@ function Retention() {
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {RETENTION.map((r, i) => (
             <Reveal key={r.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 text-center transition hover:border-teal-400/40">
-                <span className="inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-4 py-2 text-sm font-bold text-teal-300">
+              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 text-center transition hover:border-[#2d7ef2]/40">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#2d7ef2]/15 px-4 py-2 text-sm font-bold text-[#7fb0f8]">
                   {r.icon} {r.title}
                 </span>
                 <p className="mt-4 text-sm leading-relaxed text-slate-400">{r.text}</p>
@@ -451,7 +451,7 @@ function Targeting() {
           <Kicker>Tráfego com inteligência</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             O alvo certo para o{" "}
-            <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
               seu investimento
             </span>
           </h2>
@@ -463,23 +463,23 @@ function Targeting() {
           <svg viewBox="0 0 300 120" className="mt-8 h-28 w-full max-w-sm" aria-hidden>
             <defs>
               <linearGradient id="tgArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
+                <stop offset="0%" stopColor="#2d7ef2" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#2d7ef2" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path d="M0,105 C60,98 110,80 160,58 C210,36 250,22 292,10 L292,120 L0,120 Z" fill="url(#tgArea)" />
             <path
               d="M0,105 C60,98 110,80 160,58 C210,36 250,22 292,10"
               fill="none"
-              stroke="#2dd4bf"
+              stroke="#2d7ef2"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
-            <path d="M281,7 L295,9 L288,21 Z" fill="#2dd4bf" />
+            <path d="M281,7 L295,9 L288,21 Z" fill="#2d7ef2" />
             <path
               d="M0,112 C70,108 130,96 180,80 C230,64 262,52 292,42"
               fill="none"
-              stroke="rgba(94,234,212,0.4)"
+              stroke="rgba(147,187,250,0.4)"
               strokeWidth="1.6"
               strokeLinecap="round"
               strokeDasharray="5 6"
@@ -490,8 +490,8 @@ function Targeting() {
         <div className="space-y-4">
           {TARGETS.map((t, i) => (
             <Reveal key={t.title} delay={i * 0.08}>
-              <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-teal-400/40">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-400/10 text-teal-300">
+              <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-[#2d7ef2]/40">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
                   {t.icon}
                 </span>
                 <div>
@@ -535,15 +535,15 @@ function Why() {
           <Kicker>Diferenciais</Kicker>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Por que escolher a{" "}
-            <span className="bg-teal-400 px-2 text-ink-950">FortGrow?</span>
+            <span className="bg-[#2d7ef2] px-2 text-white">FortGrow?</span>
           </h2>
         </Reveal>
 
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {WHY.map((w, i) => (
             <Reveal key={w.title} delay={i * 0.1}>
-              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:-translate-y-1 hover:border-teal-400/40 hover:bg-white/[0.05]">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400/20 to-cyan-400/10 text-teal-300">
+              <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:-translate-y-1 hover:border-[#2d7ef2]/40 hover:bg-white/[0.05]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2d7ef2]/20 to-[#5093f5]/10 text-[#7fb0f8]">
                   {w.icon}
                 </span>
                 <h3 className="mt-5 text-lg font-bold text-white">{w.title}</h3>
@@ -574,18 +574,18 @@ function Contact() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(700px 420px at 12% 0%, rgba(20,184,166,0.12), transparent 60%)," +
-            "radial-gradient(600px 420px at 92% 100%, rgba(45,212,191,0.10), transparent 60%)",
+            "radial-gradient(700px 420px at 12% 0%, rgba(45,126,242,0.12), transparent 60%)," +
+            "radial-gradient(600px 420px at 92% 100%, rgba(45,126,242,0.10), transparent 60%)",
         }}
       />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-2 lg:px-8">
         <Reveal>
-          <span className="inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-teal-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#2d7ef2]/30 bg-[#2d7ef2]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#7fb0f8]">
             <TrendingUp size={13} /> Vamos escalar juntos
           </span>
           <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
             Pronto para construir sua{" "}
-            <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text text-transparent">
               máquina previsível de vendas?
             </span>
           </h2>
@@ -597,7 +597,7 @@ function Contact() {
           <ul className="mt-7 space-y-3">
             {CONTACT_BENEFITS.map((b) => (
               <li key={b} className="flex items-center gap-3 text-sm text-slate-300">
-                <CheckCircle2 size={18} className="shrink-0 text-teal-300" /> {b}
+                <CheckCircle2 size={18} className="shrink-0 text-[#7fb0f8]" /> {b}
               </li>
             ))}
           </ul>
@@ -606,9 +606,9 @@ function Contact() {
               href={cta}
               target="_blank"
               rel="noreferrer"
-              className="mt-8 inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-teal-400/50 hover:text-white"
+              className="mt-8 inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-[#2d7ef2]/50 hover:text-white"
             >
-              <MessageCircle size={16} className="text-teal-300" /> Prefiro chamar no WhatsApp
+              <MessageCircle size={16} className="text-[#7fb0f8]" /> Prefiro chamar no WhatsApp
             </a>
           )}
         </Reveal>
@@ -625,7 +625,7 @@ function Contact() {
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-[#04090a] text-slate-200">
+    <div className="min-h-screen bg-[#05090f] text-slate-200">
       <SiteNav slogan={SLOGAN} />
       <main>
         <Hero />
