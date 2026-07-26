@@ -251,23 +251,39 @@ export function MethodologyPentagon() {
 
   return (
     <div className="relative mx-auto w-full max-w-[660px]">
-      {/* fundo: luz ambiente + grade + partículas */}
-      <div aria-hidden className="pointer-events-none absolute inset-[-18%]">
+      {/* Fundo: luz ambiente + grade + partículas.
+          Todas as camadas de luz vivem em caixas quadradas com gradiente
+          `closest-side`, ou seja: o brilho chega a zero antes da borda da
+          caixa. É o que evita o retângulo de luz com cantos retos que
+          aparecia quando o gradiente era recortado pelo próprio elemento. */}
+      <div aria-hidden className="pointer-events-none absolute inset-[-24%]">
+        {/* halo principal (azul da marca) */}
         <div
-          className="absolute inset-0"
+          className="absolute left-1/2 top-1/2 aspect-square w-[94%] -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(45,126,242,0.16), transparent 62%)," +
-              "radial-gradient(circle at 30% 25%, rgba(34,211,238,0.10), transparent 55%)",
+              "radial-gradient(circle closest-side, rgba(45,126,242,0.22) 0%, rgba(45,126,242,0.11) 38%, rgba(45,126,242,0.03) 62%, rgba(45,126,242,0) 82%)",
           }}
         />
+        {/* segundo foco de luz, deslocado — dá volume sem virar mancha */}
         <div
-          className="absolute inset-0 opacity-[0.25]"
+          className="absolute left-[36%] top-[30%] aspect-square w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle closest-side, rgba(34,211,238,0.14) 0%, rgba(34,211,238,0.05) 45%, rgba(34,211,238,0) 78%)",
+          }}
+        />
+        {/* grade técnica, recortada em círculo bem dentro da caixa */}
+        <div
+          className="absolute left-1/2 top-1/2 aspect-square w-[92%] -translate-x-1/2 -translate-y-1/2 opacity-[0.28]"
           style={{
             backgroundImage:
               "linear-gradient(rgba(56,189,248,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.06) 1px, transparent 1px)",
             backgroundSize: "44px 44px",
-            maskImage: "radial-gradient(circle at 50% 50%, black, transparent 72%)",
+            maskImage:
+              "radial-gradient(circle closest-side, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 46%, transparent 76%)",
+            WebkitMaskImage:
+              "radial-gradient(circle closest-side, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 46%, transparent 76%)",
           }}
         />
         {PARTICLES.map((p, i) => (
@@ -331,14 +347,25 @@ export function MethodologyPentagon() {
 
                   {/* Glow por traços empilhados (sem filtro): o navegador não
                       precisa rasterizar um blur a cada quadro — é o que
-                      mantém a rotação fluida. */}
+                      mantém a rotação fluida. São 4 traços com queda suave de
+                      largura/opacidade, para a luz "vazar" da linha em vez de
+                      terminar num contorno duro. */}
+                  <polygon
+                    points={points}
+                    fill="none"
+                    stroke={layer.color}
+                    strokeWidth={isActive ? 6.4 : 4.6}
+                    strokeLinejoin="round"
+                    opacity={isActive ? 0.10 : 0.05}
+                    style={{ transition: "stroke-width 0.35s ease, opacity 0.35s ease" }}
+                  />
                   <polygon
                     points={points}
                     fill="none"
                     stroke={layer.color}
                     strokeWidth={isActive ? 3.4 : 2.4}
                     strokeLinejoin="round"
-                    opacity={isActive ? 0.20 : 0.10}
+                    opacity={isActive ? 0.22 : 0.12}
                     style={{ transition: "stroke-width 0.35s ease, opacity 0.35s ease" }}
                   />
                   <polygon
@@ -420,6 +447,65 @@ export function MethodologyPentagon() {
           );
         })}
 
+        {/* Card da etapa — abre ao clicar no ícone, à frente das camadas */}
+        {openLayer !== null && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center p-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCard(null);
+            }}
+          >
+            {/* véu escuro: destaca o card sem esconder os anéis girando */}
+            <span aria-hidden className="absolute inset-0 rounded-full bg-[#04070d]/70" />
+            <div
+              role="dialog"
+              aria-label={LAYERS[openLayer].label}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-[330px] animate-fade-up rounded-2xl p-6 text-left"
+              style={{
+                background: `linear-gradient(160deg, ${LAYERS[openLayer].color}26, rgba(5,9,15,0.96) 60%)`,
+                border: `1px solid ${LAYERS[openLayer].color}`,
+                boxShadow: `0 0 40px -8px ${LAYERS[openLayer].color}, 0 20px 50px -20px rgba(0,0,0,0.9)`,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggleCard(null)}
+                aria-label="Fechar"
+                className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+              <span
+                className="flex h-12 w-12 items-center justify-center rounded-xl"
+                style={{
+                  background: `${LAYERS[openLayer].color}22`,
+                  border: `1px solid ${LAYERS[openLayer].color}66`,
+                  color: LAYERS[openLayer].color,
+                  boxShadow: `0 0 18px -4px ${LAYERS[openLayer].color}`,
+                }}
+              >
+                {LAYERS[openLayer].bigIcon}
+              </span>
+
+              <h3 className="mt-4 pr-6 text-lg font-bold text-white">
+                {LAYERS[openLayer].label}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                {LAYERS[openLayer].description}
+              </p>
+              <p
+                className="mt-4 text-[11px] font-semibold uppercase tracking-wider"
+                style={{ color: LAYERS[openLayer].color }}
+              >
+                Camada {openLayer + 1} de {LAYERS.length} · Metodologia FortGrow
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* núcleo: só a marca */}
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -446,75 +532,25 @@ export function MethodologyPentagon() {
         </div>
       </div>
 
-      {/* Card da etapa — abaixo do pentágono, sem cobrir as camadas */}
-      <div className="mt-6 min-h-[112px]">
-        {openLayer === null ? (
-          <div className="flex h-12 items-center justify-center">
-            {active === null ? (
-              <p className="text-center text-xs text-slate-500">
-                Clique em um ícone para ver a etapa
-              </p>
-            ) : (
-              <span
-                className="inline-flex items-center gap-2.5 rounded-full border px-4 py-2 text-sm font-bold transition-all duration-300"
-                style={{
-                  borderColor: LAYERS[active].color,
-                  background: `${LAYERS[active].color}1f`,
-                  color: LAYERS[active].color,
-                  boxShadow: `0 0 26px -6px ${LAYERS[active].color}`,
-                }}
-              >
-                {LAYERS[active].icon}
-                {LAYERS[active].label}
-              </span>
-            )}
-          </div>
+      {/* Dica / nome da camada em destaque (altura fixa: a seção não "pula") */}
+      <div className="mt-6 flex h-12 items-center justify-center">
+        {active === null || openLayer !== null ? (
+          <p className="text-center text-xs text-slate-500">
+            Clique em um ícone para ver a etapa
+          </p>
         ) : (
-          <div
-            role="dialog"
-            aria-label={LAYERS[openLayer].label}
-            className="relative animate-fade-up rounded-2xl p-5 text-left sm:p-6"
+          <span
+            className="inline-flex items-center gap-2.5 rounded-full border px-4 py-2 text-sm font-bold transition-all duration-300"
             style={{
-              background: `linear-gradient(160deg, ${LAYERS[openLayer].color}24, rgba(5,9,15,0.92) 60%)`,
-              border: `1px solid ${LAYERS[openLayer].color}`,
-              boxShadow: `0 0 34px -10px ${LAYERS[openLayer].color}`,
+              borderColor: LAYERS[active].color,
+              background: `${LAYERS[active].color}1f`,
+              color: LAYERS[active].color,
+              boxShadow: `0 0 26px -6px ${LAYERS[active].color}`,
             }}
           >
-            <button
-              type="button"
-              onClick={() => toggleCard(null)}
-              aria-label="Fechar"
-              className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-
-            <div className="flex items-start gap-4">
-              <span
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: `${LAYERS[openLayer].color}22`,
-                  border: `1px solid ${LAYERS[openLayer].color}66`,
-                  color: LAYERS[openLayer].color,
-                  boxShadow: `0 0 18px -4px ${LAYERS[openLayer].color}`,
-                }}
-              >
-                {LAYERS[openLayer].bigIcon}
-              </span>
-              <div className="min-w-0">
-                <h3 className="pr-6 text-lg font-bold text-white">{LAYERS[openLayer].label}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
-                  {LAYERS[openLayer].description}
-                </p>
-                <p
-                  className="mt-3 text-[11px] font-semibold uppercase tracking-wider"
-                  style={{ color: LAYERS[openLayer].color }}
-                >
-                  Camada {openLayer + 1} de {LAYERS.length} · Metodologia FortGrow
-                </p>
-              </div>
-            </div>
-          </div>
+            {LAYERS[active].icon}
+            {LAYERS[active].label}
+          </span>
         )}
       </div>
 
