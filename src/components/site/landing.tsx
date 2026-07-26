@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { Cormorant_Garamond } from "next/font/google";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -20,7 +22,6 @@ import {
   Scissors,
   ShieldCheck,
   Snowflake,
-  Sparkles,
   Target,
   TrendingUp,
   Users,
@@ -39,6 +40,14 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
  * Marketing": fundo escuro esfumaçado, azul neon da logo, manchetes em caixa
  * alta com a frase-chave destacada, cards de vidro e o hexágono FG neon.
  */
+
+/** Fonte delicada (serif itálica) do "Estruturação" — como no slide da apresentação. */
+const delicate = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  style: ["italic"],
+  display: "swap",
+});
 
 /* ───────────────────────── blocos de apoio ───────────────────────── */
 
@@ -86,8 +95,45 @@ function NeonHex({ size = 190 }: { size?: number }) {
 
 /* ───────────────────────── Hero ───────────────────────── */
 
+/**
+ * Botão "Contrate a FortGrow": ao clicar, anima um preenchimento de
+ * carregamento do azul bebê para o azul escuro e então leva ao contato.
+ */
+function ContrateButton() {
+  const [state, setState] = useState<"idle" | "loading">("idle");
+
+  function onClick(e: React.MouseEvent) {
+    e.preventDefault();
+    if (state !== "idle") return;
+    setState("loading");
+    setTimeout(() => {
+      document.getElementById("contato")?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => setState("idle"), 1400);
+    }, 1000);
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-[#a9cdfb] px-9 py-3.5 text-base font-bold shadow-[0_6px_30px_-6px_rgba(45,126,242,0.5)] transition-transform active:scale-[0.97]"
+    >
+      {/* preenchimento de carregamento: azul bebê → azul escuro */}
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#2d7ef2] to-[#123c8f] transition-[width] duration-1000 ease-out"
+        style={{ width: state === "idle" ? "0%" : "100%" }}
+      />
+      <span
+        className="relative inline-flex items-center gap-2 transition-colors duration-500"
+        style={{ color: state === "idle" ? "#0d2f6b" : "#ffffff" }}
+      >
+        Contrate a FortGrow <ArrowRight size={17} />
+      </span>
+    </button>
+  );
+}
+
 function Hero() {
-  const cta = ctaHref();
   return (
     <section className="relative overflow-hidden pt-32 pb-24 lg:pt-40 lg:pb-32">
       {/* fundo esfumaçado azul (paleta da logo) */}
@@ -114,14 +160,19 @@ function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-5 text-center lg:px-8">
-        <motion.span
+        {/* Lockup do slide: "Estruturação" em fonte delicada + DE MARKETING */}
+        <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="inline-flex items-center gap-2 rounded-full border border-[#2d7ef2]/30 bg-[#2d7ef2]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#7fb0f8]"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Sparkles size={13} /> {SLOGAN}
-        </motion.span>
+          <p className={`${delicate.className} text-4xl italic leading-none text-white/95 sm:text-5xl`}>
+            Estruturação
+          </p>
+          <p className="mt-1.5 text-sm font-extrabold uppercase tracking-[0.5em] text-[#7fb0f8] sm:text-base">
+            de Marketing
+          </p>
+        </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 26 }}
@@ -151,22 +202,9 @@ function Hero() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.85, delay: 0.42, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          className="mt-10 flex justify-center"
         >
-          <a
-            href="#contato"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#2d7ef2] px-6 py-3 text-base font-bold text-white shadow-[0_6px_30px_-6px_rgba(45,126,242,0.6)] transition hover:bg-[#4f92f7] hover:shadow-[0_8px_38px_-6px_rgba(45,126,242,0.8)] active:scale-[0.97]"
-          >
-            Construir minha máquina de vendas <ArrowRight size={17} />
-          </a>
-          <a
-            href={cta.startsWith("http") ? cta : "#metodo"}
-            target={cta.startsWith("http") ? "_blank" : undefined}
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-6 py-3 text-base font-semibold text-slate-200 transition hover:border-[#2d7ef2]/50 hover:text-white active:scale-[0.97]"
-          >
-            <MessageCircle size={16} className="text-[#7fb0f8]" /> Falar com especialista
-          </a>
+          <ContrateButton />
         </motion.div>
 
         {/* pilares rápidos */}
