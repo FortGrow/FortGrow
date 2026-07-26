@@ -253,6 +253,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [to, setTo] = useState(() => iso(new Date()));
   const [save, setSave] = useState<{ state: "idle" | "saving" | "saved" | "error"; at?: string }>({ state: "idle" });
   const [adding, setAdding] = useState(false);
+  /* Mês dos lançamentos: filtra a tabela e define o mês do "Adicionar linha"
+     — permite lançar métricas de meses anteriores. */
+  const [entryMonth, setEntryMonth] = useState(() => iso(new Date()).slice(0, 7));
+  const [monthScope, setMonthScope] = useState(true);
   /* Modal de vendas detalhadas + contador de versão por linha: os inputs da
      tabela são não-controlados, então quando o modal re-sincroniza Vendas e
      Receita bruta a linha precisa remontar para exibir os novos valores. */
@@ -369,10 +373,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   async function addRow() {
     setAdding(true);
     try {
+      // Mês atual → hoje; mês anterior selecionado → dia 1 daquele mês
+      // (a data exata pode ser ajustada na própria linha depois).
+      const today = iso(new Date());
+      const date = entryMonth === today.slice(0, 7) ? today : `${entryMonth}-01`;
       const res = await fetch("/api/performance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, date: iso(new Date()) }),
+        body: JSON.stringify({ clientId, date }),
       });
       if (!res.ok) throw new Error();
       const { entry } = await res.json();
@@ -464,8 +472,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         .filter((r) => source === "TODAS" || r.source === source)
         .filter((r) => !campaign || (r.campaign ?? "") === campaign)
         .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType)
+        .filter((r) => !(editable && monthScope) || r.date.slice(0, 7) === entryMonth)
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [rows, source, campaign, campaignType]
+    [rows, source, campaign, campaignType, editable, monthScope, entryMonth]
+  );
+
+  const entryMonthLabel = useMemo(
+    () => new Date(`${entryMonth}-01T12:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+    [entryMonth]
   );
 
   /* Campanhas conhecidas + comparativo por campanha no período */
@@ -1192,15 +1206,43 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             {save.state === "error" && "Erro ao salvar — confira sua conexão e tente de novo."}
           </span>
           {editable && (
-            <button onClick={addRow} disabled={adding} className="btn-primary ml-auto !px-3.5 !py-2 text-xs">
-              <Plus size={14} /> Adicionar linha
-            </button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400">
+                Mês:
+                <input
+                  type="month"
+                  value={entryMonth}
+                  onChange={(e) => e.target.value && setEntryMonth(e.target.value)}
+                  className="input !w-auto !py-1.5 text-xs"
+                  title="Mês dos lançamentos (também define o mês do novo lançamento)"
+                />
+              </label>
+              <button
+                onClick={() => setMonthScope((s) => !s)}
+                className={cn(
+                  "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
+                  monthScope
+                    ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
+                    : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
+                )}
+                title={monthScope ? "Mostrando só o mês selecionado" : "Mostrando todos os meses"}
+              >
+                {monthScope ? "Só este mês" : "Todos os meses"}
+              </button>
+              <button onClick={addRow} disabled={adding} className="btn-primary !px-3.5 !py-2 text-xs">
+                <Plus size={14} /> Adicionar linha
+              </button>
+            </div>
           )}
         </div>
 
         {table.length === 0 ? (
           <p className="py-10 text-center text-sm text-slate-500">
-            {editable ? "Nenhum lançamento ainda. Clique em “Adicionar linha” para começar." : "Nenhum dado de performance lançado ainda."}
+            {!editable
+              ? "Nenhum dado de performance lançado ainda."
+              : editable && monthScope
+                ? `Nenhum lançamento em ${entryMonthLabel}. Clique em “Adicionar linha” para lançar neste mês.`
+                : "Nenhum lançamento ainda. Clique em “Adicionar linha” para começar."}
           </p>
         ) : (
           <>
