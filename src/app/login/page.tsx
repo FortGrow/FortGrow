@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight, BadgeCheck, BarChart3, Instagram, Loader2, Lock, Mail, Megaphone, MousePointerClick, Search, ShoppingCart, Target, TrendingUp, Users } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
+import { FloatingCta } from "@/components/site/floating-cta";
 
 type Tile =
   | { kind: "kpi"; title: string; value: string; delta: string; hue: string }
@@ -515,6 +516,9 @@ export default function LoginPage() {
       >
         <ArrowLeft size={16} /> Voltar ao site
       </Link>
+
+      {/* gatilho de contratação também nesta página */}
+      <FloatingCta href="/#contato" />
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
         {/* Lado visual: marca + frase de impacto */}

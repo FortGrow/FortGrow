@@ -67,7 +67,14 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3.5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-7">
+    <form
+      onSubmit={onSubmit}
+      className="space-y-3.5 rounded-2xl border border-[#2d7ef2]/50 p-6 shadow-[0_0_36px_-12px_rgba(45,126,242,0.75)] sm:p-7"
+      style={{
+        background:
+          "linear-gradient(160deg, rgba(45,126,242,0.22), rgba(18,60,143,0.16) 55%, rgba(255,255,255,0.02))",
+      }}
+    >
       {/* honeypot: invisível para humanos */}
       <input
         type="text"
@@ -88,7 +95,7 @@ export function ContactForm() {
             value={form.contactName}
             onChange={(e) => set("contactName", e.target.value)}
             placeholder="Como podemos te chamar"
-            className="input"
+            className="input border-white/15 bg-[#061020]/70"
           />
         </div>
         <div>
@@ -98,7 +105,7 @@ export function ContactForm() {
             value={form.companyName}
             onChange={(e) => set("companyName", e.target.value)}
             placeholder="Nome da sua empresa"
-            className="input"
+            className="input border-white/15 bg-[#061020]/70"
           />
         </div>
       </div>
@@ -113,7 +120,7 @@ export function ContactForm() {
             value={form.phone}
             onChange={(e) => set("phone", e.target.value)}
             placeholder="(00) 00000-0000"
-            className="input"
+            className="input border-white/15 bg-[#061020]/70"
           />
         </div>
         <div>
@@ -124,7 +131,7 @@ export function ContactForm() {
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
             placeholder="voce@empresa.com"
-            className="input"
+            className="input border-white/15 bg-[#061020]/70"
           />
         </div>
       </div>
@@ -137,7 +144,7 @@ export function ContactForm() {
             value={form.segment}
             onChange={(e) => set("segment", e.target.value)}
             placeholder="Ex.: imóveis, e-commerce, serviços…"
-            className="input"
+            className="input border-white/15 bg-[#061020]/70"
           />
         </div>
         <div>
@@ -147,7 +154,7 @@ export function ContactForm() {
             required
             value={form.revenue}
             onChange={(e) => set("revenue", e.target.value)}
-            className="input cursor-pointer"
+            className="input cursor-pointer border-white/15 bg-[#061020]/70"
           >
             <option value="" disabled>Selecione…</option>
             {REVENUE_RANGES.map((r) => (
@@ -165,7 +172,7 @@ export function ContactForm() {
           value={form.message}
           onChange={(e) => set("message", e.target.value)}
           placeholder="Conte rapidamente seu momento e seu objetivo de crescimento."
-          className="input resize-none"
+          className="input resize-none border-white/15 bg-[#061020]/70"
         />
       </div>
 
@@ -175,11 +182,11 @@ export function ContactForm() {
         </p>
       )}
 
-      <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d7ef2] px-4 py-3 text-base font-bold text-white shadow-[0_6px_26px_-6px_rgba(45,126,242,0.55)] transition hover:bg-[#4f92f7] active:scale-[0.98] disabled:opacity-50">
+      <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-base font-bold text-[#123c8f] shadow-[0_6px_26px_-8px_rgba(0,0,0,0.6)] transition hover:bg-[#eaf2ff] active:scale-[0.98] disabled:opacity-50">
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         Falar com um especialista no WhatsApp
       </button>
-      <p className="text-center text-[11px] text-slate-500">
+      <p className="text-center text-[11px] text-slate-300/70">
         Resposta rápida · Sem compromisso
       </p>
     </form>
