@@ -27,11 +27,11 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import { FgMark } from "@/components/brand/logo";
 import { SiteNav } from "./site-nav";
 import { SiteFooter } from "./site-footer";
 import { Reveal } from "./motion";
 import { ContactForm } from "./contact-form";
+import { MethodologyPentagon } from "./methodology-pentagon";
 import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /*
@@ -46,41 +46,6 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#7fb0f8]">{children}</p>
-  );
-}
-
-/** Hexágono FG com brilho neon (marca da apresentação). */
-function NeonHex({ size = 190 }: { size?: number }) {
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden>
-        <defs>
-          <filter id="hexGlow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="3.2" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <polygon
-          points="50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5"
-          fill="rgba(5,9,15,0.9)"
-          stroke="#2d7ef2"
-          strokeWidth="2.2"
-          filter="url(#hexGlow)"
-        />
-        <polygon
-          points="50,10 85,30 85,70 50,90 15,70 15,30"
-          fill="none"
-          stroke="rgba(45,126,242,0.35)"
-          strokeWidth="0.8"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <FgMark size={Math.round(size * 0.42)} className="drop-shadow-[0_0_22px_rgba(45,126,242,0.65)]" />
-      </div>
-    </div>
   );
 }
 
@@ -394,14 +359,6 @@ const SOLUTION_STEPS = [
   },
 ];
 
-const ORBIT = [
-  { icon: <Clapperboard size={14} />, label: "Audiovisual Estratégico" },
-  { icon: <BrainCircuit size={14} />, label: "Diagnóstico Estratégico" },
-  { icon: <Mic2 size={14} />, label: "Posicionamento & Narrativa" },
-  { icon: <Rocket size={14} />, label: "Performance & ROI" },
-  { icon: <TrendingUp size={14} />, label: "Otimização Contínua" },
-];
-
 function Solution() {
   return (
     <section id="metodo" className="relative overflow-hidden border-y border-white/10 bg-black/30 py-20 lg:py-28">
@@ -423,38 +380,30 @@ function Solution() {
           </h2>
         </Reveal>
 
-        <div className="mt-14 grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-          {/* Hexágono neon + órbita de disciplinas */}
-          <Reveal className="flex flex-col items-center">
-            <NeonHex />
-            <div className="mt-8 flex max-w-sm flex-wrap items-center justify-center gap-2">
-              {ORBIT.map((o) => (
-                <span
-                  key={o.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#2d7ef2]/25 bg-[#2d7ef2]/[0.07] px-3 py-1.5 text-[11px] font-semibold text-[#b9d3fb]"
-                >
-                  {o.icon} {o.label}
-                </span>
-              ))}
-            </div>
-          </Reveal>
+        {/* Ecossistema da metodologia: pentágono em camadas (destaque central) */}
+        <Reveal delay={0.05} className="mt-14">
+          <MethodologyPentagon />
+          <p className="mx-auto mt-8 max-w-md text-center text-xs text-slate-500">
+            Cada camada é uma frente da metodologia, girando em conjunto.
+            Passe o mouse em uma delas para explorar.
+          </p>
+        </Reveal>
 
-          {/* Os 3 passos */}
-          <div className="space-y-4">
-            {SOLUTION_STEPS.map((s, i) => (
-              <Reveal key={s.title} delay={i * 0.1}>
-                <div className="flex gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-[#2d7ef2]/40">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
-                    {s.icon}
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{s.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-400">{s.text}</p>
-                  </div>
+        {/* Os 3 passos */}
+        <div className="mt-16 grid gap-5 md:grid-cols-3">
+          {SOLUTION_STEPS.map((s, i) => (
+            <Reveal key={s.title} delay={i * 0.1}>
+              <div className="flex h-full gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-[#2d7ef2]/40">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/10 text-[#7fb0f8]">
+                  {s.icon}
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{s.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{s.text}</p>
                 </div>
-              </Reveal>
-            ))}
-          </div>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
