@@ -86,6 +86,50 @@ function NeonHex({ size = 190 }: { size?: number }) {
 
 /* ───────────────────────── Hero ───────────────────────── */
 
+const LOGO_SRC = "/site/estruturacao-estrategica.png";
+
+/**
+ * Logo "Estruturação Estratégica" com aspecto 3D em alto-relevo: cópias da
+ * mesma arte são empilhadas atrás da principal (cada uma um pouco deslocada e
+ * escurecida) formando a extrusão da costura; por cima, um brilho de luz varre
+ * o relevo. Tudo em CSS — sem custo de renderização 3D.
+ */
+/* eslint-disable @next/next/no-img-element */
+function Logo3D() {
+  const DEPTH = 9; // camadas de profundidade do relevo
+  return (
+    <div className="logo-3d w-full max-w-[300px] sm:max-w-[420px]">
+      <div className="logo-3d-stack">
+        {/* camadas de extrusão (do fundo para a frente) */}
+        {Array.from({ length: DEPTH }).map((_, i) => {
+          const d = DEPTH - i; // 9 → 1
+          return (
+            <img
+              key={d}
+              src={LOGO_SRC}
+              alt=""
+              aria-hidden
+              className="logo-3d-layer"
+              style={{
+                transform: `translate3d(${d * -0.9}px, ${d * 1.5}px, ${-d * 2}px)`,
+                filter: `brightness(${0.18 + i * 0.05}) saturate(0.7)`,
+                opacity: 0.92,
+              }}
+            />
+          );
+        })}
+        {/* face principal + brilho */}
+        <img src={LOGO_SRC} alt="Estruturação Estratégica" className="logo-3d-face w-full" />
+        <span
+          className="logo-3d-shine"
+          style={{ ["--logo-mask" as string]: `url(${LOGO_SRC})` }}
+          aria-hidden
+        />
+      </div>
+    </div>
+  );
+}
+
 /**
  * Botão "Contrate a FortGrow": ao clicar, anima um preenchimento de
  * carregamento do azul bebê para o azul escuro e então leva ao contato.
@@ -151,15 +195,15 @@ function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-5 text-center lg:px-8">
-        {/* Logo oficial "Estruturação Estratégica" (arte enviada pela agência) */}
-        <motion.img
+        {/* Logo oficial "Estruturação Estratégica" com relevo 3D */}
+        <motion.div
           initial={{ opacity: 0, y: 14, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          src="/site/estruturacao-estrategica.png"
-          alt="Estruturação Estratégica"
-          className="mx-auto h-auto w-full max-w-[300px] drop-shadow-[0_8px_30px_rgba(45,126,242,0.25)] sm:max-w-[420px]"
-        />
+          className="flex justify-center"
+        >
+          <Logo3D />
+        </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 26 }}
