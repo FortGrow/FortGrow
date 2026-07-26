@@ -31,8 +31,8 @@ export function SiteNav({ slogan }: { slogan?: string }) {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "border-b border-white/10 bg-[#05090f]/85 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent"
+          ? "border-b border-[#2d7ef2]/60 bg-[#05090f]/85 shadow-[0_1px_18px_-2px_rgba(45,126,242,0.45)] backdrop-blur-xl"
+          : "border-b border-[#2d7ef2]/35 bg-transparent"
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
@@ -87,7 +87,7 @@ export function SiteNav({ slogan }: { slogan?: string }) {
 
       {/* Menu mobile */}
       {open && (
-        <div className="border-t border-white/10 bg-[#05090f]/95 backdrop-blur-xl md:hidden">
+        <div className="border-t border-[#2d7ef2]/35 bg-[#05090f]/95 backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4">
             {NAV_LINKS.map((l) => (
               <a
