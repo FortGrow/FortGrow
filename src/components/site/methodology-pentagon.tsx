@@ -8,6 +8,7 @@ import {
   Rocket,
   Settings,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { FgMark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
@@ -37,14 +38,20 @@ type Layer = {
   color: string;
   /** profundidade: leve escala (planos diferentes) */
   scale: number;
-  /** ângulo do chip (ícone + nome) sobre a camada */
+  /** ângulo do chip (ícone) sobre a camada */
   chipAngle: number;
+  /** explicação exibida no card ao clicar no ícone */
+  description: string;
+  /** versão maior do ícone, usada no card */
+  bigIcon: ReactNode;
 };
 
 /* Do centro para fora: mais externa = mais lenta e mais “ao fundo”. */
 const LAYERS: Layer[] = [
   {
     key: "performance",
+    bigIcon: <Rocket size={22} />,
+    description: "Acompanhamos CAC, CPL, ROAS e receita em tempo real. Cada real investido é medido, para você saber exatamente o retorno de cada campanha — e decidir com números, não com achismo.",
     label: "Performance & ROI",
     short: "Performance",
     icon: <Rocket size={12} />,
@@ -57,6 +64,8 @@ const LAYERS: Layer[] = [
   },
   {
     key: "trafego",
+    bigIcon: <Settings size={22} />,
+    description: "Campanhas de Meta e Google Ads geridas com foco em custo por lead e em venda. Segmentação precisa para levar sua mensagem a quem realmente tem potencial de compra.",
     label: "Tráfego Pago",
     short: "Tráfego",
     icon: <Settings size={12} />,
@@ -69,6 +78,8 @@ const LAYERS: Layer[] = [
   },
   {
     key: "otimizacao",
+    bigIcon: <TrendingUp size={22} />,
+    description: "Testes e ajustes constantes: cortamos o que não performa e escalamos o que dá resultado. Melhoria contínua, mês após mês, para o custo cair e o retorno subir.",
     label: "Otimização Contínua",
     short: "Otimização",
     icon: <TrendingUp size={12} />,
@@ -81,6 +92,8 @@ const LAYERS: Layer[] = [
   },
   {
     key: "posicionamento",
+    bigIcon: <MessageSquare size={22} />,
+    description: "Definimos a voz, a mensagem e o posicionamento único da sua marca — para que ela seja lembrada e reconhecida como autoridade no seu mercado.",
     label: "Posicionamento & Narrativa",
     short: "Narrativa",
     icon: <MessageSquare size={12} />,
@@ -93,6 +106,8 @@ const LAYERS: Layer[] = [
   },
   {
     key: "diagnostico",
+    bigIcon: <BrainCircuit size={22} />,
+    description: "Mergulhamos no seu negócio, mercado e concorrência para mapear seu público ideal e desenhar o plano de crescimento antes de investir o primeiro real em mídia.",
     label: "Diagnóstico Estratégico",
     short: "Diagnóstico",
     icon: <BrainCircuit size={12} />,
@@ -105,6 +120,8 @@ const LAYERS: Layer[] = [
   },
   {
     key: "audiovisual",
+    bigIcon: <Clapperboard size={22} />,
+    description: "Produção de vídeo e foto com padrão estético de cinema e engenharia de retenção: roteiros com gancho nos 3 primeiros segundos, direção de postura e edição dinâmica.",
     label: "Audiovisual Estratégico",
     short: "Audiovisual",
     icon: <Clapperboard size={12} />,
@@ -147,6 +164,8 @@ export function MethodologyPentagon() {
   const trackRefs = useRef<(HTMLDivElement | null)[]>([]);
   const animRefs = useRef<(Animation | null)[]>([]);
   const [active, setActive] = useState<number | null>(null);
+  /** camada com o card aberto (clique no ícone) */
+  const [openLayer, setOpenLayer] = useState<number | null>(null);
 
   /* Rotação via Web Animations API: permite mudar a velocidade no hover
      sem cortes (updatePlaybackRate preserva a posição atual). */
@@ -176,6 +195,7 @@ export function MethodologyPentagon() {
   }, []);
 
   function focusLayer(i: number | null) {
+    if (openLayer !== null) return; // com o card aberto, o destaque fica travado
     setActive((prev) => (prev === i ? prev : i));
     animRefs.current.forEach((anim, idx) => {
       if (!anim) return;
@@ -183,6 +203,28 @@ export function MethodologyPentagon() {
       anim.updatePlaybackRate(i === idx ? 0.22 : 1);
     });
   }
+
+  /** Abre/fecha o card da camada. Enquanto aberto, ela para de girar. */
+  function toggleCard(i: number | null) {
+    setOpenLayer(i);
+    setActive(i);
+    animRefs.current.forEach((anim, idx) => {
+      if (!anim) return;
+      if (i === null) anim.updatePlaybackRate(1);
+      else anim.updatePlaybackRate(idx === i ? 0 : 1);
+    });
+  }
+
+  /* Fecha o card com ESC */
+  useEffect(() => {
+    if (openLayer === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") toggleCard(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openLayer]);
 
   /**
    * Qual camada está sob o cursor: como os pentágonos são concêntricos, a
@@ -247,6 +289,10 @@ export function MethodologyPentagon() {
         className="relative aspect-square w-full"
         onMouseMove={onStageMove}
         onMouseLeave={() => focusLayer(null)}
+        onClick={() => {
+          if (openLayer !== null) toggleCard(null);
+          else if (active !== null) toggleCard(active);
+        }}
       >
         {LAYERS.map((layer, i) => {
           const isActive = active === i;
@@ -343,8 +389,14 @@ export function MethodologyPentagon() {
                 {/* chip: ícone + nome, presos à camada (giram junto) */}
                 {/* badge só com o ícone — o nome aparece na legenda central
                     ao passar o mouse (assim o texto nunca gira de cabeça pra baixo) */}
-                <div
-                  className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border transition-all duration-300"
+                <button
+                  type="button"
+                  aria-label={layer.label}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCard(openLayer === i ? null : i);
+                  }}
+                  className="pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border transition-all duration-300"
                   style={{
                     left: `${chip.x}%`,
                     top: `${chip.y}%`,
@@ -362,11 +414,70 @@ export function MethodologyPentagon() {
                   >
                     {layer.icon}
                   </span>
-                </div>
+                </button>
               </div>
             </div>
           );
         })}
+
+        {/* Card da etapa — abre ao clicar no ícone da camada */}
+        {openLayer !== null && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center p-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCard(null);
+            }}
+          >
+            {/* véu escuro: destaca o card sem esconder os anéis girando */}
+            <span aria-hidden className="absolute inset-0 rounded-full bg-[#04070d]/70" />
+            <div
+              role="dialog"
+              aria-label={LAYERS[openLayer].label}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-[330px] animate-fade-up rounded-2xl p-6 text-left"
+              style={{
+                background: `linear-gradient(160deg, ${LAYERS[openLayer].color}26, rgba(5,9,15,0.96) 60%)`,
+                border: `1px solid ${LAYERS[openLayer].color}`,
+                boxShadow: `0 0 40px -8px ${LAYERS[openLayer].color}, 0 20px 50px -20px rgba(0,0,0,0.9)`,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggleCard(null)}
+                aria-label="Fechar"
+                className="absolute right-3 top-3 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+
+              <span
+                className="flex h-12 w-12 items-center justify-center rounded-xl"
+                style={{
+                  background: `${LAYERS[openLayer].color}22`,
+                  border: `1px solid ${LAYERS[openLayer].color}66`,
+                  color: LAYERS[openLayer].color,
+                  boxShadow: `0 0 18px -4px ${LAYERS[openLayer].color}`,
+                }}
+              >
+                {LAYERS[openLayer].bigIcon}
+              </span>
+
+              <h3 className="mt-4 pr-6 text-lg font-bold text-white">
+                {LAYERS[openLayer].label}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                {LAYERS[openLayer].description}
+              </p>
+              <p
+                className="mt-4 text-[11px] font-semibold uppercase tracking-wider"
+                style={{ color: LAYERS[openLayer].color }}
+              >
+                Camada {openLayer + 1} de {LAYERS.length} · Metodologia FortGrow
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* núcleo: só a marca */}
         <div
@@ -394,12 +505,11 @@ export function MethodologyPentagon() {
         </div>
       </div>
 
-      {/* Nome da camada sob o cursor — sempre na horizontal, legível.
-          Altura fixa para a seção não "pular" ao entrar/sair do hover. */}
+      {/* Dica / nome da camada em destaque (altura fixa: a seção não "pula") */}
       <div className="mt-6 flex h-12 items-center justify-center">
-        {active === null ? (
+        {active === null || openLayer !== null ? (
           <p className="text-center text-xs text-slate-500">
-            Passe o mouse por uma camada para ver a etapa
+            Clique em um ícone para ver a etapa
           </p>
         ) : (
           <span
