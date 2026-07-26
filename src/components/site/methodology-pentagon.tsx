@@ -35,8 +35,8 @@ type Layer = {
   /** true = anti-horário */
   reverse: boolean;
   color: string;
-  /** profundidade (px em translateZ) */
-  depth: number;
+  /** profundidade: leve escala (planos diferentes) */
+  scale: number;
   /** ângulo do chip (ícone + nome) sobre a camada */
   chipAngle: number;
 };
@@ -48,11 +48,11 @@ const LAYERS: Layer[] = [
     label: "Performance & ROI",
     short: "Performance",
     icon: <Rocket size={13} />,
-    radius: 16,
+    radius: 11,
     duration: 18,
     reverse: false,
     color: "#67e8f9",
-    depth: 70,
+    scale: 1.05,
     chipAngle: -90,
   },
   {
@@ -60,11 +60,11 @@ const LAYERS: Layer[] = [
     label: "Tráfego Pago",
     short: "Tráfego",
     icon: <Settings size={13} />,
-    radius: 22,
+    radius: 18.4,
     duration: 24,
     reverse: true,
     color: "#22d3ee",
-    depth: 50,
+    scale: 1.035,
     chipAngle: -18,
   },
   {
@@ -72,11 +72,11 @@ const LAYERS: Layer[] = [
     label: "Otimização Contínua",
     short: "Otimização",
     icon: <TrendingUp size={13} />,
-    radius: 28,
+    radius: 25.8,
     duration: 30,
     reverse: false,
     color: "#38bdf8",
-    depth: 30,
+    scale: 1.02,
     chipAngle: 54,
   },
   {
@@ -84,11 +84,11 @@ const LAYERS: Layer[] = [
     label: "Posicionamento & Narrativa",
     short: "Narrativa",
     icon: <MessageSquare size={13} />,
-    radius: 34,
+    radius: 33.2,
     duration: 36,
     reverse: true,
     color: "#60a5fa",
-    depth: 10,
+    scale: 1.005,
     chipAngle: 126,
   },
   {
@@ -96,11 +96,11 @@ const LAYERS: Layer[] = [
     label: "Diagnóstico Estratégico",
     short: "Diagnóstico",
     icon: <BrainCircuit size={13} />,
-    radius: 40,
+    radius: 40.6,
     duration: 42,
     reverse: false,
     color: "#3b82f6",
-    depth: -10,
+    scale: 0.992,
     chipAngle: 198,
   },
   {
@@ -108,11 +108,11 @@ const LAYERS: Layer[] = [
     label: "Audiovisual Estratégico",
     short: "Audiovisual",
     icon: <Clapperboard size={13} />,
-    radius: 46,
+    radius: 48,
     duration: 48,
     reverse: true,
     color: "#2d7ef2",
-    depth: -30,
+    scale: 0.98,
     chipAngle: 270,
   },
 ];
@@ -245,7 +245,6 @@ export function MethodologyPentagon() {
       {/* palco 3D */}
       <div
         className="relative aspect-square w-full"
-        style={{ perspective: "1400px", transformStyle: "preserve-3d" }}
         onMouseMove={onStageMove}
         onMouseLeave={() => focusLayer(null)}
       >
@@ -260,10 +259,11 @@ export function MethodologyPentagon() {
               /* o container cobre todo o palco: precisa deixar o ponteiro
                  passar, senão a camada de cima intercepta o hover das outras */
               className="pointer-events-none absolute inset-0"
+              /* profundidade sem 3D: escala + opacidade (composição barata) */
               style={{
-                transform: `translateZ(${layer.depth}px) scale(${1 - i * 0.004})`,
-                filter: isActive ? "none" : `blur(${Math.max(0, (i - 2) * 0.22)}px)`,
-                transition: "filter 0.4s ease",
+                transform: `scale(${layer.scale})`,
+                opacity: isActive ? 1 : 1 - i * 0.05,
+                transition: "opacity 0.4s ease",
               }}
             >
               {/* trilho que gira: tudo aqui dentro acompanha a rotação */}
@@ -272,16 +272,10 @@ export function MethodologyPentagon() {
                   trackRefs.current[i] = el;
                 }}
                 className="pent-layer pointer-events-none absolute inset-0"
+                style={{ willChange: "transform", backfaceVisibility: "hidden" }}
               >
                 <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full overflow-visible">
                   <defs>
-                    <filter id={`pg-${layer.key}`} x="-30%" y="-30%" width="160%" height="160%">
-                      <feGaussianBlur stdDeviation={isActive ? 1.5 : 0.9} result="b" />
-                      <feMerge>
-                        <feMergeNode in="b" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
                     <linearGradient id={`ps-${layer.key}`} x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
                       <stop offset="50%" stopColor="#ffffff" stopOpacity="0.95" />
@@ -289,16 +283,25 @@ export function MethodologyPentagon() {
                     </linearGradient>
                   </defs>
 
-                  {/* brilho de fundo do contorno */}
+                  {/* Glow por traços empilhados (sem filtro): o navegador não
+                      precisa rasterizar um blur a cada quadro — é o que
+                      mantém a rotação fluida. */}
                   <polygon
                     points={points}
                     fill="none"
                     stroke={layer.color}
-                    strokeWidth={isActive ? 1.5 : 0.9}
+                    strokeWidth={isActive ? 3.4 : 2.4}
                     strokeLinejoin="round"
-                    opacity={isActive ? 0.55 : 0.28}
-                    filter={`url(#pg-${layer.key})`}
-                    className="pent-pulse"
+                    opacity={isActive ? 0.20 : 0.10}
+                    style={{ transition: "stroke-width 0.35s ease, opacity 0.35s ease" }}
+                  />
+                  <polygon
+                    points={points}
+                    fill="none"
+                    stroke={layer.color}
+                    strokeWidth={isActive ? 1.7 : 1.15}
+                    strokeLinejoin="round"
+                    opacity={isActive ? 0.5 : 0.3}
                     style={{ transition: "stroke-width 0.35s ease, opacity 0.35s ease" }}
                   />
                   {/* contorno nítido */}
@@ -306,9 +309,9 @@ export function MethodologyPentagon() {
                     points={points}
                     fill="none"
                     stroke={layer.color}
-                    strokeWidth={isActive ? 0.65 : 0.4}
+                    strokeWidth={isActive ? 0.6 : 0.38}
                     strokeLinejoin="round"
-                    opacity={isActive ? 1 : 0.75}
+                    opacity={isActive ? 1 : 0.85}
                     style={{ transition: "stroke-width 0.35s ease, opacity 0.35s ease" }}
                   />
                   {/* feixe de energia (hover) */}
@@ -340,14 +343,14 @@ export function MethodologyPentagon() {
                 {/* chip: ícone + nome, presos à camada (giram junto) */}
                 <div
                   className={cn(
-                    "absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2 py-1 backdrop-blur-sm transition-all duration-300 sm:px-2.5 sm:py-1.5",
+                    "absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2 py-1 transition-all duration-300 sm:px-2.5 sm:py-1.5",
                     isActive ? "scale-110" : "scale-100",
                   )}
                   style={{
                     left: `${chip.x}%`,
                     top: `${chip.y}%`,
                     borderColor: isActive ? layer.color : `${layer.color}55`,
-                    background: isActive ? `${layer.color}22` : "rgba(5,9,15,0.72)",
+                    background: isActive ? `${layer.color}26` : "rgba(6,11,20,0.9)",
                     boxShadow: isActive ? `0 0 22px ${layer.color}70` : `0 0 10px ${layer.color}25`,
                   }}
                 >
@@ -374,24 +377,24 @@ export function MethodologyPentagon() {
         {/* núcleo: só a marca */}
         <div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          style={{ transform: "translate(-50%, -50%) translateZ(90px)" }}
+          style={{ transform: "translate(-50%, -50%)" }}
         >
           <div className="relative flex items-center justify-center">
             <span
               aria-hidden
-              className="pent-core-halo absolute h-[110px] w-[110px] rounded-full sm:h-[140px] sm:w-[140px]"
+              className="pent-core-halo absolute h-[86px] w-[86px] rounded-full sm:h-[110px] sm:w-[110px]"
               style={{
                 background:
                   "radial-gradient(circle, rgba(45,126,242,0.45) 0%, rgba(34,211,238,0.18) 45%, transparent 70%)",
               }}
             />
             <FgMark
-              size={64}
-              className="relative drop-shadow-[0_0_26px_rgba(45,126,242,0.85)] sm:hidden"
+              size={46}
+              className="relative drop-shadow-[0_0_22px_rgba(45,126,242,0.9)] sm:hidden"
             />
             <FgMark
-              size={92}
-              className="relative hidden drop-shadow-[0_0_30px_rgba(45,126,242,0.85)] sm:block"
+              size={64}
+              className="relative hidden drop-shadow-[0_0_26px_rgba(45,126,242,0.9)] sm:block"
             />
           </div>
         </div>
