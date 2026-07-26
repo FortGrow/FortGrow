@@ -32,6 +32,7 @@ import { SiteFooter } from "./site-footer";
 import { Reveal } from "./motion";
 import { ContactForm } from "./contact-form";
 import { MethodologyPentagon } from "./methodology-pentagon";
+import { FloatingCta } from "./floating-cta";
 import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /*
@@ -764,6 +765,8 @@ export function Landing() {
         <Contact />
       </main>
       <SiteFooter />
+      {/* gatilho fixo, presente em toda a navegação */}
+      <FloatingCta />
     </div>
   );
 }

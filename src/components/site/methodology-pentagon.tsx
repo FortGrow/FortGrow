@@ -47,7 +47,7 @@ const LAYERS: Layer[] = [
     key: "performance",
     label: "Performance & ROI",
     short: "Performance",
-    icon: <Rocket size={13} />,
+    icon: <Rocket size={12} />,
     radius: 11,
     duration: 18,
     reverse: false,
@@ -59,8 +59,8 @@ const LAYERS: Layer[] = [
     key: "trafego",
     label: "Tráfego Pago",
     short: "Tráfego",
-    icon: <Settings size={13} />,
-    radius: 18.4,
+    icon: <Settings size={12} />,
+    radius: 18.1,
     duration: 24,
     reverse: true,
     color: "#22d3ee",
@@ -71,8 +71,8 @@ const LAYERS: Layer[] = [
     key: "otimizacao",
     label: "Otimização Contínua",
     short: "Otimização",
-    icon: <TrendingUp size={13} />,
-    radius: 25.8,
+    icon: <TrendingUp size={12} />,
+    radius: 25.2,
     duration: 30,
     reverse: false,
     color: "#38bdf8",
@@ -83,8 +83,8 @@ const LAYERS: Layer[] = [
     key: "posicionamento",
     label: "Posicionamento & Narrativa",
     short: "Narrativa",
-    icon: <MessageSquare size={13} />,
-    radius: 33.2,
+    icon: <MessageSquare size={12} />,
+    radius: 32.3,
     duration: 36,
     reverse: true,
     color: "#60a5fa",
@@ -95,8 +95,8 @@ const LAYERS: Layer[] = [
     key: "diagnostico",
     label: "Diagnóstico Estratégico",
     short: "Diagnóstico",
-    icon: <BrainCircuit size={13} />,
-    radius: 40.6,
+    icon: <BrainCircuit size={12} />,
+    radius: 39.4,
     duration: 42,
     reverse: false,
     color: "#3b82f6",
@@ -107,8 +107,8 @@ const LAYERS: Layer[] = [
     key: "audiovisual",
     label: "Audiovisual Estratégico",
     short: "Audiovisual",
-    icon: <Clapperboard size={13} />,
-    radius: 48,
+    icon: <Clapperboard size={12} />,
+    radius: 46.5,
     duration: 48,
     reverse: true,
     color: "#2d7ef2",
@@ -208,7 +208,7 @@ export function MethodologyPentagon() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-[620px]">
+    <div className="relative mx-auto w-full max-w-[660px]">
       {/* fundo: luz ambiente + grade + partículas */}
       <div aria-hidden className="pointer-events-none absolute inset-[-18%]">
         <div
@@ -341,32 +341,26 @@ export function MethodologyPentagon() {
                 />
 
                 {/* chip: ícone + nome, presos à camada (giram junto) */}
+                {/* badge só com o ícone — o nome aparece na legenda central
+                    ao passar o mouse (assim o texto nunca gira de cabeça pra baixo) */}
                 <div
-                  className={cn(
-                    "absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full border px-2 py-1 transition-all duration-300 sm:px-2.5 sm:py-1.5",
-                    isActive ? "scale-110" : "scale-100",
-                  )}
+                  className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border transition-all duration-300"
                   style={{
                     left: `${chip.x}%`,
                     top: `${chip.y}%`,
-                    borderColor: isActive ? layer.color : `${layer.color}55`,
-                    background: isActive ? `${layer.color}26` : "rgba(6,11,20,0.9)",
-                    boxShadow: isActive ? `0 0 22px ${layer.color}70` : `0 0 10px ${layer.color}25`,
+                    width: isActive ? 30 : 24,
+                    height: isActive ? 30 : 24,
+                    borderColor: isActive ? layer.color : `${layer.color}66`,
+                    background: isActive ? `${layer.color}2e` : "rgba(6,11,20,0.92)",
+                    boxShadow: isActive ? `0 0 22px ${layer.color}80` : `0 0 10px ${layer.color}30`,
+                    color: layer.color,
                   }}
                 >
                   <span
                     className="transition-transform duration-300"
-                    style={{ color: layer.color, transform: isActive ? "scale(1.2)" : "scale(1)" }}
+                    style={{ transform: isActive ? "scale(1.25)" : "scale(1)" }}
                   >
                     {layer.icon}
-                  </span>
-                  <span
-                    className={cn(
-                      "hidden whitespace-nowrap text-[10px] font-semibold tracking-tight transition-colors sm:inline",
-                      isActive ? "text-white" : "text-slate-300",
-                    )}
-                  >
-                    {layer.label}
                   </span>
                 </div>
               </div>
@@ -400,8 +394,31 @@ export function MethodologyPentagon() {
         </div>
       </div>
 
-      {/* legenda compacta — no celular os chips ficam só com o ícone */}
-      <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-2 sm:hidden">
+      {/* Nome da camada sob o cursor — sempre na horizontal, legível.
+          Altura fixa para a seção não "pular" ao entrar/sair do hover. */}
+      <div className="mt-6 flex h-12 items-center justify-center">
+        {active === null ? (
+          <p className="text-center text-xs text-slate-500">
+            Passe o mouse por uma camada para ver a etapa
+          </p>
+        ) : (
+          <span
+            className="inline-flex items-center gap-2.5 rounded-full border px-4 py-2 text-sm font-bold transition-all duration-300"
+            style={{
+              borderColor: LAYERS[active].color,
+              background: `${LAYERS[active].color}1f`,
+              color: LAYERS[active].color,
+              boxShadow: `0 0 26px -6px ${LAYERS[active].color}`,
+            }}
+          >
+            {LAYERS[active].icon}
+            {LAYERS[active].label}
+          </span>
+        )}
+      </div>
+
+      {/* legenda compacta no celular (sem hover) */}
+      <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:hidden">
         {LAYERS.map((l) => (
           <li key={l.key} className="flex items-center gap-2 text-[11px] text-slate-400">
             <span
