@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Cormorant_Garamond } from "next/font/google";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -40,14 +39,6 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
  * Marketing": fundo escuro esfumaçado, azul neon da logo, manchetes em caixa
  * alta com a frase-chave destacada, cards de vidro e o hexágono FG neon.
  */
-
-/** Fonte delicada (serif itálica) do "Estruturação" — como no slide da apresentação. */
-const delicate = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["italic"],
-  display: "swap",
-});
 
 /* ───────────────────────── blocos de apoio ───────────────────────── */
 
@@ -160,19 +151,15 @@ function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-5 text-center lg:px-8">
-        {/* Lockup do slide: "Estruturação" em fonte delicada + DE MARKETING */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
+        {/* Logo oficial "Estruturação Estratégica" (arte enviada pela agência) */}
+        <motion.img
+          initial={{ opacity: 0, y: 14, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <p className={`${delicate.className} text-4xl italic leading-none text-white/95 sm:text-5xl`}>
-            Estruturação
-          </p>
-          <p className="mt-1.5 text-sm font-extrabold uppercase tracking-[0.5em] text-[#7fb0f8] sm:text-base">
-            de Marketing
-          </p>
-        </motion.div>
+          src="/site/estruturacao-estrategica.png"
+          alt="Estruturação Estratégica"
+          className="mx-auto h-auto w-full max-w-[300px] drop-shadow-[0_8px_30px_rgba(45,126,242,0.25)] sm:max-w-[420px]"
+        />
 
         <motion.h1
           initial={{ opacity: 0, y: 26 }}
