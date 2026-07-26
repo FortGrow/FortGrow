@@ -43,6 +43,14 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /* ───────────────────────── blocos de apoio ───────────────────────── */
 
+/**
+ * Destaque das manchetes: itálico em azul da marca, com um leve brilho para
+ * a palavra "saltar" do fundo escuro. Usado em todas as frases de destaque
+ * da home, para o site falar uma língua visual só.
+ */
+const HIGHLIGHT =
+  "bg-gradient-to-r from-[#3d92ff] via-[#6aabff] to-[#a9cdfb] bg-clip-text italic text-transparent [filter:drop-shadow(0_0_26px_rgba(45,126,242,0.55))]";
+
 /** Rótulo de seção (pequeno, uppercase, azul da logo). */
 function Kicker({ children }: { children: React.ReactNode }) {
   return (
@@ -222,14 +230,14 @@ function Hero() {
           initial={{ opacity: 0, y: 26 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.85, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto mt-8 max-w-4xl text-[1.9rem] font-extrabold uppercase leading-[1.16] tracking-tight text-white sm:text-4xl xl:text-[2.9rem]"
+          /* leading folgado: em caixa alta os acentos (Ã, É, Á) encostavam na
+             linha de cima e a manchete ficava com cara de erro de layout */
+          className="mx-auto mt-8 max-w-4xl text-[1.9rem] font-extrabold uppercase leading-[1.3] tracking-tight text-white sm:text-4xl sm:leading-[1.3] xl:text-[2.9rem]"
         >
           Não é sobre ter vídeos bonitos.
           <br />
           É sobre construir uma máquina{" "}
-          <span className="inline-block -skew-x-3 bg-[#2d7ef2] px-2.5 py-0.5 italic text-white shadow-[0_0_34px_rgba(45,126,242,0.5)]">
-            previsível de vendas
-          </span>
+          <span className={HIGHLIGHT}>previsível de vendas</span>
         </motion.h1>
 
         <motion.p
@@ -318,7 +326,7 @@ function Clients() {
         <Reveal className="text-center">
           <h2 className="text-2xl font-extrabold uppercase tracking-[0.08em] text-white sm:text-3xl">
             Mais de{" "}
-            <span className="bg-[#2d7ef2] px-2 italic text-white">100 empresas</span>{" "}
+            <span className={HIGHLIGHT}>100 empresas</span>{" "}
             impactadas!
           </h2>
           <p className="mt-3 text-sm text-slate-500">
@@ -367,9 +375,9 @@ function Problem() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-3xl text-center">
           <Kicker>O problema</Kicker>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             Por que o seu investimento em marketing{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
+            <span className={HIGHLIGHT}>
               não traz retorno?
             </span>
           </h2>
@@ -423,9 +431,9 @@ function Solution() {
       <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <Kicker>A solução</Kicker>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             Como a FortGrow{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
+            <span className={HIGHLIGHT}>
               resolve esses problemas
             </span>
           </h2>
@@ -489,9 +497,9 @@ function Retention() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <Kicker>Estética de cinema</Kicker>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             Direção de imagem e{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
+            <span className={HIGHLIGHT}>
               engenharia de retenção
             </span>
           </h2>
@@ -564,9 +572,9 @@ function Targeting() {
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 lg:grid-cols-2 lg:px-8">
         <Reveal>
           <Kicker>Tráfego com inteligência</Kicker>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             O alvo certo para o{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
+            <span className={HIGHLIGHT}>
               seu investimento
             </span>
           </h2>
@@ -666,9 +674,9 @@ function Why() {
       <div className="mx-auto max-w-6xl px-5 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <Kicker>Diferenciais</Kicker>
-          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             Por que escolher a{" "}
-            <span className="bg-[#2d7ef2] px-2 italic text-white">FortGrow?</span>
+            <span className={HIGHLIGHT}>FortGrow?</span>
           </h2>
         </Reveal>
 
@@ -710,9 +718,9 @@ function Contact() {
           <span className="inline-flex items-center gap-2 rounded-full border border-[#2d7ef2]/30 bg-[#2d7ef2]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#7fb0f8]">
             <TrendingUp size={13} /> Vamos escalar juntos
           </span>
-          <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl">
+          <h2 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
             Pronto para construir sua{" "}
-            <span className="bg-gradient-to-r from-[#7fb0f8] to-[#b9d3fb] bg-clip-text italic text-transparent">
+            <span className={HIGHLIGHT}>
               máquina previsível de vendas?
             </span>
           </h2>
