@@ -135,36 +135,33 @@ function Logo3D() {
  * carregamento do azul bebê para o azul escuro e então leva ao contato.
  */
 function ContrateButton() {
-  const [state, setState] = useState<"idle" | "loading">("idle");
-
-  function onClick(e: React.MouseEvent) {
-    e.preventDefault();
-    if (state !== "idle") return;
-    setState("loading");
-    setTimeout(() => {
-      document.getElementById("contato")?.scrollIntoView({ behavior: "smooth" });
-      setTimeout(() => setState("idle"), 1400);
-    }, 1000);
-  }
+  // O carregamento começa assim que o cursor chega no botão (hover/foco) —
+  // não é preciso clicar. Ao sair, o preenchimento volta ao início.
+  const [filling, setFilling] = useState(false);
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-[#a9cdfb] px-9 py-3.5 text-base font-bold shadow-[0_6px_30px_-6px_rgba(45,126,242,0.5)] transition-transform active:scale-[0.97]"
+    <a
+      href="#contato"
+      onMouseEnter={() => setFilling(true)}
+      onMouseLeave={() => setFilling(false)}
+      onFocus={() => setFilling(true)}
+      onBlur={() => setFilling(false)}
+      onTouchStart={() => setFilling(true)}
+      className="relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-[#a9cdfb] px-9 py-3.5 text-base font-bold shadow-[0_6px_30px_-6px_rgba(45,126,242,0.5)] transition-transform active:scale-[0.97]"
     >
       {/* preenchimento de carregamento: azul bebê → azul escuro */}
       <span
         aria-hidden
-        className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#2d7ef2] to-[#123c8f] transition-[width] duration-1000 ease-out"
-        style={{ width: state === "idle" ? "0%" : "100%" }}
+        className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#2d7ef2] to-[#123c8f] transition-[width] duration-[900ms] ease-out"
+        style={{ width: filling ? "100%" : "0%" }}
       />
       <span
         className="relative inline-flex items-center gap-2 transition-colors duration-500"
-        style={{ color: state === "idle" ? "#0d2f6b" : "#ffffff" }}
+        style={{ color: filling ? "#ffffff" : "#0d2f6b" }}
       >
         Contrate a FortGrow <ArrowRight size={17} />
       </span>
-    </button>
+    </a>
   );
 }
 
