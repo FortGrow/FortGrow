@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { normalizeInstagram } from "@/lib/validation";
+import { REVENUE_RANGES } from "@/lib/site-config";
+
+/** Faturamento maior → potencial de fechamento maior (qualificação do lead). */
+function potentialFromRevenue(revenue?: string): string | undefined {
+  if (!revenue) return undefined;
+  const i = REVENUE_RANGES.indexOf(revenue);
+  if (i < 0) return undefined;
+  if (i >= 3) return "Alto";
+  if (i >= 1) return "Médio";
+  return "Baixo";
+}
 
 /**
  * Endpoint PÚBLICO do formulário da página inicial.
@@ -18,6 +29,7 @@ const schema = z.object({
   phone: z.string().min(8, "Informe um telefone/WhatsApp válido").max(30),
   email: z.string().email("E-mail inválido").max(160).optional().or(z.literal("")),
   segment: z.string().max(120).optional().or(z.literal("")),
+  revenue: z.string().max(60).optional().or(z.literal("")),
   message: z.string().max(1000).optional().or(z.literal("")),
   instagram: z.preprocess(normalizeInstagram, z.string().max(80).optional()),
 });
@@ -34,7 +46,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const { contactName, companyName, phone, email, segment, message, instagram } = parsed.data;
+  const { contactName, companyName, phone, email, segment, revenue, message, instagram } = parsed.data;
+
+  // Observações do lead: faturamento informado + mensagem (o que houver)
+  const noteParts: string[] = [];
+  if (revenue) noteParts.push(`Faturamento: ${revenue}`);
+  if (message) noteParts.push(`Mensagem do site: ${message}`);
+  const notes = noteParts.join("\n") || "Contato recebido pelo formulário da página inicial.";
 
   try {
     const lead = await prisma.lead.create({
@@ -46,12 +64,11 @@ export async function POST(req: NextRequest) {
         email: email || null,
         segment: segment || null,
         instagram: instagram || null,
+        potential: potentialFromRevenue(revenue),
         source: "Site (formulário)",
         prospectStatus: "NOVO",
         firstContactAt: new Date(),
-        notes: message
-          ? `Mensagem do site: ${message}`
-          : "Contato recebido pelo formulário da página inicial.",
+        notes,
         activities: {
           create: {
             type: "nota",

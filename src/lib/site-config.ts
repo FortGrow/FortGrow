@@ -9,6 +9,8 @@
  * FortGrow. Enquanto ficarem vazios, os botões de contato levam para o login.
  */
 export const SITE = {
+  // Link direto do WhatsApp (click-to-chat). Tem prioridade sobre o número.
+  whatsappLink: "https://wa.me/message/BZPPXKFGWV2EC1",
   // Contatos oficiais — PREENCHER com os dados reais da FortGrow
   whatsapp: "", // ex.: "5511999999999" (só números, com DDI 55)
   email: "", // ex.: "contato@fortgrow.com.br"
@@ -18,12 +20,27 @@ export const SITE = {
     "Olá! Quero estruturar o marketing da minha empresa com a FortGrow.",
 };
 
-/** Link do WhatsApp (ou fallback para o login, se ainda não configurado). */
+/** Link do WhatsApp (link direto tem prioridade; senão monta pelo número). */
 export function whatsappUrl(): string {
+  if (SITE.whatsappLink) return SITE.whatsappLink;
   if (!SITE.whatsapp) return "/login";
   const text = encodeURIComponent(SITE.whatsappMessage);
   return `https://wa.me/${SITE.whatsapp}?text=${text}`;
 }
+
+/** Há um WhatsApp configurado (link direto ou número)? */
+export function hasWhatsapp(): boolean {
+  return Boolean(SITE.whatsappLink || SITE.whatsapp);
+}
+
+/** Faixas de faturamento mensal (qualificação do lead no formulário). */
+export const REVENUE_RANGES = [
+  "Até R$ 10 mil/mês",
+  "R$ 10 mil a R$ 50 mil/mês",
+  "R$ 50 mil a R$ 100 mil/mês",
+  "R$ 100 mil a R$ 500 mil/mês",
+  "Acima de R$ 500 mil/mês",
+];
 
 /** Link do Instagram (ou vazio se não configurado). */
 export function instagramUrl(): string {
@@ -32,7 +49,7 @@ export function instagramUrl(): string {
 
 /** Destino do CTA principal "Falar com especialista". */
 export function ctaHref(): string {
-  return SITE.whatsapp ? whatsappUrl() : "#contato";
+  return hasWhatsapp() ? whatsappUrl() : "#contato";
 }
 
 /** Itens do menu — âncoras das seções da home. */
