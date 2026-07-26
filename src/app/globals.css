@@ -131,6 +131,31 @@ body {
     }
   }
 
+  /* Carrossel infinito de logos (home institucional) */
+  .logo-marquee {
+    mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  }
+  .logo-marquee-track {
+    width: max-content;
+    animation: logo-marquee 38s linear infinite;
+  }
+  .logo-marquee-track.reverse {
+    animation-direction: reverse;
+  }
+  .logo-marquee:hover .logo-marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes logo-marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .logo-marquee-track {
+      animation: none;
+    }
+  }
+
   /* Preview flutuante do menu (hover inteligente) */
   .nav-preview {
     animation: preview-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
