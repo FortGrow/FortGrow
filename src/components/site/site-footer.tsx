@@ -10,7 +10,7 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative border-t border-white/10 bg-[#04090a]">
+    <footer className="relative border-t border-white/10 bg-[#05090f]">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
         <div>
           <div className="flex items-center gap-2.5">
@@ -57,7 +57,7 @@ export function SiteFooter() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-2.5 text-sm text-slate-400 transition hover:text-white"
               >
-                <MessageCircle size={16} className="text-teal-300" /> WhatsApp
+                <MessageCircle size={16} className="text-[#7fb0f8]" /> WhatsApp
               </a>
             </li>
             {SITE.email && (
@@ -66,7 +66,7 @@ export function SiteFooter() {
                   href={`mailto:${SITE.email}`}
                   className="inline-flex items-center gap-2.5 text-sm text-slate-400 transition hover:text-white"
                 >
-                  <Mail size={16} className="text-teal-300" /> {SITE.email}
+                  <Mail size={16} className="text-[#7fb0f8]" /> {SITE.email}
                 </a>
               </li>
             )}

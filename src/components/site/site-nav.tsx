@@ -31,14 +31,14 @@ export function SiteNav({ slogan }: { slogan?: string }) {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "border-b border-white/10 bg-[#04090a]/85 backdrop-blur-xl"
+          ? "border-b border-white/10 bg-[#05090f]/85 backdrop-blur-xl"
           : "border-b border-transparent bg-transparent"
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 lg:px-8">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5" aria-label="FortGrow">
-            <FgMark size={34} className="drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
+            <FgMark size={34} className="drop-shadow-[0_0_14px_rgba(45,126,242,0.4)]" />
             <span className="text-lg">
               <FgWordmark />
             </span>
@@ -70,7 +70,7 @@ export function SiteNav({ slogan }: { slogan?: string }) {
           >
             Entrar
           </Link>
-          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-teal-400 px-4 py-2.5 text-sm font-bold text-ink-950 shadow-[0_4px_18px_-6px_rgba(45,212,191,0.55)] transition hover:bg-teal-300 active:scale-[0.97]">
+          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-[#2d7ef2] px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_18px_-6px_rgba(45,126,242,0.55)] transition hover:bg-[#4f92f7] active:scale-[0.97]">
             Falar com especialista <ArrowUpRight size={15} />
           </a>
         </div>
@@ -87,7 +87,7 @@ export function SiteNav({ slogan }: { slogan?: string }) {
 
       {/* Menu mobile */}
       {open && (
-        <div className="border-t border-white/10 bg-[#04090a]/95 backdrop-blur-xl md:hidden">
+        <div className="border-t border-white/10 bg-[#05090f]/95 backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4">
             {NAV_LINKS.map((l) => (
               <a
@@ -112,7 +112,7 @@ export function SiteNav({ slogan }: { slogan?: string }) {
                 target={cta.startsWith("http") ? "_blank" : undefined}
                 rel="noreferrer"
                 onClick={() => setOpen(false)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:bg-teal-300 active:scale-[0.97]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d7ef2] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#4f92f7] active:scale-[0.97]"
               >
                 Falar agora
               </a>
