@@ -19,6 +19,7 @@ import { TrendChart } from "@/components/charts/trend-chart";
 import { StatCard } from "@/components/ui/stat-card";
 import { InstagramPanel, type IgSummary } from "@/components/performance/instagram-panel";
 import { SalesModal } from "@/components/performance/sales-modal";
+import { ImportReportPanel } from "@/components/performance/import-report-panel";
 import { cn, brl, num } from "@/lib/utils";
 
 export type PerfRow = {
@@ -265,15 +266,21 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     setRowVersion((v) => ({ ...v, [entry.id]: (v[entry.id] ?? 0) + 1 }));
   }
 
-  useEffect(() => {
-    fetch(`/api/performance?clientId=${clientId}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => {
-        setRows(d.entries as PerfRow[]);
-        setCfg(d.config as PerfConfig);
-      })
-      .catch(() => setRows([]));
+  const reload = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/performance?clientId=${clientId}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      setRows(d.entries as PerfRow[]);
+      setCfg(d.config as PerfConfig);
+    } catch {
+      setRows((prev) => prev ?? []);
+    }
   }, [clientId]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   /* Autosave com debounce: linhas alteradas + config, enviados 800ms após a última tecla */
   const pending = useRef<Map<string, Partial<PerfRow>>>(new Map());
@@ -1166,6 +1173,9 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           </p>
         )}
       </div>
+
+      {/* Importação automática de relatório (.xlsx) — só para quem edita */}
+      {editable && <ImportReportPanel clientId={clientId} onImported={reload} />}
 
       {/* Planilha de lançamentos */}
       <div className="card p-5">
