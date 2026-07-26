@@ -76,7 +76,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     prisma.service.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
   ]);
 
-  const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries] = await Promise.all([
+  const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries, perfRevenueTotalAgg] = await Promise.all([
     prisma.invoice.aggregate({ where: { clientId: client.id, status: "PAGO" }, _sum: { amount: true } }),
     prisma.invoice.aggregate({
       where: { clientId: client.id, status: { in: ["EM_ABERTO", "ATRASADO"] } },
@@ -96,6 +96,8 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       where: { clientId: client.id, date: { gte: new Date(Date.now() - 90 * 86400000) } },
       orderBy: { date: "asc" },
     }),
+    // Receita total lançada em Performance — base da comissão de clientes variáveis
+    prisma.performanceEntry.aggregate({ where: { clientId: client.id }, _sum: { revenue: true } }),
   ]);
   const perfEntries90 = perfEntries;
   const perfEntries30 = perfEntries90.filter((e) => e.date.getTime() >= Date.now() - 30 * 86400000);
@@ -121,6 +123,16 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
   const hasPerf = perfEntries30.length > 0;
   const comissaoPaga = Number(comissaoPagaAgg._sum.amount ?? 0);
   const comissaoTotal = Number(comissaoTotalAgg._sum.amount ?? 0);
+
+  /* Comissão da FortGrow para clientes variáveis (COMISSAO): calculada
+     automaticamente sobre a receita lançada em Performance —
+     volume × base% × repasse% (mesma fórmula dos lançamentos de comissão).
+     Atualiza sozinha conforme os resultados são lançados. */
+  const isCommissionClient = client.billingType === "COMISSAO";
+  const perfRevenueTotal = Number(perfRevenueTotalAgg._sum.revenue ?? 0);
+  const generatedCommission = isCommissionClient
+    ? Math.round(perfRevenueTotal * (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100) * 100) / 100
+    : 0;
 
   /* Painel de 90 dias: quando há lançamentos de Performance, eles são a fonte
      (o que a equipe aponta é o que aparece); sem lançamentos, cai para as
@@ -230,12 +242,14 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
           />
           <StatCard
             label="Comissão FortGrow"
-            value={brl(comissaoPaga)}
+            value={brl(isCommissionClient ? generatedCommission : comissaoPaga)}
             hint={
-              comissaoTotal > 0
-                ? `recebida · ${brl(comissaoTotal)} em lançamentos`
-                : client.billingType === "COMISSAO"
-                  ? "nenhum lançamento de comissão ainda"
+              isCommissionClient
+                ? perfRevenueTotal > 0
+                  ? `${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% sobre ${brl(perfRevenueTotal)} em resultados${comissaoTotal > 0 ? ` · ${brl(comissaoTotal)} lançado` : ""}`
+                  : "sem resultados de performance lançados ainda"
+                : comissaoTotal > 0
+                  ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"
             }
             accent="violet"
