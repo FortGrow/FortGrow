@@ -74,7 +74,7 @@ export function SiteNav() {
             <a
               key={l.href}
               href={l.href}
-              className="group relative whitespace-nowrap rounded-lg px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-white/85 transition hover:bg-white/15 hover:text-white"
+              className="group relative whitespace-nowrap rounded-lg px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-white transition hover:bg-white/15"
             >
               {l.label}
               <LoadBar />
@@ -117,7 +117,7 @@ export function SiteNav() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-3 text-sm font-semibold uppercase tracking-[0.06em] text-white/90 transition hover:bg-white/15"
+                className="rounded-xl px-3 py-3 text-sm font-semibold uppercase tracking-[0.06em] text-white transition hover:bg-white/15"
               >
                 {l.label}
               </a>
