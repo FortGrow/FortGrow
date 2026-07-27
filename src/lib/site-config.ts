@@ -83,7 +83,7 @@ export const TEAM: {
   {
     slug: "yuri-cavichiolo",
     name: "Yuri Cavichiolo",
-    role: "Diretor Estratégico",
+    role: "CEO e Diretor Estratégico",
     bio: "Lidera o desenvolvimento de estratégias e métodos que transformam negócios em operações mais previsíveis, eficientes e escaláveis.",
     accent: "#2d7ef2",
   },
