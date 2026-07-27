@@ -57,6 +57,7 @@ export const NAV_LINKS = [
   { label: "O problema", href: "#problema" },
   { label: "Como funciona", href: "#metodo" },
   { label: "Equipe", href: "#equipe" },
+  { label: "Planos", href: "#planos" },
   { label: "Diferenciais", href: "#diferenciais" },
   { label: "Clientes", href: "#clientes" },
   { label: "Contato", href: "#contato" },
@@ -124,6 +125,75 @@ export const CLIENTS: { slug: string; name: string }[] = [
   { slug: "poder-consignacao", name: "O Poder da Consignação" },
   { slug: "raro-veiculos", name: "Raro Veículos" },
   { slug: "estetica-pro", name: "Programa Estética Pró" },
+];
+
+/**
+ * Comparativo de planos personalizados.
+ *
+ * `PLAN_TOPICS` são as entregas possíveis (as linhas da tabela) e cada
+ * cliente em `CLIENT_PLANS` lista quais delas entram no seu plano — o
+ * check da tabela sai daí. Para ajustar um plano basta incluir ou remover
+ * a chave do tópico em `includes`.
+ */
+export const PLAN_TOPICS: { key: string; label: string }[] = [
+  { key: "diagnostico", label: "Diagnóstico Estratégico" },
+  { key: "posicionamento", label: "Posicionamento de Marca" },
+  { key: "conteudo", label: "Geração de Conteúdo" },
+  { key: "audiovisual", label: "Produção Audiovisual" },
+  { key: "trafego", label: "Gestão de Tráfego Pago" },
+  { key: "demanda", label: "Geração de Demanda" },
+  { key: "vendas", label: "CRM & Estruturação de Vendas" },
+  { key: "dashboards", label: "Dashboards & Relatórios" },
+];
+
+export const CLIENT_PLANS: {
+  slug: string;
+  name: string;
+  /** logo em /public/site/clients (sem logo, entra o selo tipográfico) */
+  logo?: string;
+  plan: string;
+  summary: string;
+  accent: string;
+  includes: string[];
+}[] = [
+  {
+    slug: "strike-fire",
+    name: "Strike Fire",
+    logo: "/site/clients/strike-fire.png",
+    plan: "Posicionamento & Conteúdo",
+    summary:
+      "Plano voltado para posicionamento de marca e geração de conteúdo: construir autoridade e presença antes de escalar mídia.",
+    accent: "#60a5fa",
+    includes: ["diagnostico", "posicionamento", "conteudo", "audiovisual", "dashboards"],
+  },
+  {
+    slug: "poder-consignacao",
+    name: "O Poder da Consignação",
+    logo: "/site/clients/poder-consignacao.png",
+    plan: "Tráfego & Vendas",
+    summary:
+      "Plano voltado para gestão de tráfego, geração de demanda e vendas: volume qualificado entrando e um processo comercial para converter.",
+    accent: "#38bdf8",
+    includes: ["diagnostico", "trafego", "demanda", "vendas", "dashboards"],
+  },
+  {
+    slug: "axton-capital",
+    name: "Axton Capital",
+    plan: "Estruturação 360",
+    summary:
+      "Estruturação 360 de marketing: tráfego pago, posicionamento e vendas operando juntos, da marca ao fechamento.",
+    accent: "#2d7ef2",
+    includes: [
+      "diagnostico",
+      "posicionamento",
+      "conteudo",
+      "audiovisual",
+      "trafego",
+      "demanda",
+      "vendas",
+      "dashboards",
+    ],
+  },
 ];
 
 /**
