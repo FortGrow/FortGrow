@@ -38,6 +38,7 @@ import { TeamCard } from "./team-card";
 import { PlansTable } from "./plans-table";
 import { CLIENTS, TEAM, ctaHref } from "@/lib/site-config";
 import { hueOf } from "@/lib/glass";
+import { HIGHLIGHT } from "@/lib/site-style";
 
 /*
  * Home institucional — identidade da apresentação oficial "Estruturação de
@@ -46,15 +47,6 @@ import { hueOf } from "@/lib/glass";
  */
 
 /* ───────────────────────── blocos de apoio ───────────────────────── */
-
-/**
- * Destaque das manchetes: itálico branco sobre um bloco do azul da marca.
- * `decoration-clone` faz cada linha da frase receber o bloco completo (com
- * as bordas laterais), então frases que quebram em duas linhas continuam
- * com o destaque correto.
- */
-const HIGHLIGHT =
-  "box-decoration-clone bg-[#2d7ef2] px-2.5 py-0.5 italic text-white shadow-[0_0_38px_rgba(45,126,242,0.55)]";
 
 /** Rótulo de seção (pequeno, uppercase, azul da logo). */
 function Kicker({ children }: { children: React.ReactNode }) {
