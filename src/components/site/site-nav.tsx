@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, LogIn, Menu, X } from "lucide-react";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { NAV_LINKS, ctaHref } from "@/lib/site-config";
 
@@ -74,7 +74,7 @@ export function SiteNav() {
             <a
               key={l.href}
               href={l.href}
-              className="group relative whitespace-nowrap rounded-lg px-2.5 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-white/85 transition hover:bg-white/15 hover:text-white"
+              className="group relative whitespace-nowrap rounded-lg px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-white/85 transition hover:bg-white/15 hover:text-white"
             >
               {l.label}
               <LoadBar />
@@ -83,12 +83,15 @@ export function SiteNav() {
         </div>
 
         <div className="hidden shrink-0 items-center gap-2 xl:flex">
+          {/* Fundo próprio: o cliente que vem para logar precisa achar isto
+              de primeira. Contorno translúcido em vez de sólido — o branco
+              cheio é do "Falar com especialista", que é a ação principal. */}
           <Link
             href="/login"
-            className="group relative whitespace-nowrap rounded-xl px-2.5 py-2 text-[12px] font-bold uppercase tracking-[0.06em] text-white/85 transition hover:text-white"
+            className="group relative inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-white/40 bg-white/15 px-3 py-2 text-[12px] font-bold uppercase tracking-[0.06em] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition hover:border-white/60 hover:bg-white/25"
           >
+            <LogIn size={14} />
             Entrar
-            <LoadBar />
           </Link>
           <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#1b5fd0] shadow-[0_4px_18px_-6px_rgba(0,0,0,0.45)] transition hover:bg-[#eaf2ff] active:scale-[0.97]">
             Falar com especialista <ArrowUpRight size={15} />
@@ -123,8 +126,9 @@ export function SiteNav() {
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="inline-flex items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white transition hover:bg-white/15"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/15 px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white transition hover:bg-white/25"
               >
+                <LogIn size={15} />
                 Entrar
               </Link>
               <a
