@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowUpRight, BadgeCheck, Loader2, Lock, Mail, Megaphone, Se
 import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { FloatingCta } from "@/components/site/floating-cta";
+import { LoginVideo } from "@/components/site/login-video";
 import { HIGHLIGHT } from "@/lib/site-style";
 
 
@@ -187,18 +188,7 @@ function Backdrop() {
           celular o detalhe da animação se perde e não vale 1 MB de dados
           nem a bateria; lá fica o quadro parado. */}
       {comVideo ? (
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster="/site/video/login-bg.jpg"
-        >
-          <source src="/site/video/login-bg.webm" type="video/webm" />
-          <source src="/site/video/login-bg.mp4" type="video/mp4" />
-        </video>
+        <LoginVideo />
       ) : (
         /* celular e quem pede menos movimento: o quadro parado, 64 KB */
         <div
