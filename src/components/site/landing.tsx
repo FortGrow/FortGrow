@@ -114,10 +114,10 @@ function NeonCard({
 
 /* ───────────────────────── Hero ───────────────────────── */
 
-const LOGO_SRC = "/site/estruturacao-estrategica.png";
+const LOGO_SRC = "/site/estruturacao-fortgrow.webp";
 
 /**
- * Logo "Estruturação Estratégica" com aspecto 3D em alto-relevo: cópias da
+ * Logo "Estruturação FortGrow" com aspecto 3D em alto-relevo: cópias da
  * mesma arte são empilhadas atrás da principal (cada uma um pouco deslocada e
  * escurecida) formando a extrusão da costura; por cima, um brilho de luz varre
  * o relevo. Tudo em CSS — sem custo de renderização 3D.
@@ -147,7 +147,7 @@ function Logo3D() {
           );
         })}
         {/* face principal + brilho */}
-        <img src={LOGO_SRC} alt="Estruturação Estratégica" className="logo-3d-face w-full" />
+        <img src={LOGO_SRC} alt="Estruturação FortGrow" className="logo-3d-face w-full" />
         <span
           className="logo-3d-shine"
           style={{ ["--logo-mask" as string]: `url(${LOGO_SRC})` }}
@@ -220,7 +220,7 @@ function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-5xl px-5 text-center lg:px-8">
-        {/* Logo oficial "Estruturação Estratégica" com relevo 3D */}
+        {/* Logo oficial "Estruturação FortGrow" com relevo 3D */}
         <motion.div
           initial={{ opacity: 0, y: 14, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
