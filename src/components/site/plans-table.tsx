@@ -90,8 +90,9 @@ function LogoTab({
           src={plano.logo}
           alt={plano.name}
           className="h-12 w-auto max-w-full object-contain transition-all duration-300 sm:h-16"
-          /* logos de traço fino somem se apagarem demais */
-          style={{ opacity: ativo ? 1 : 0.62, filter: ativo ? "none" : "grayscale(1)" }}
+          /* aba inativa só esmaece: dessaturar apagaria a cor da marca
+             (a Strike Fire é laranja) e logos de traço fino somem */
+          style={{ opacity: ativo ? 1 : 0.55 }}
         />
       ) : (
         <span

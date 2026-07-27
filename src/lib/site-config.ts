@@ -125,6 +125,7 @@ export const CLIENTS: { slug: string; name: string }[] = [
   { slug: "poder-consignacao", name: "O Poder da Consignação" },
   { slug: "raro-veiculos", name: "Raro Veículos" },
   { slug: "estetica-pro", name: "Programa Estética Pró" },
+  { slug: "axton-capital", name: "Axton Capital" },
 ];
 
 /**
@@ -159,7 +160,8 @@ export const CLIENT_PLANS: {
   {
     slug: "strike-fire",
     name: "Strike Fire",
-    logo: "/site/clients/strike-fire.png",
+    // versão laranja (cor da marca) — o carrossel de clientes usa a branca
+    logo: "/site/clients/strike-fire-laranja.png",
     plan: "Posicionamento & Conteúdo",
     summary:
       "Plano voltado para posicionamento de marca e geração de conteúdo: construir autoridade e presença antes de escalar mídia.",
@@ -179,6 +181,7 @@ export const CLIENT_PLANS: {
   {
     slug: "axton-capital",
     name: "Axton Capital",
+    logo: "/site/clients/axton-capital.png",
     plan: "Estruturação 360",
     summary:
       "Estruturação 360 de marketing: tráfego pago, posicionamento e vendas operando juntos, da marca ao fechamento.",
