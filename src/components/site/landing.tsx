@@ -509,10 +509,11 @@ function Team() {
         {/* A figura de cada integrante sobe 119px acima do card. Empilhados
             (celular) ou em duas colunas (tablet), o espaço entre linhas
             precisa comportar isso — senão a cabeça de um cobre o texto do
-            card de cima. Em três colunas há uma linha só, e o respiro fica
-            por conta do `mt`. Espaçamento declarado por eixo, sem o atalho
-            `gap`, que sobrescreveria o valor vertical. */}
-        <div className="mt-24 grid gap-x-6 gap-y-36 sm:grid-cols-2 lg:mt-40 lg:grid-cols-3 lg:gap-x-7 lg:gap-y-8">
+            card de cima. O `mt` segue a mesma conta: é a folga entre o
+            texto de abertura da seção e a primeira figura, e vale em toda
+            largura — não só no desktop. Espaçamento declarado por eixo,
+            sem o atalho `gap`, que sobrescreveria o valor vertical. */}
+        <div className="mt-40 grid gap-x-6 gap-y-36 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-7 lg:gap-y-8">
           {TEAM.map((member, i) => (
             <Reveal key={member.slug} delay={0.08 * i}>
               <TeamCard member={member} />
