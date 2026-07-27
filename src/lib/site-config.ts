@@ -56,9 +56,44 @@ export function ctaHref(): string {
 export const NAV_LINKS = [
   { label: "O problema", href: "#problema" },
   { label: "Como funciona", href: "#metodo" },
+  { label: "Equipe", href: "#equipe" },
   { label: "Diferenciais", href: "#diferenciais" },
   { label: "Clientes", href: "#clientes" },
   { label: "Contato", href: "#contato" },
+];
+
+/**
+ * Time da FortGrow — fotos em /public/site/team.
+ * `accent` é a cor da moldura neon do card.
+ */
+export const TEAM: {
+  slug: string;
+  name: string;
+  role: string;
+  bio: string;
+  accent: string;
+}[] = [
+  {
+    slug: "yuri-cavichiolo",
+    name: "Yuri Cavichiolo",
+    role: "Diretor Estratégico",
+    bio: "Lidera o desenvolvimento de estratégias e métodos que transformam negócios em operações mais previsíveis, eficientes e escaláveis.",
+    accent: "#2d7ef2",
+  },
+  {
+    slug: "thiago-lamin",
+    name: "Thiago Lamin",
+    role: "Gestor de Tráfego",
+    bio: "Atua com tráfego pago, estratégias de aquisição de clientes e otimização de campanhas digitais para geração de resultados.",
+    accent: "#22d3ee",
+  },
+  {
+    slug: "emily-tavares",
+    name: "Emily Tavares",
+    role: "Diretora Criativa",
+    bio: "Lidera a criação de conteúdos, campanhas e produções audiovisuais, transformando estratégias em comunicação que gera conexão e resultados.",
+    accent: "#60a5fa",
+  },
 ];
 
 /** Slogan curto da marca (aparece no topo). */

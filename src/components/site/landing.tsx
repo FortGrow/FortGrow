@@ -34,7 +34,7 @@ import { ContactForm } from "./contact-form";
 import { MethodologyPentagon } from "./methodology-pentagon";
 import { FloatingCta } from "./floating-cta";
 import { SiteNotifications } from "./site-notifications";
-import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
+import { CLIENTS, SLOGAN, TEAM, ctaHref } from "@/lib/site-config";
 
 /*
  * Home institucional — identidade da apresentação oficial "Estruturação de
@@ -493,6 +493,91 @@ const RETENTION = [
   },
 ];
 
+/* ─────────────────── Equipe ─────────────────── */
+
+/**
+ * Card de um integrante do time: retrato em moldura neon com a cor do
+ * integrante, nome/cargo sobre o gradiente e a descrição logo abaixo.
+ * No hover a moldura acende e a foto dá um leve zoom.
+ */
+function TeamCard({ member }: { member: (typeof TEAM)[number] }) {
+  const { accent } = member;
+  return (
+    <div
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1"
+      style={{
+        background: `linear-gradient(165deg, ${accent}1f, rgba(255,255,255,0.02) 55%)`,
+        border: `1px solid ${accent}66`,
+        boxShadow: `0 0 20px -8px ${accent}66, inset 0 1px 0 ${accent}22`,
+      }}
+    >
+      {/* retrato */}
+      <div className="relative aspect-[4/5] overflow-hidden">
+        <img
+          src={`/site/team/${member.slug}.jpg`}
+          alt={`${member.name} — ${member.role} da FortGrow`}
+          width={480}
+          height={600}
+          loading="lazy"
+          className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+        />
+        {/* degradê para o texto assentar sobre a foto */}
+        <span
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-2/5"
+          style={{ background: "linear-gradient(to top, rgba(5,9,15,0.96), rgba(5,9,15,0.55) 45%, transparent)" }}
+        />
+        <div className="absolute inset-x-0 bottom-0 p-5">
+          <h3 className="text-lg font-extrabold leading-tight text-white">{member.name}</h3>
+          <p className="mt-0.5 text-sm font-semibold" style={{ color: accent }}>
+            {member.role} · FortGrow
+          </p>
+        </div>
+      </div>
+
+      <p className="flex-1 px-5 pb-6 pt-4 text-sm leading-relaxed text-slate-300/90">
+        {member.bio}
+      </p>
+    </div>
+  );
+}
+
+function Team() {
+  return (
+    <section id="equipe" className="relative overflow-hidden py-20 lg:py-28">
+      {/* luz de ambiente atrás dos cards */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(820px 460px at 50% 0%, rgba(45,126,242,0.10), transparent 62%)",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <Kicker>Quem faz acontecer</Kicker>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
+            O time por trás da{" "}
+            <span className={HIGHLIGHT}>sua estruturação</span>
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-slate-400">
+            Estratégia, mídia e criação na mesma mesa — cada frente com um
+            especialista responsável pelo seu resultado.
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {TEAM.map((member, i) => (
+            <Reveal key={member.slug} delay={0.08 * i}>
+              <TeamCard member={member} />
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Retention() {
   return (
     <section className="relative py-20 lg:py-28">
@@ -769,6 +854,7 @@ export function Landing() {
         <Clients />
         <Problem />
         <Solution />
+        <Team />
         <Retention />
         <Targeting />
         <Why />
