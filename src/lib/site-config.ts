@@ -85,7 +85,7 @@ export const TEAM: {
     name: "Thiago Lamin",
     role: "Gestor de Tráfego",
     bio: "Atua com tráfego pago, estratégias de aquisição de clientes e otimização de campanhas digitais para geração de resultados.",
-    accent: "#22d3ee",
+    accent: "#38bdf8",
   },
   {
     slug: "emily-tavares",
