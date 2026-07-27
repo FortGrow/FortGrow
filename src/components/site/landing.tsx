@@ -83,7 +83,7 @@ function NeonCard({
 }) {
   return (
     <div
-      className={`glass glass-interactive group h-full p-6 ${className ?? ""}`}
+      className={`glass glass-3d group h-full p-6 ${className ?? ""}`}
       /* a cor da peça entra como matiz do próprio vidro, em vez de virar
          uma borda colorida por cima — vidro tingido, não moldura */
       style={{ ["--glass-tint" as string]: hueOf(color) }}

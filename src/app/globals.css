@@ -216,9 +216,54 @@ body {
    * o vidro clareia e a peça inclina de leve. O `perspective()` vai na
    * própria transformação — assim nenhum ancestral precisa virar
    * contexto 3D (que quebraria `position: fixed` de filhos). */
+  /*
+   * A perspectiva é proporcional à largura da peça (o JS escreve
+   * `--glass-persp`). Um card estreito e um painel largo giram no mesmo
+   * ângulo, mas a distorção aparente fica na mesma proporção — é o que
+   * faz o efeito parecer o mesmo em peças de tamanhos muito diferentes,
+   * em vez de deformar o painel largo.
+   */
+  .card,
+  .glass,
   .glass-interactive {
-    transform: perspective(1000px) rotateX(var(--glass-rx, 0deg)) rotateY(var(--glass-ry, 0deg))
+    transform: perspective(var(--glass-persp, 1100px)) rotateX(var(--glass-rx, 0deg))
+      rotateY(var(--glass-ry, 0deg)) scale(var(--glass-scale, 1))
       translate3d(0, var(--glass-y, 0px), 0);
+  }
+  /* Modal não gira: o card cobre a página e o usuário está preenchendo
+     um formulário dentro dele — inclinar atrapalha em vez de encantar. */
+  .fixed .card {
+    --glass-px: 0px !important;
+    --glass-py: 0px !important;
+    --glass-rx: 0deg !important;
+    --glass-ry: 0deg !important;
+    --glass-scale: 1 !important;
+    --glass-y: 0px !important;
+  }
+
+  /*
+   * Paralaxe do conteúdo — o que dá volume de verdade, e não a rotação
+   * sozinha: enquanto o card gira, o conteúdo desliza contra a superfície
+   * do vidro, como se estivesse alguns milímetros à frente dela.
+   *
+   * Feito com deslocamento no plano (o JS escreve `--glass-px/py` em
+   * pixels, no sentido oposto à inclinação), e não com `translateZ`.
+   * Motivo: `translateZ` só é projetado se um ANCESTRAL tiver a
+   * propriedade `perspective` — a função `perspective()` dentro do
+   * próprio `transform` não vale para os filhos. Montar esse ancestral
+   * exigiria embrulhar os 133 cards do produto, e `preserve-3d` ainda
+   * anularia `overflow: hidden` e prenderia descendentes `fixed`.
+   * O deslocamento no plano dá a mesma leitura, sem tocar no HTML e sem
+   * criar contexto 3D nenhum.
+   */
+  .card > *,
+  .glass-3d > * {
+    transform: translate3d(var(--glass-px, 0px), var(--glass-py, 0px), 0);
+    transition: transform 0.42s var(--ease-glass);
+  }
+  .card.glass-tracking > *,
+  .glass-3d.glass-tracking > * {
+    transition-duration: 0.12s;
   }
   @media (hover: hover) and (pointer: fine) {
     /* Elevação vale para todo card; a inclinação é opcional e fica nos
@@ -233,12 +278,15 @@ body {
         0 4px 10px -4px rgba(0, 0, 0, 0.5),
         0 30px 60px -28px rgba(0, 0, 0, 0.9);
     }
+    .card:hover,
+    .glass:hover,
     .glass-interactive:hover {
       --glass-y: -4px;
+      --glass-scale: 1.02;
     }
     /* Enquanto o ponteiro percorre a peça, a transformação encurta para
      * colar no cursor; ao sair, volta à curva longa e a peça "assenta". */
-    .glass-interactive.glass-tracking {
+    .glass-tracking {
       transition-duration: 0.12s;
     }
   }
@@ -334,22 +382,10 @@ body {
     transform: scale(0.97);
   }
 
-  /* Profundidade nos cards do conteúdo: flutuam no hover */
-  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    main .card:hover {
-      transform: translateY(-4px) scale(1.012);
-      box-shadow:
-        0 22px 44px -16px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(56, 189, 248, 0.09),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      border-color: rgba(148, 163, 184, 0.25);
-    }
-    /* Inclinação 3D controlada pelo FxLayer via CSS vars */
-    main [data-tilt] {
-      transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(var(--lift, 0px));
-      transition: transform 0.25s ease;
-    }
-  }
+  /* A elevação e a inclinação dos cards vivem no material de vidro, no
+     topo deste arquivo. O bloco antigo (`main .card:hover` + `[data-tilt]`)
+     saiu daqui: eram duas regras de `transform` disputando o mesmo
+     elemento, e a mais específica anulava a rotação do vidro. */
 
   /* Entrada de tela: fade + slide sutil */
   .animate-page {

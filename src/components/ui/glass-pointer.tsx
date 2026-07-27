@@ -18,8 +18,15 @@ import { useEffect } from "react";
  * movimento — nesses casos a profundidade vem só da luz e das sombras.
  */
 
-/** Inclinação máxima, em graus. Deliberadamente discreta. */
-const TILT = 3.2;
+/** Inclinação máxima, em graus — a mesma dos cards da equipe. */
+const TILT = 11;
+
+/** Perspectiva proporcional à peça: mantém a distorção na mesma escala
+ *  num card estreito e num painel largo. */
+const PERSPECTIVA = 3.1;
+
+/** Deslocamento máximo do conteúdo contra o vidro, em pixels. */
+const PARALAXE = 7;
 
 export function GlassPointer() {
   useEffect(() => {
@@ -38,6 +45,10 @@ export function GlassPointer() {
       atual.style.setProperty("--glass-lit", "0");
       atual.style.removeProperty("--glass-rx");
       atual.style.removeProperty("--glass-ry");
+      atual.style.removeProperty("--glass-persp");
+      atual.style.removeProperty("--glass-px");
+      atual.style.removeProperty("--glass-py");
+      atual.style.removeProperty("will-change");
       atual.classList.remove("glass-tracking");
       atual = null;
       rect = null;
@@ -51,10 +62,12 @@ export function GlassPointer() {
       atual.style.setProperty("--glass-mx", `${(x * 100).toFixed(1)}%`);
       atual.style.setProperty("--glass-my", `${(y * 100).toFixed(1)}%`);
       atual.style.setProperty("--glass-lit", "1");
-      if (atual.classList.contains("glass-interactive")) {
-        atual.style.setProperty("--glass-ry", `${((x - 0.5) * 2 * TILT).toFixed(2)}deg`);
-        atual.style.setProperty("--glass-rx", `${((0.5 - y) * 2 * TILT).toFixed(2)}deg`);
-      }
+      atual.style.setProperty("--glass-ry", `${((x - 0.5) * 2 * TILT).toFixed(2)}deg`);
+      atual.style.setProperty("--glass-rx", `${((0.5 - y) * 2 * TILT).toFixed(2)}deg`);
+      /* conteúdo desliza no sentido oposto à inclinação: é o que faz ele
+         parecer solto, à frente da superfície */
+      atual.style.setProperty("--glass-px", `${((0.5 - x) * 2 * PARALAXE).toFixed(1)}px`);
+      atual.style.setProperty("--glass-py", `${((0.5 - y) * 2 * PARALAXE).toFixed(1)}px`);
     }
 
     function onMove(e: PointerEvent) {
@@ -64,7 +77,14 @@ export function GlassPointer() {
         atual = alvo;
         // uma única medição por peça: o retângulo só muda com scroll/resize
         rect = alvo ? alvo.getBoundingClientRect() : null;
-        if (alvo) alvo.classList.add("glass-tracking");
+        if (alvo) {
+          alvo.classList.add("glass-tracking");
+          if (rect) {
+            alvo.style.setProperty("--glass-persp", `${Math.round(rect.width * PERSPECTIVA)}px`);
+            // só enquanto a peça está sob o cursor: promover tudo custa memória
+            alvo.style.setProperty("will-change", "transform");
+          }
+        }
       }
       if (!atual) return;
       px = e.clientX;

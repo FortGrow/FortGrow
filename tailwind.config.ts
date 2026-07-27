@@ -43,9 +43,13 @@ const config: Config = {
         card: "0 1px 0 0 rgba(255,255,255,0.03) inset, 0 8px 24px -12px rgba(0,0,0,0.6)",
       },
       keyframes: {
+        /* Usa a propriedade `translate`, não `transform`: com fill-mode
+           "both" o estado final da animação ficaria grudado no transform
+           para sempre e travaria a inclinação 3D dos cards de vidro. As
+           duas propriedades compõem, então o efeito é o mesmo. */
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0", translate: "0 8px" },
+          to: { opacity: "1", translate: "0 0" },
         },
         shimmer: {
           "100%": { transform: "translateX(100%)" },

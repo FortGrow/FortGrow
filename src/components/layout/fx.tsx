@@ -3,11 +3,13 @@
 import { useEffect } from "react";
 
 /**
- * Camada de efeitos 3D leves (desktop apenas):
- *  - parallax do fundo: orbes de luz seguem o mouse suavemente (translate3d)
- *  - tilt: cards marcados com [data-tilt] inclinam levemente conforme o mouse
- * Tudo via transform (GPU) e requestAnimationFrame; desligado em telas touch
- * e quando o usuário prefere menos movimento.
+ * Parallax do fundo (desktop apenas): as orbes de luz e a grade seguem o
+ * mouse suavemente, via transform (GPU) e requestAnimationFrame.
+ *
+ * A inclinação dos cards ficava aqui também, em `[data-tilt]`. Saiu para o
+ * material de vidro (GlassPointer): eram dois sistemas escrevendo
+ * `transform` no mesmo elemento, e o antigo — mais específico — anulava a
+ * rotação do novo.
  */
 export function FxLayer() {
   useEffect(() => {
@@ -33,41 +35,10 @@ export function FxLayer() {
       }
     };
 
-    // Tilt por delegação: só em elementos [data-tilt]
-    let tiltEl: HTMLElement | null = null;
-    let tiltRaf = 0;
-    const onTiltMove = (e: PointerEvent) => {
-      const target = (e.target as HTMLElement | null)?.closest<HTMLElement>("[data-tilt]") ?? null;
-      if (target !== tiltEl) {
-        if (tiltEl) {
-          tiltEl.style.setProperty("--tilt-x", "0deg");
-          tiltEl.style.setProperty("--tilt-y", "0deg");
-          tiltEl.style.setProperty("--lift", "0px");
-        }
-        tiltEl = target;
-      }
-      if (!tiltEl) return;
-      const el = tiltEl;
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width - 0.5;
-      const py = (e.clientY - r.top) / r.height - 0.5;
-      if (!tiltRaf) {
-        tiltRaf = requestAnimationFrame(() => {
-          tiltRaf = 0;
-          el.style.setProperty("--tilt-x", `${(-py * 4).toFixed(2)}deg`);
-          el.style.setProperty("--tilt-y", `${(px * 5).toFixed(2)}deg`);
-          el.style.setProperty("--lift", "-2px");
-        });
-      }
-    };
-
     window.addEventListener("pointermove", onMove, { passive: true });
-    document.addEventListener("pointermove", onTiltMove, { passive: true });
     return () => {
       window.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointermove", onTiltMove);
       if (raf) cancelAnimationFrame(raf);
-      if (tiltRaf) cancelAnimationFrame(tiltRaf);
     };
   }, []);
 
