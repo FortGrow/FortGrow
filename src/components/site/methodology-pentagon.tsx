@@ -520,13 +520,15 @@ export function MethodologyPentagon() {
                   "radial-gradient(circle, rgba(45,126,242,0.45) 0%, rgba(34,211,238,0.18) 45%, transparent 70%)",
               }}
             />
+            {/* marca em branco no núcleo (brightness-0 + invert transforma
+                o PNG colorido em silhueta branca), com o brilho azul mantido */}
             <FgMark
               size={46}
-              className="relative drop-shadow-[0_0_22px_rgba(45,126,242,0.9)] sm:hidden"
+              className="relative brightness-0 invert drop-shadow-[0_0_22px_rgba(45,126,242,0.9)] sm:hidden"
             />
             <FgMark
               size={64}
-              className="relative hidden drop-shadow-[0_0_26px_rgba(45,126,242,0.9)] sm:block"
+              className="relative hidden brightness-0 invert drop-shadow-[0_0_26px_rgba(45,126,242,0.9)] sm:block"
             />
           </div>
         </div>
