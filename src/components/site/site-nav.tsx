@@ -74,7 +74,7 @@ export function SiteNav() {
             <a
               key={l.href}
               href={l.href}
-              className="group relative whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium text-white/85 transition hover:bg-white/15 hover:text-white"
+              className="group relative whitespace-nowrap rounded-lg px-2.5 py-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-white/85 transition hover:bg-white/15 hover:text-white"
             >
               {l.label}
               <LoadBar />
@@ -85,7 +85,7 @@ export function SiteNav() {
         <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <Link
             href="/login"
-            className="group relative whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-semibold text-white/85 transition hover:text-white"
+            className="group relative whitespace-nowrap rounded-xl px-2.5 py-2 text-[12px] font-bold uppercase tracking-[0.06em] text-white/85 transition hover:text-white"
           >
             Entrar
             <LoadBar />
@@ -114,7 +114,7 @@ export function SiteNav() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-3 text-base font-medium text-white/90 transition hover:bg-white/15"
+                className="rounded-xl px-3 py-3 text-sm font-semibold uppercase tracking-[0.06em] text-white/90 transition hover:bg-white/15"
               >
                 {l.label}
               </a>
@@ -123,7 +123,7 @@ export function SiteNav() {
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="inline-flex items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
+                className="inline-flex items-center justify-center rounded-xl border border-white/40 px-4 py-2.5 text-sm font-bold uppercase tracking-[0.06em] text-white transition hover:bg-white/15"
               >
                 Entrar
               </Link>
