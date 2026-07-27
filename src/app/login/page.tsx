@@ -4,13 +4,130 @@ import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowUpRight, BadgeCheck, Loader2, Lock, Mail, Megaphone, Search, ShoppingCart, Target, TrendingUp } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BadgeCheck, BarChart3, Instagram, Loader2, Lock, Mail, Megaphone, MousePointerClick, Search, ShoppingCart, Target, TrendingUp, Users } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
-import { LoginVideo } from "@/components/site/login-video";
 import { HIGHLIGHT } from "@/lib/site-style";
 
 
+type Tile =
+  | { kind: "kpi"; title: string; value: string; delta: string; hue: string }
+  | { kind: "channel"; label: string; icon: "meta" | "google" | "ig" | "seo" | "leads" | "clicks" | "team" | "chart"; hue: string }
+  | { kind: "sale"; value: string; hue: string }
+  | { kind: "bars"; hue: string }
+  | { kind: "spark"; hue: string };
+
+const HUES = {
+  blue: "2,132,199",
+  sky: "56,189,248",
+  green: "5,150,105",
+  emerald: "52,211,153",
+  violet: "139,92,246",
+  purple: "167,139,250",
+  orange: "217,119,6",
+  pink: "236,72,153",
+};
+
+const TILES: Tile[] = [
+  { kind: "kpi", title: "ROAS", value: "5.2x", delta: "+18%", hue: HUES.emerald },
+  { kind: "channel", label: "Meta Ads", icon: "meta", hue: HUES.blue },
+  { kind: "sale", value: "R$ 4.750", hue: HUES.green },
+  { kind: "bars", hue: HUES.violet },
+  { kind: "kpi", title: "Leads", value: "1.284", delta: "+32%", hue: HUES.sky },
+  { kind: "channel", label: "Google Ads", icon: "google", hue: HUES.orange },
+  { kind: "spark", hue: HUES.emerald },
+  { kind: "channel", label: "Posicionamento", icon: "seo", hue: HUES.purple },
+  { kind: "kpi", title: "CPL", value: "R$ 8,40", delta: "-21%", hue: HUES.violet },
+  { kind: "sale", value: "R$ 12.400", hue: HUES.emerald },
+  { kind: "channel", label: "Instagram", icon: "ig", hue: HUES.pink },
+  { kind: "bars", hue: HUES.sky },
+  { kind: "kpi", title: "Receita", value: "R$ 2,4M", delta: "+47%", hue: HUES.purple },
+  { kind: "channel", label: "Geração de leads", icon: "leads", hue: HUES.green },
+  { kind: "spark", hue: HUES.blue },
+  { kind: "kpi", title: "CTR", value: "3,8%", delta: "+12%", hue: HUES.orange },
+  { kind: "sale", value: "R$ 1.290", hue: HUES.green },
+  { kind: "channel", label: "CRM & Vendas", icon: "team", hue: HUES.sky },
+  { kind: "bars", hue: HUES.emerald },
+  { kind: "kpi", title: "Conversão", value: "6,3%", delta: "+9%", hue: HUES.pink },
+  { kind: "channel", label: "Tráfego pago", icon: "clicks", hue: HUES.violet },
+  { kind: "spark", hue: HUES.purple },
+  { kind: "kpi", title: "Vendas", value: "312", delta: "+28%", hue: HUES.emerald },
+  { kind: "channel", label: "Performance", icon: "chart", hue: HUES.blue },
+];
+
+const CHANNEL_ICONS = {
+  meta: Megaphone,
+  google: Target,
+  ig: Instagram,
+  seo: Search,
+  leads: Users,
+  clicks: MousePointerClick,
+  team: ShoppingCart,
+  chart: BarChart3,
+};
+
+function TileCard({ tile }: { tile: Tile }) {
+  const bg = `linear-gradient(160deg, rgba(${tile.hue},0.30), rgba(${tile.hue},0.08) 70%)`;
+  if (tile.kind === "kpi") {
+    return (
+      <div className="flex h-full flex-col justify-between glass rounded-xl p-3" style={{ background: bg }}>
+        <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">{tile.title}</p>
+        <div>
+          <p className="text-base font-extrabold text-white/90">{tile.value}</p>
+          <p className="inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: `rgb(${tile.hue})` }}>
+            <ArrowUpRight size={10} /> {tile.delta}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if (tile.kind === "channel") {
+    const Icon = CHANNEL_ICONS[tile.icon];
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 glass rounded-xl p-3 text-center" style={{ background: bg }}>
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/85">
+          <Icon size={15} />
+        </span>
+        <p className="text-[10px] font-bold leading-tight text-white/75">{tile.label}</p>
+      </div>
+    );
+  }
+  if (tile.kind === "sale") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-1 glass rounded-xl p-3" style={{ background: bg }}>
+        <span className="text-lg">💰</span>
+        <p className="text-[10px] font-bold text-white/85">Venda realizada</p>
+        <p className="text-xs font-extrabold" style={{ color: `rgb(${tile.hue})` }}>{tile.value}</p>
+      </div>
+    );
+  }
+  if (tile.kind === "bars") {
+    return (
+      <div className="flex h-full items-end justify-center gap-1.5 glass rounded-xl p-3.5" style={{ background: bg }}>
+        {[35, 55, 45, 70, 60, 90].map((h, i) => (
+          <span key={i} className="w-2 rounded-sm" style={{ height: `${h}%`, background: `rgba(${tile.hue},0.75)` }} />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-full items-center glass rounded-xl p-3" style={{ background: bg }}>
+      <svg viewBox="0 0 100 40" className="h-full w-full" preserveAspectRatio="none">
+        <path
+          d="M0,34 C15,32 25,26 40,22 C58,17 74,10 100,4"
+          fill="none"
+          stroke={`rgb(${tile.hue})`}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeOpacity="0.8"
+        />
+      </svg>
+    </div>
+  );
+}
+
+
+const WALL_TILES = [...TILES, ...TILES, ...TILES];
 /** Mini dashboard flutuante decorativo (gráficos de crescimento em SVG puro). */
 function FloatCard({
   className,
@@ -130,24 +247,6 @@ function SalesToasts() {
 /** Cena de fundo: gradientes, grade, orbes e dashboards flutuantes com parallax. */
 function Backdrop() {
   const ref = useRef<HTMLDivElement>(null);
-  /* `display: none` esconde o vídeo mas não impede o download nem a
-     decodificação — o elemento precisa não existir. Daí a decisão vir do
-     JS, e não de uma classe utilitária. */
-  const [comVideo, setComVideo] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 640px)");
-    const leve = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setComVideo(mq.matches && !leve.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    leve.addEventListener("change", sync);
-    return () => {
-      mq.removeEventListener("change", sync);
-      leve.removeEventListener("change", sync);
-    };
-  }, []);
-
   useEffect(() => {
     if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -186,27 +285,19 @@ function Backdrop() {
           primeira fonte que sabe tocar. Só entra a partir de sm — num
           celular o detalhe da animação se perde e não vale 1 MB de dados
           nem a bateria; lá fica o quadro parado. */}
-      {comVideo ? (
-        <LoginVideo />
-      ) : (
-        /* celular e quem pede menos movimento: o quadro parado, 64 KB */
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url(/site/video/login-bg.jpg)" }}
-        />
-      )}
-      {/* O vídeo é claro: sem véu o texto perde contraste. Uma camada
-          uniforme mais um gradiente que fecha nas laterais — é onde ficam a
-          manchete e o formulário —, deixando o centro da animação
-          respirar. */}
-      <div className="absolute inset-0 bg-ink-950/70" />
+      {/* Muro de cards (referência Netflix) — camada mais profunda */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-[-12%] grid auto-rows-[104px] grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 opacity-55 blur-[2px]"
         style={{
-          background:
-            "linear-gradient(90deg, rgba(4,7,13,0.92) 0%, rgba(4,7,13,0.35) 38%, rgba(4,7,13,0.35) 55%, rgba(4,7,13,0.94) 100%)",
+          transform: "rotate(-4deg) scale(1.12) translate3d(var(--plx2, 0px), var(--ply2, 0px), 0)",
+          transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1)",
         }}
-      />
+      >
+        {WALL_TILES.map((tile, i) => (
+          <TileCard key={i} tile={tile} />
+        ))}
+      </div>
+      <div className="absolute inset-0 bg-ink-950/62" />
 
       {/* Gradientes de luz (azul tecnológico, verde crescimento, roxo leve) */}
       <div
@@ -373,12 +464,12 @@ function LoginForm() {
             <p className="text-sm font-bold text-slate-100">
               <FgWordmark />
             </p>
-            <p className="text-[11px] text-slate-300">Acesse sua conta para continuar</p>
+            <p className="text-[11px] text-slate-500">Acesse sua conta para continuar</p>
           </div>
         </div>
 
         <div>
-          <label className="label !text-slate-300" htmlFor="email">E-mail</label>
+          <label className="label" htmlFor="email">E-mail</label>
           <div className="relative">
             <Mail size={15} className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-500" />
             <input
@@ -394,7 +485,7 @@ function LoginForm() {
           </div>
         </div>
         <div>
-          <label className="label !text-slate-300" htmlFor="password">Senha</label>
+          <label className="label" htmlFor="password">Senha</label>
           <div className="relative">
             <Lock size={15} className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-500" />
             <input
@@ -421,7 +512,7 @@ function LoginForm() {
           Entrar
         </button>
 
-        <p className="pt-1 text-center text-[11px] text-slate-400">
+        <p className="pt-1 text-center text-[11px] text-slate-600">
           Área administrativa e Portal do Cliente · Acesso protegido
         </p>
       </form>
@@ -467,7 +558,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-5 max-w-md text-base leading-relaxed text-slate-200"
+            className="mt-5 max-w-md text-base leading-relaxed text-slate-400"
           >
             A FortGrow constrói sua máquina de crescimento de ponta a ponta —
             do posicionamento da marca ao tráfego pago que vira venda.
