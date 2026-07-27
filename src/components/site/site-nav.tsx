@@ -6,6 +6,27 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
 import { NAV_LINKS, ctaHref } from "@/lib/site-config";
 
+/**
+ * Barra de carregamento sob o item do menu.
+ *
+ * Mesma ideia do gatilho "Contrate a FortGrow": basta o cursor chegar —
+ * não precisa clicar — e a barra preenche da esquerda para a direita em
+ * 900ms, no mesmo tempo e na mesma curva do botão.
+ *
+ * Cresce por `scaleX` em vez de `width`: `width` é propriedade de layout
+ * e obrigaria o navegador a recalcular a cada quadro; `transform` roda no
+ * compositor. Também responde ao foco por teclado, para quem navega sem
+ * mouse ver o mesmo retorno.
+ */
+function LoadBar() {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-x-2.5 bottom-1 h-[2px] origin-left scale-x-0 rounded-full bg-gradient-to-r from-[#a9cdfb] to-white transition-transform duration-[900ms] ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
+    />
+  );
+}
+
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -53,9 +74,10 @@ export function SiteNav() {
             <a
               key={l.href}
               href={l.href}
-              className="whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium text-white/85 transition hover:bg-white/15 hover:text-white"
+              className="group relative whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium text-white/85 transition hover:bg-white/15 hover:text-white"
             >
               {l.label}
+              <LoadBar />
             </a>
           ))}
         </div>
@@ -63,9 +85,10 @@ export function SiteNav() {
         <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <Link
             href="/login"
-            className="whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-semibold text-white/85 transition hover:text-white"
+            className="group relative whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-semibold text-white/85 transition hover:text-white"
           >
             Entrar
+            <LoadBar />
           </Link>
           <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#1b5fd0] shadow-[0_4px_18px_-6px_rgba(0,0,0,0.45)] transition hover:bg-[#eaf2ff] active:scale-[0.97]">
             Falar com especialista <ArrowUpRight size={15} />
