@@ -51,34 +51,34 @@ export function SiteNav({ slogan }: { slogan?: string }) {
           )}
         </div>
 
-        {/* Menu desktop */}
-        <div className="hidden items-center gap-1 md:flex">
+        {/* Menu desktop — a partir de lg: com 6 itens + CTA não cabe em md */}
+        <div className="hidden items-center gap-0.5 lg:flex">
           {NAV_LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="rounded-lg px-3.5 py-2 text-sm font-medium text-white/85 transition hover:bg-white/15 hover:text-white"
+              className="whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium text-white/85 transition hover:bg-white/15 hover:text-white xl:px-3.5 xl:text-sm"
             >
               {l.label}
             </a>
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <Link
             href="/login"
-            className="rounded-xl px-3.5 py-2 text-sm font-semibold text-white/85 transition hover:text-white"
+            className="whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-semibold text-white/85 transition hover:text-white xl:px-3.5 xl:text-sm"
           >
             Entrar
           </Link>
-          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#1b5fd0] shadow-[0_4px_18px_-6px_rgba(0,0,0,0.45)] transition hover:bg-[#eaf2ff] active:scale-[0.97]">
+          <a href={cta} target={cta.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-white px-3.5 py-2.5 text-[13px] font-bold xl:px-4 xl:text-sm text-[#1b5fd0] shadow-[0_4px_18px_-6px_rgba(0,0,0,0.45)] transition hover:bg-[#eaf2ff] active:scale-[0.97]">
             Falar com especialista <ArrowUpRight size={15} />
           </a>
         </div>
 
         {/* Botão mobile */}
         <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/30 text-white md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/30 text-white lg:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Fechar menu" : "Abrir menu"}
         >
@@ -88,7 +88,7 @@ export function SiteNav({ slogan }: { slogan?: string }) {
 
       {/* Menu mobile */}
       {open && (
-        <div className="border-t border-white/20 bg-gradient-to-b from-[#1b5fd0] to-[#124099] md:hidden">
+        <div className="border-t border-white/20 bg-gradient-to-b from-[#1b5fd0] to-[#124099] lg:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4">
             {NAV_LINKS.map((l) => (
               <a
