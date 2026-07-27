@@ -33,6 +33,7 @@ import { Reveal } from "./motion";
 import { ContactForm } from "./contact-form";
 import { MethodologyPentagon } from "./methodology-pentagon";
 import { FloatingCta } from "./floating-cta";
+import { SiteNotifications } from "./site-notifications";
 import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 
 /*
@@ -44,12 +45,13 @@ import { CLIENTS, SLOGAN, ctaHref } from "@/lib/site-config";
 /* ───────────────────────── blocos de apoio ───────────────────────── */
 
 /**
- * Destaque das manchetes: itálico em azul da marca, com um leve brilho para
- * a palavra "saltar" do fundo escuro. Usado em todas as frases de destaque
- * da home, para o site falar uma língua visual só.
+ * Destaque das manchetes: itálico branco sobre um bloco do azul da marca.
+ * `decoration-clone` faz cada linha da frase receber o bloco completo (com
+ * as bordas laterais), então frases que quebram em duas linhas continuam
+ * com o destaque correto.
  */
 const HIGHLIGHT =
-  "bg-gradient-to-r from-[#3d92ff] via-[#6aabff] to-[#a9cdfb] bg-clip-text italic text-transparent [filter:drop-shadow(0_0_26px_rgba(45,126,242,0.55))]";
+  "box-decoration-clone bg-[#2d7ef2] px-2.5 py-0.5 italic text-white shadow-[0_0_38px_rgba(45,126,242,0.55)]";
 
 /** Rótulo de seção (pequeno, uppercase, azul da logo). */
 function Kicker({ children }: { children: React.ReactNode }) {
@@ -773,6 +775,8 @@ export function Landing() {
         <Contact />
       </main>
       <SiteFooter />
+      {/* micro-cards de resultado pipocando ao longo de toda a página */}
+      <SiteNotifications />
       {/* gatilho fixo, presente em toda a navegação */}
       <FloatingCta />
     </div>
