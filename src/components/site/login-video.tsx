@@ -28,6 +28,15 @@ export function LoginVideo() {
     const v = ref.current;
     if (!v) return;
 
+    /* O React define `muted` como propriedade, mas não emite o atributo no
+       HTML — e é o atributo que o Safari do iPhone consulta para decidir se
+       libera o autoplay. Sem ele, trata o vídeo como se tivesse som e
+       bloqueia. Por isso os dois são fixados na mão aqui. */
+    v.muted = true;
+    v.defaultMuted = true;
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
+
     /** Tenta tocar; se o navegador recusar, não quebra nada. */
     const tocar = () => {
       const p = v.play();
@@ -61,6 +70,10 @@ export function LoginVideo() {
     };
 
     tocar();
+    /* Assim que houver quadro decodificado, tenta de novo: na primeira
+       chamada o elemento pode nem ter fonte resolvida ainda. */
+    v.addEventListener("loadeddata", tocar);
+    v.addEventListener("canplay", tocar);
     v.addEventListener("ended", aoTerminar);
     v.addEventListener("pause", aoPausar);
     v.addEventListener("stalled", tocar);
@@ -69,6 +82,8 @@ export function LoginVideo() {
     document.addEventListener("keydown", naPrimeiraInteracao);
 
     return () => {
+      v.removeEventListener("loadeddata", tocar);
+      v.removeEventListener("canplay", tocar);
       v.removeEventListener("ended", aoTerminar);
       v.removeEventListener("pause", aoPausar);
       v.removeEventListener("stalled", tocar);
@@ -87,14 +102,19 @@ export function LoginVideo() {
       loop
       playsInline
       /* `auto`: com `metadata` o navegador buscava o restante só na hora
-         de tocar, e o laço engasgava na virada. São 860 KB — cabe. */
+         de tocar, e o laço engasgava na virada. É 1 MB — cabe. */
       preload="auto"
       poster="/site/video/login-bg.jpg"
       aria-hidden
       tabIndex={-1}
     >
-      <source src="/site/video/login-bg.webm" type="video/webm" />
+      {/* MP4/H.264 primeiro, de propósito: é o formato que todo navegador
+          decodifica. Com o WebM na frente, o Safari do iPhone chegava a
+          escolhê-lo, falhava na decodificação e não voltava para a fonte
+          seguinte — ficava no quadro parado. O WebM segue como segunda
+          opção, para navegadores que não aceitem o MP4. */}
       <source src="/site/video/login-bg.mp4" type="video/mp4" />
+      <source src="/site/video/login-bg.webm" type="video/webm" />
     </video>
   );
 }
