@@ -35,7 +35,8 @@ import { MethodologyPentagon } from "./methodology-pentagon";
 import { FloatingCta } from "./floating-cta";
 import { SiteNotifications } from "./site-notifications";
 import { TeamCard } from "./team-card";
-import { CLIENTS, SLOGAN, TEAM, ctaHref } from "@/lib/site-config";
+import { PlansTable } from "./plans-table";
+import { CLIENTS, TEAM, ctaHref } from "@/lib/site-config";
 
 /*
  * Home institucional — identidade da apresentação oficial "Estruturação de
@@ -533,6 +534,39 @@ function Team() {
   );
 }
 
+/* ─────────────────── Planos por cliente ─────────────────── */
+
+function Plans() {
+  return (
+    <section id="planos" className="relative overflow-hidden py-20 lg:py-28">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(760px 420px at 50% 0%, rgba(45,126,242,0.10), transparent 62%)",
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 lg:px-8">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <Kicker>Planos personalizados</Kicker>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight text-white sm:text-4xl sm:leading-tight">
+            Cada empresa recebe{" "}
+            <span className={HIGHLIGHT}>o plano que precisa</span>
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-slate-400">
+            Não existe pacote fechado. Clique na logo de um cliente para ver
+            exatamente quais frentes entram na estrutura dele.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.1} className="mt-12">
+          <PlansTable />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 function Retention() {
   return (
     <section className="relative py-20 lg:py-28">
@@ -803,13 +837,14 @@ function Contact() {
 export function Landing() {
   return (
     <div className="min-h-screen bg-[#05090f] text-slate-200">
-      <SiteNav slogan={SLOGAN} />
+      <SiteNav />
       <main>
         <Hero />
         <Clients />
         <Problem />
         <Solution />
         <Team />
+        <Plans />
         <Retention />
         <Targeting />
         <Why />
