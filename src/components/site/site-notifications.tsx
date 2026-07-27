@@ -118,7 +118,7 @@ export function SiteNotifications() {
             exit={{ opacity: 0, y: -12, scale: 0.96 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={posicao(spot)}
-            className="glass glass-blur absolute w-[16rem] max-w-[74vw] p-3"
+            className="glass glass-blur glass-solid absolute w-[16rem] max-w-[74vw] p-3"
           >
             <div className="flex items-center gap-3">
               <span className="glass-icon h-9 w-9 shrink-0 text-lg">

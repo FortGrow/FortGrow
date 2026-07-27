@@ -192,6 +192,16 @@ body {
     }
   }
 
+  /* Peça que flutua por cima de texto (notificações, toasts) precisa de
+   * corpo próprio: a 74% de opacidade o conteúdo da página vaza por trás
+   * e as duas leituras se atrapalham. E não dá para contar com o desfoque
+   * — o iOS nem sempre o aplica dentro de camadas fixas. */
+  .glass-solid {
+    background:
+      linear-gradient(180deg, hsl(var(--glass-tint) / 0.1), hsl(var(--glass-tint) / 0.02) 40%, transparent 72%),
+      rgba(8, 12, 20, 0.96);
+  }
+
   /* Sem suporte a desfoque de fundo (Firefox antigo): o corpo fica mais
    * opaco para o texto não perder contraste. */
   @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
