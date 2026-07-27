@@ -79,19 +79,22 @@ export function TeamCard({ member }: { member: Member }) {
           }}
         />
 
-        {/* área da figura */}
-        <div className="relative aspect-[4/5]">
+        {/* Área da figura. É quadrada, mas a pessoa é desenhada mais alta que
+            ela e ancorada na base: a cabeça e os ombros passam da borda de
+            cima do card. Como nada aqui tem `overflow-hidden`, a figura
+            "sai" da moldura — é o que dá o efeito de profundidade. */}
+        <div className="relative aspect-square">
           {/* halo atrás da pessoa (plano do fundo) */}
           <span
             aria-hidden
-            className="absolute inset-x-6 bottom-4 top-10 rounded-[50%] transition-opacity duration-300"
+            className="absolute inset-x-6 bottom-4 top-6 rounded-[50%] transition-opacity duration-300"
             style={{
               background: `radial-gradient(circle at 50% 55%, ${accent}59, ${accent}1a 45%, transparent 70%)`,
               opacity: hover ? 1 : 0.7,
               transform: "translateZ(10px)",
             }}
           />
-          {/* figura recortada — plano da frente */}
+          {/* figura recortada — plano da frente, transbordando o card */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/site/team/${member.slug}.webp`}
@@ -99,13 +102,13 @@ export function TeamCard({ member }: { member: Member }) {
             width={760}
             height={950}
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-contain object-bottom drop-shadow-[0_18px_26px_rgba(0,0,0,0.55)]"
-            style={{ transform: "translateZ(46px)" }}
+            className="absolute bottom-0 left-1/2 h-[134%] w-auto max-w-none drop-shadow-[0_22px_30px_rgba(0,0,0,0.6)]"
+            style={{ transform: `translate(-50%, 0) translateZ(${hover ? 62 : 50}px)`, transition: "transform 300ms ease-out" }}
           />
           {/* nome e cargo — plano mais à frente ainda */}
           <div
             className="absolute inset-x-0 bottom-0 px-5 pb-1 text-center"
-            style={{ transform: "translateZ(72px)" }}
+            style={{ transform: "translateZ(78px)" }}
           >
             <h3 className="text-lg font-extrabold leading-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
               {member.name}

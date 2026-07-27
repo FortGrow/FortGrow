@@ -74,6 +74,13 @@ export const TEAM: {
   accent: string;
 }[] = [
   {
+    slug: "emily-tavares",
+    name: "Emily Tavares",
+    role: "Diretora Criativa",
+    bio: "Lidera a criação de conteúdos, campanhas e produções audiovisuais, transformando estratégias em comunicação que gera conexão e resultados.",
+    accent: "#60a5fa",
+  },
+  {
     slug: "yuri-cavichiolo",
     name: "Yuri Cavichiolo",
     role: "Diretor Estratégico",
@@ -86,13 +93,6 @@ export const TEAM: {
     role: "Gestor de Tráfego",
     bio: "Atua com tráfego pago, estratégias de aquisição de clientes e otimização de campanhas digitais para geração de resultados.",
     accent: "#38bdf8",
-  },
-  {
-    slug: "emily-tavares",
-    name: "Emily Tavares",
-    role: "Diretora Criativa",
-    bio: "Lidera a criação de conteúdos, campanhas e produções audiovisuais, transformando estratégias em comunicação que gera conexão e resultados.",
-    accent: "#60a5fa",
   },
 ];
 
