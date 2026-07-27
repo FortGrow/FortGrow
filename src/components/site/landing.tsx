@@ -520,7 +520,8 @@ function Team() {
           </p>
         </Reveal>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* folga no topo: a cabeça de cada integrante passa da borda do card */}
+        <div className="mt-24 grid gap-6 sm:grid-cols-2 sm:gap-y-24 lg:mt-40 lg:grid-cols-3 lg:gap-7">
           {TEAM.map((member, i) => (
             <Reveal key={member.slug} delay={0.08 * i}>
               <TeamCard member={member} />
