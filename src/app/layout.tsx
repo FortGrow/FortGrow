@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { GlassPointer } from "@/components/ui/glass-pointer";
 
 export const metadata: Metadata = {
   title: {
@@ -24,7 +25,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
-      <body className="min-h-screen font-sans">{children}</body>
+      <body className="min-h-screen font-sans">
+        {children}
+        {/* iluminação do vidro — um listener para toda a árvore */}
+        <GlassPointer />
+      </body>
     </html>
   );
 }

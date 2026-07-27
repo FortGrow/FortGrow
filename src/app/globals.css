@@ -5,9 +5,36 @@
 :root {
   color-scheme: dark;
   --par-x: 0px;
-  --par-y: 0px;
   --par2-x: 0px;
+  --par-y: 0px;
   --par2-y: 0px;
+
+  /* ── Material Liquid Glass ──────────────────────────────────────────
+   * Um único conjunto de tokens governa todo o vidro do produto. Ajuste
+   * aqui e a mudança percorre dashboard, modais e site institucional.
+   * `--glass-*` descrevem o material; `--ease-glass` é a curva usada em
+   * toda animação de vidro (aceleração lenta, chegada macia). */
+  --glass-tint: 210 30% 62%; /* matiz frio do vidro, em HSL sem cor final */
+  --glass-fill: 0.14; /* translucidez do corpo (12%–20%) */
+  --glass-blur: 18px;
+  --glass-sat: 1.6;
+  --glass-radius: 22px;
+  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-press: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Posição do brilho que segue o ponteiro. O JS só escreve estas duas
+   * variáveis — nenhuma propriedade que provoque reflow. */
+  --glass-mx: 50%;
+  --glass-my: 0%;
+  --glass-lit: 0; /* 0 = em repouso, 1 = ponteiro sobre o elemento */
+}
+
+/* Registrar a variável deixa a luz do vidro acender e apagar em rampa,
+ * em vez de saltar. Sem suporte (@property), ela apenas troca de valor. */
+@property --glass-lit {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
 }
 
 html {
@@ -52,19 +79,227 @@ body {
    * Glass real (backdrop-blur) é seguro: todos os modais renderizam em portal
    * no <body>, fora de qualquer card — nada fica preso em containing block.
    */
-  .card {
-    @apply relative rounded-2xl border border-line;
+  /*
+   * ── Liquid Glass ──────────────────────────────────────────────────
+   * O material é montado em camadas, como vidro real:
+   *   corpo    → translucidez + desfoque do que está atrás
+   *   ::before → luz especular (topo, lateral e o brilho que segue o mouse)
+   *   ::after  → aro cristalino de 1px, feito com gradiente recortado
+   *   sombras  → uma rasa (contato) e uma profunda (flutuação)
+   *
+   * Só `transform`, `opacity` e `box-shadow` animam: nada aqui provoca
+   * reflow. As duas pseudo-camadas não recebem eventos de ponteiro.
+   */
+  .card,
+  .glass {
+    @apply relative;
+    border: 0;
+    border-radius: var(--glass-radius);
     background:
-      linear-gradient(180deg, rgba(148, 163, 184, 0.05), transparent 36%),
-      rgba(20, 25, 38, 0.82);
+      linear-gradient(
+        180deg,
+        hsl(var(--glass-tint) / 0.1),
+        hsl(var(--glass-tint) / 0.02) 38%,
+        transparent 70%
+      ),
+      rgba(17, 22, 34, calc(0.5 + (1 - var(--glass-fill)) * 0.28));
     box-shadow:
-      0 8px 24px -12px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.035);
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      /* aro cristalino (fallback quando o ::after não puder ser recortado) */
+      0 0 0 1px hsl(var(--glass-tint) / 0.14),
+      /* luz no topo interno e sombra na base interna: espessura do vidro */
+      inset 0 1px 0 hsl(var(--glass-tint) / 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      /* contato + flutuação */
+      0 2px 6px -3px rgba(0, 0, 0, 0.5),
+      0 18px 44px -24px rgba(0, 0, 0, 0.85);
+    transition:
+      transform 0.42s var(--ease-glass),
+      box-shadow 0.42s var(--ease-glass),
+      background-color 0.42s var(--ease-glass);
+  }
+
+  /* Camadas 2 e 3: reflexo do topo, highlight lateral e o brilho móvel. */
+  .card::before,
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      /* brilho que acompanha o ponteiro */
+      radial-gradient(
+        120% 90% at var(--glass-mx) var(--glass-my),
+        hsl(var(--glass-tint) / calc(0.16 * var(--glass-lit))),
+        transparent 60%
+      ),
+      /* reflexo lateral, quase imperceptível */
+      linear-gradient(105deg, hsl(var(--glass-tint) / 0.07) 0 12%, transparent 42%),
+      /* faixa de luz incidindo no topo */
+      linear-gradient(180deg, hsl(var(--glass-tint) / 0.1), transparent 45%);
+    transition: opacity 0.42s var(--ease-glass);
+  }
+
+  /* Camada 4: aro de vidro. Um gradiente recortado em anel de 1px dá o
+   * brilho irregular de uma quina de vidro — borda sólida não dá. */
+  .card::after,
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      150deg,
+      hsl(var(--glass-tint) / 0.55),
+      hsl(var(--glass-tint) / 0.1) 26%,
+      transparent 52%,
+      hsl(var(--glass-tint) / 0.18)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    transition: opacity 0.42s var(--ease-glass);
+  }
+
+  /*
+   * Desfoque do fundo: entra por adesão, não por padrão.
+   *
+   * Medido nesta base: com `backdrop-filter` a seção da metodologia cai de
+   * 61 para 30 fps — e o raio quase não muda esse número (18px → 8px só
+   * devolve 4 fps). O custo não é o borrão, é existir um backdrop root que
+   * precisa ser relido a cada quadro enquanto algo se move na página.
+   *
+   * E o ganho visual depende inteiramente do que está atrás: sobre o
+   * gradiente liso da home, com e sem desfoque ficam indistinguíveis; sobre
+   * o mural de cards do login, o desfoque é o que torna o formulário
+   * legível. Então ele fica onde há textura atrás — login, modais (que
+   * cobrem a página) e as notificações flutuantes.
+   */
+  .glass-blur,
+  .fixed .card {
+    backdrop-filter: blur(10px) saturate(1.3);
+    -webkit-backdrop-filter: blur(10px) saturate(1.3);
   }
   @media (min-width: 1024px) {
-    .card {
-      backdrop-filter: blur(12px) saturate(1.15);
+    .glass-blur,
+    .fixed .card {
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    }
+  }
+
+  /* Sem suporte a desfoque de fundo (Firefox antigo): o corpo fica mais
+   * opaco para o texto não perder contraste. */
+  @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .card,
+    .glass {
+      background:
+        linear-gradient(180deg, hsl(var(--glass-tint) / 0.08), transparent 60%),
+        rgba(16, 20, 30, 0.94);
+    }
+  }
+  /* Sem recorte de máscara: cai para um aro simples, ainda fino. */
+  @supports not ((mask-composite: exclude) or (-webkit-mask-composite: xor)) {
+    .card::after,
+    .glass::after {
+      background: none;
+      border: 1px solid hsl(var(--glass-tint) / 0.2);
+      padding: 0;
+    }
+  }
+
+  /* Profundidade ao passar o ponteiro: sobe alguns pixels, a sombra abre,
+   * o vidro clareia e a peça inclina de leve. O `perspective()` vai na
+   * própria transformação — assim nenhum ancestral precisa virar
+   * contexto 3D (que quebraria `position: fixed` de filhos). */
+  .glass-interactive {
+    transform: perspective(1000px) rotateX(var(--glass-rx, 0deg)) rotateY(var(--glass-ry, 0deg))
+      translate3d(0, var(--glass-y, 0px), 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    /* Elevação vale para todo card; a inclinação é opcional e fica nos
+     * cards-peça do site — girar um painel largo do dashboard atrapalha
+     * a leitura em vez de ajudar. */
+    .card:hover,
+    .glass:hover {
+      box-shadow:
+        0 0 0 1px hsl(var(--glass-tint) / 0.2),
+        inset 0 1px 0 hsl(var(--glass-tint) / 0.3),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+        0 4px 10px -4px rgba(0, 0, 0, 0.5),
+        0 30px 60px -28px rgba(0, 0, 0, 0.9);
+    }
+    .glass-interactive:hover {
+      --glass-y: -4px;
+    }
+    /* Enquanto o ponteiro percorre a peça, a transformação encurta para
+     * colar no cursor; ao sair, volta à curva longa e a peça "assenta". */
+    .glass-interactive.glass-tracking {
+      transition-duration: 0.12s;
+    }
+  }
+
+  /* Botão de vidro: mesmo material, com pressão ao clicar. */
+  .btn-glass {
+    @apply relative inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-100;
+    border: 0;
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, hsl(var(--glass-tint) / 0.16), hsl(var(--glass-tint) / 0.04) 60%),
+      rgba(22, 28, 42, 0.55);
+    box-shadow:
+      0 0 0 1px hsl(var(--glass-tint) / 0.18),
+      inset 0 1px 0 hsl(var(--glass-tint) / 0.3),
+      0 6px 18px -10px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px) saturate(1.4);
+    -webkit-backdrop-filter: blur(8px) saturate(1.4);
+    transition:
+      transform 0.28s var(--ease-glass),
+      box-shadow 0.28s var(--ease-glass),
+      background-color 0.28s var(--ease-glass);
+  }
+  .btn-glass:hover {
+    background:
+      linear-gradient(180deg, hsl(var(--glass-tint) / 0.24), hsl(var(--glass-tint) / 0.07) 60%),
+      rgba(26, 33, 48, 0.6);
+    box-shadow:
+      0 0 0 1px hsl(var(--glass-tint) / 0.28),
+      inset 0 1px 0 hsl(var(--glass-tint) / 0.42),
+      0 10px 24px -12px rgba(0, 0, 0, 0.85);
+    transform: translate3d(0, -1px, 0);
+  }
+  .btn-glass:active {
+    transform: translate3d(0, 0, 0) scale(0.975);
+    transition-duration: 0.09s;
+    transition-timing-function: var(--ease-press);
+  }
+
+  /* Ícone "embutido" no vidro: rebaixo escuro + luz na quina de cima,
+   * o oposto do relevo de um elemento colado por cima. */
+  .glass-icon {
+    @apply relative flex items-center justify-center;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.22);
+    box-shadow:
+      inset 0 1px 1px rgba(0, 0, 0, 0.55),
+      inset 0 -1px 0 hsl(var(--glass-tint) / 0.16),
+      0 1px 0 hsl(var(--glass-tint) / 0.12);
+  }
+
+  /* Quem pede menos movimento fica com o material, sem deslocamento. */
+  @media (prefers-reduced-motion: reduce) {
+    .card,
+    .glass,
+    .btn-glass,
+    .glass-interactive {
+      transition-duration: 0.01ms;
+    }
+    .glass-interactive:hover {
+      --glass-y: 0px;
     }
   }
   .input {

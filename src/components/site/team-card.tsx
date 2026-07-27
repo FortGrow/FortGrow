@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { TEAM } from "@/lib/site-config";
+import { hueOf } from "@/lib/glass";
 
 /**
  * Card 3D de integrante do time.
@@ -56,17 +57,11 @@ export function TeamCard({ member }: { member: Member }) {
           willChange: hover ? "transform" : undefined,
         }}
       >
-        {/* superfície do card */}
+        {/* superfície: material de vidro comum, tingido pela cor da pessoa */}
         <span
           aria-hidden
-          className="absolute inset-0 rounded-2xl transition-shadow duration-300"
-          style={{
-            background: `linear-gradient(165deg, ${accent}26, rgba(255,255,255,0.02) 58%)`,
-            border: `1px solid ${accent}66`,
-            boxShadow: hover
-              ? `0 26px 60px -24px rgba(0,0,0,0.95), 0 0 34px -10px ${accent}88, inset 0 1px 0 ${accent}33`
-              : `0 16px 40px -28px rgba(0,0,0,0.9), 0 0 18px -8px ${accent}55, inset 0 1px 0 ${accent}22`,
-          }}
+          className="glass absolute inset-0"
+          style={{ ["--glass-tint" as string]: hueOf(accent) }}
         />
 
         {/* reflexo que segue o cursor */}

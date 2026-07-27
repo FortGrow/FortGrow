@@ -37,6 +37,7 @@ import { SiteNotifications } from "./site-notifications";
 import { TeamCard } from "./team-card";
 import { PlansTable } from "./plans-table";
 import { CLIENTS, TEAM, ctaHref } from "@/lib/site-config";
+import { hueOf } from "@/lib/glass";
 
 /*
  * Home institucional — identidade da apresentação oficial "Estruturação de
@@ -82,32 +83,23 @@ function NeonCard({
 }) {
   return (
     <div
-      className={`group relative h-full overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 ${className ?? ""}`}
-      style={{
-        background: `linear-gradient(155deg, ${color}1f, rgba(255,255,255,0.02) 55%)`,
-        border: `1px solid ${color}66`,
-        boxShadow: `0 0 18px -6px ${color}55, inset 0 1px 0 ${color}22`,
-      }}
+      className={`glass glass-interactive group h-full p-6 ${className ?? ""}`}
+      /* a cor da peça entra como matiz do próprio vidro, em vez de virar
+         uma borda colorida por cima — vidro tingido, não moldura */
+      style={{ ["--glass-tint" as string]: hueOf(color) }}
     >
-      {/* halo de canto */}
+      {/* halo de canto, agora por trás do vidro */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-60 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: `radial-gradient(circle, ${color}40, transparent 70%)` }}
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-60 transition-opacity duration-500 group-hover:opacity-100"
+        style={{ background: `radial-gradient(circle, ${color}45, transparent 70%)` }}
       />
-      <span
-        className="relative flex h-12 w-12 items-center justify-center rounded-xl"
-        style={{
-          background: `${color}1f`,
-          border: `1px solid ${color}55`,
-          color,
-          boxShadow: `0 0 16px -4px ${color}80`,
-        }}
-      >
+      {/* ícone embutido: rebaixo escuro com luz na quina superior */}
+      <span className="glass-icon relative h-12 w-12" style={{ color }}>
         {icon}
       </span>
       <h3 className="relative mt-5 text-lg font-bold text-white">{title}</h3>
-      <p className="relative mt-2 text-sm leading-relaxed text-slate-300/90">{text}</p>
+      <p className="relative mt-2 text-sm leading-relaxed text-slate-200/85">{text}</p>
     </div>
   );
 }

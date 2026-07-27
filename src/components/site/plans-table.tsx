@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BarChart3, BrainCircuit, Check, Clapperboard, Megaphone, Minus, PenLine, ShoppingCart, Sparkles, Users } from "lucide-react";
 import { CLIENT_PLANS, PLAN_TOPICS } from "@/lib/site-config";
+import { hueOf } from "@/lib/glass";
 
 /**
  * Comparativo dos planos personalizados.
@@ -126,8 +127,8 @@ export function PlansTable() {
       </div>
 
       <div
-        className="overflow-hidden rounded-2xl border transition-colors duration-300"
-        style={{ borderColor: `${sel.accent}59`, background: "rgba(4,8,14,0.6)" }}
+        className="glass overflow-hidden"
+        style={{ ["--glass-tint" as string]: hueOf(sel.accent) }}
       >
         {/* ── tabela comparativa (desktop) ── */}
         <table

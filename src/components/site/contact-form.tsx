@@ -50,8 +50,8 @@ export function ContactForm() {
 
   if (done) {
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-[#2d7ef2]/25 bg-[#2d7ef2]/5 p-10 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2d7ef2]/15 text-[#7fb0f8]">
+      <div className="glass flex h-full flex-col items-center justify-center p-10 text-center">
+        <span className="glass-icon h-14 w-14 text-[#9ec5fb]">
           <MessageCircle size={30} />
         </span>
         <h3 className="mt-5 text-xl font-bold text-white">Recebemos seu contato!</h3>
@@ -69,7 +69,7 @@ export function ContactForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-3.5 rounded-2xl border border-[#2d7ef2]/50 p-6 shadow-[0_0_36px_-12px_rgba(45,126,242,0.75)] sm:p-7"
+      className="glass space-y-3.5 p-6 sm:p-7"
       style={{
         background:
           "linear-gradient(160deg, rgba(45,126,242,0.22), rgba(18,60,143,0.16) 55%, rgba(255,255,255,0.02))",

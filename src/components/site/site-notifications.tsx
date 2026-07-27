@@ -12,9 +12,9 @@ import { BadgeCheck } from "lucide-react";
  * ponto da página) e são puramente decorativos: `pointer-events-none`, fora
  * da ordem de leitura e desligados para quem pede menos movimento.
  *
- * Sem `backdrop-blur` de propósito: o pentágono da metodologia gira em
- * paralelo e o blur de fundo obriga o navegador a re-rasterizar a cada
- * quadro — o fundo sólido mantém a animação fluida.
+ * Estes usam `glass-blur` (desfoque real): flutuam sobre o conteúdo da
+ * página, então há textura atrás para o vidro trabalhar — diferente dos
+ * cards de seção, que ficam sobre o gradiente liso do fundo.
  */
 
 type Notice = {
@@ -118,10 +118,10 @@ export function SiteNotifications() {
             exit={{ opacity: 0, y: -12, scale: 0.96 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             style={posicao(spot)}
-            className="absolute w-[16rem] max-w-[74vw] rounded-2xl border border-[#2d7ef2]/30 bg-[#070c15]/95 p-3 shadow-[0_18px_45px_-18px_rgba(0,0,0,0.95)] ring-1 ring-[#2d7ef2]/10"
+            className="glass glass-blur absolute w-[16rem] max-w-[74vw] p-3"
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2d7ef2]/15 text-lg">
+              <span className="glass-icon h-9 w-9 shrink-0 text-lg">
                 {notice.icon}
               </span>
               <div className="min-w-0">

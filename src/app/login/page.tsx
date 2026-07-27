@@ -69,7 +69,7 @@ function TileCard({ tile }: { tile: Tile }) {
   const bg = `linear-gradient(160deg, rgba(${tile.hue},0.30), rgba(${tile.hue},0.08) 70%)`;
   if (tile.kind === "kpi") {
     return (
-      <div className="flex h-full flex-col justify-between rounded-xl border border-white/10 p-3" style={{ background: bg }}>
+      <div className="flex h-full flex-col justify-between glass rounded-xl p-3" style={{ background: bg }}>
         <p className="text-[9px] font-bold uppercase tracking-wider text-white/60">{tile.title}</p>
         <div>
           <p className="text-base font-extrabold text-white/90">{tile.value}</p>
@@ -83,7 +83,7 @@ function TileCard({ tile }: { tile: Tile }) {
   if (tile.kind === "channel") {
     const Icon = CHANNEL_ICONS[tile.icon];
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-white/10 p-3 text-center" style={{ background: bg }}>
+      <div className="flex h-full flex-col items-center justify-center gap-2 glass rounded-xl p-3 text-center" style={{ background: bg }}>
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/85">
           <Icon size={15} />
         </span>
@@ -93,7 +93,7 @@ function TileCard({ tile }: { tile: Tile }) {
   }
   if (tile.kind === "sale") {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-1 rounded-xl border border-white/10 p-3" style={{ background: bg }}>
+      <div className="flex h-full flex-col items-center justify-center gap-1 glass rounded-xl p-3" style={{ background: bg }}>
         <span className="text-lg">💰</span>
         <p className="text-[10px] font-bold text-white/85">Venda realizada</p>
         <p className="text-xs font-extrabold" style={{ color: `rgb(${tile.hue})` }}>{tile.value}</p>
@@ -102,7 +102,7 @@ function TileCard({ tile }: { tile: Tile }) {
   }
   if (tile.kind === "bars") {
     return (
-      <div className="flex h-full items-end justify-center gap-1.5 rounded-xl border border-white/10 p-3.5" style={{ background: bg }}>
+      <div className="flex h-full items-end justify-center gap-1.5 glass rounded-xl p-3.5" style={{ background: bg }}>
         {[35, 55, 45, 70, 60, 90].map((h, i) => (
           <span key={i} className="w-2 rounded-sm" style={{ height: `${h}%`, background: `rgba(${tile.hue},0.75)` }} />
         ))}
@@ -110,7 +110,7 @@ function TileCard({ tile }: { tile: Tile }) {
     );
   }
   return (
-    <div className="flex h-full items-center rounded-xl border border-white/10 p-3" style={{ background: bg }}>
+    <div className="flex h-full items-center glass rounded-xl p-3" style={{ background: bg }}>
       <svg viewBox="0 0 100 40" className="h-full w-full" preserveAspectRatio="none">
         <path
           d="M0,34 C15,32 25,26 40,22 C58,17 74,10 100,4"
@@ -151,7 +151,7 @@ function FloatCard({
       initial={{ opacity: 0, y: 24, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={`pointer-events-none absolute w-44 rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-2xl backdrop-blur-md ${className}`}
+      className={`glass glass-blur pointer-events-none absolute w-44 p-3.5 ${className}`}
       style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}
     >
       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{title}</p>
@@ -226,7 +226,7 @@ function SalesToasts() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.97 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex items-center gap-3 rounded-2xl border border-grow-500/25 bg-ink-900/80 p-3.5 shadow-2xl ring-1 ring-grow-500/10 backdrop-blur-md"
+          className="glass glass-blur flex items-center gap-3 p-3.5"
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-grow-500/15 text-lg">
             {sale.icon}
@@ -360,7 +360,7 @@ function Backdrop() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.15, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute bottom-[5%] left-[45%] flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 shadow-2xl backdrop-blur-md"
+          className="glass glass-blur pointer-events-none absolute bottom-[5%] left-[45%] flex items-center gap-2.5 px-3.5 py-2.5"
           style={{ transform: "translate3d(var(--plx, 0px), var(--ply, 0px), 0)" }}
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
@@ -440,7 +440,7 @@ function LoginForm() {
           formulário estável para digitar/clicar) */}
       <form
         onSubmit={onSubmit}
-        className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.055] p-7 shadow-[0_30px_70px_-20px_rgba(0,0,0,0.7),0_0_0_1px_rgba(56,189,248,0.06)] backdrop-blur-xl"
+        className="glass glass-blur space-y-4 p-7" style={{ ["--glass-radius" as string]: "28px" }}
       >
         <div className="mb-2 hidden items-center gap-3 lg:flex">
           <FgMark size={40} className="drop-shadow-[0_0_14px_rgba(56,189,248,0.4)]" />
@@ -512,7 +512,7 @@ export default function LoginPage() {
       {/* Voltar para o site institucional */}
       <Link
         href="/"
-        className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-ink-900/60 px-3.5 py-2 text-sm font-medium text-slate-300 backdrop-blur-md transition hover:border-white/20 hover:bg-ink-800/70 hover:text-white sm:left-6 sm:top-6"
+        className="btn-glass absolute left-4 top-4 z-20 sm:left-6 sm:top-6"
       >
         <ArrowLeft size={16} /> Voltar ao site
       </Link>
