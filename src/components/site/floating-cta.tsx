@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
  * some quando a seção de contato entra na tela — ali o formulário assume.
  */
 export function FloatingCta({ href = "#contato" }: { href?: string }) {
-  // Em páginas sem a seção de contato (ex.: login) o botão fica sempre visível
+  // Em páginas sem a seção de contato o botão fica sempre visível
   const [visible, setVisible] = useState(!href.startsWith("#"));
   const [filling, setFilling] = useState(false);
 

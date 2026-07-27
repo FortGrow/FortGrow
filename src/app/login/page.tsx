@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowUpRight, BadgeCheck, Loader2, Lock, Mail, Megaphone, Search, ShoppingCart, Target, TrendingUp } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { FgMark, FgWordmark } from "@/components/brand/logo";
-import { FloatingCta } from "@/components/site/floating-cta";
 import { LoginVideo } from "@/components/site/login-video";
 import { HIGHLIGHT } from "@/lib/site-style";
 
@@ -442,9 +441,6 @@ export default function LoginPage() {
       >
         <ArrowLeft size={16} /> Voltar ao site
       </Link>
-
-      {/* gatilho de contratação também nesta página */}
-      <FloatingCta href="/#contato" />
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
         {/* Lado visual: marca + frase de impacto */}
