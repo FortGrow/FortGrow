@@ -53,7 +53,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       metrics: { where: { date: { gte: new Date(Date.now() - 90 * 86400000) } } },
       users: {
         where: { role: "CLIENTE" },
-        select: { id: true, name: true, email: true, active: true },
+        select: { id: true, name: true, email: true, active: true, permissionsMatrix: true },
         orderBy: { name: "asc" },
       },
       contentPosts: {
@@ -288,7 +288,13 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       </div>
 
       <div className="mb-6 space-y-4">
-        <PortalAccessPanel clientId={client.id} users={client.users} />
+        <PortalAccessPanel
+          clientId={client.id}
+          users={client.users.map((u) => ({
+            ...u,
+            permissionsMatrix: (u.permissionsMatrix as Record<string, string>) ?? {},
+          }))}
+        />
         <StaffCommissionsPanel
           clientId={client.id}
           staff={staff}

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { MODULES, ROLE_DEFAULTS, type ModuleKey } from "@/lib/rbac";
+import { MODULES, PORTAL_MODULES, PORTAL_MODULE_KEYS, ROLE_DEFAULTS, type ModuleKey } from "@/lib/rbac";
 import { initials } from "@/lib/utils";
 import { NewUserForm } from "./new-user-form";
 import { PermissionsEditor } from "./permissions-editor";
@@ -52,6 +52,14 @@ export default async function EquipePage() {
     }
     const keys = (u.permissions.length ? u.permissions : ROLE_DEFAULTS[u.role] ?? []) as ModuleKey[];
     return keys.map((k) => MODULES[k] ?? k);
+  };
+
+  /** Áreas do portal liberadas — sem marcação nenhuma, o cliente vê tudo. */
+  const areasOf = (u: (typeof clientUsers)[number]): string => {
+    const matrix = (u.permissionsMatrix as Record<string, string>) ?? {};
+    const liberadas = PORTAL_MODULE_KEYS.filter((k) => matrix[k]?.includes("v"));
+    if (liberadas.length === 0) return "Portal completo";
+    return liberadas.map((k) => PORTAL_MODULES[k]).join(" · ");
   };
 
   return (
@@ -112,7 +120,7 @@ export default async function EquipePage() {
       </DataTable>
 
       <h2 className="mb-3 text-sm font-bold text-slate-300">Acessos de clientes (Portal)</h2>
-      <DataTable headers={["Usuário", "Empresa", "Status"]}>
+      <DataTable headers={["Usuário", "Empresa", "Áreas liberadas", "Status"]}>
         {clientUsers.map((u) => (
           <tr key={u.id} className="transition hover:bg-ink-800/50">
             <Td>
@@ -120,9 +128,20 @@ export default async function EquipePage() {
               <p className="text-xs text-slate-500">{u.email}</p>
             </Td>
             <Td>{u.client?.companyName ?? "—"}</Td>
+            <Td className="max-w-md">
+              <span className="text-xs text-slate-400">{areasOf(u)}</span>
+            </Td>
             <Td>
               <div className="flex items-center gap-2">
                 <Badge tone={u.active ? "grow" : "danger"}>{u.active ? "ATIVO" : "INATIVO"}</Badge>
+                {session.role === "ADMIN" && (
+                  <PermissionsEditor
+                    scope="portal"
+                    userId={u.id}
+                    userName={u.name}
+                    matrix={(u.permissionsMatrix as Record<string, string>) ?? {}}
+                  />
+                )}
                 {session.role === "ADMIN" && (
                   <UserEditor
                     user={{ id: u.id, name: u.name, role: u.role, clientId: u.clientId, active: u.active }}

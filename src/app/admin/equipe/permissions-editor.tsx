@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
-import { MODULES, type ModuleKey } from "@/lib/rbac";
+import { MODULES, PORTAL_MODULES } from "@/lib/rbac";
 
 const LEVELS = [
   ["v", "Ver"],
@@ -12,9 +12,16 @@ const LEVELS = [
   ["d", "Excluir"],
 ] as const;
 
+/** No portal o cliente só consome: a permissão é abrir a área, ou não. */
+const LEVELS_PORTAL = [["v", "Liberado"]] as const;
+
 /**
  * Editor da matriz de permissões por usuário:
  * cada módulo × (ver / editar / excluir), salvo no banco vinculado ao usuário.
+ *
+ * Dois escopos, o mesmo armazenamento (`User.permissionsMatrix`):
+ *  - `admin`  → módulos internos, com os três níveis;
+ *  - `portal` → áreas do Portal do Cliente, só liberado/bloqueado.
  */
 export type PermTemplate = { id: string; name: string; matrix: Record<string, string> };
 
@@ -23,11 +30,13 @@ export function PermissionsEditor({
   userName,
   matrix: initial,
   templates = [],
+  scope = "admin",
 }: {
   userId: string;
   userName: string;
   matrix: Record<string, string>;
   templates?: PermTemplate[];
+  scope?: "admin" | "portal";
 }) {
   const [open, setOpen] = useState(false);
   const [matrix, setMatrix] = useState<Record<string, string>>(initial);
@@ -37,6 +46,12 @@ export function PermissionsEditor({
   const [templateName, setTemplateName] = useState("");
   const [templateMsg, setTemplateMsg] = useState<string | null>(null);
   const router = useRouter();
+
+  const portal = scope === "portal";
+  const catalogo: Record<string, string> = portal ? PORTAL_MODULES : MODULES;
+  const niveis: readonly (readonly [string, string])[] = portal ? LEVELS_PORTAL : LEVELS;
+  // Templates são desenhados com módulos do admin — não fazem sentido no portal
+  const modelos = portal ? [] : templates;
 
   function applyTemplate(id: string) {
     const t = templates.find((t) => t.id === id);
@@ -65,6 +80,12 @@ export function PermissionsEditor({
       const data = await res.json().catch(() => ({}));
       setTemplateMsg(data.error ?? "Falha ao salvar template.");
     }
+  }
+
+  /** Atalho do portal: libera ou limpa todas as áreas de uma vez. */
+  function marcarTodas(liberar: boolean) {
+    setSaved(false);
+    setMatrix(liberar ? Object.fromEntries(Object.keys(catalogo).map((k) => [k, "v"])) : {});
   }
 
   function toggle(module: string, flag: string) {
@@ -121,11 +142,21 @@ export function PermissionsEditor({
           <div className="card w-full max-w-xl animate-fade-up p-6">
             <h2 className="text-lg font-bold text-slate-100">Permissões de {userName}</h2>
             <p className="mb-4 mt-1 text-xs text-slate-500">
-              Marque o que este colaborador pode fazer em cada módulo. Editar/Excluir habilitam Ver automaticamente.
-              Sem nenhuma marcação, valem os padrões do papel. As mudanças valem no próximo login do colaborador.
+              {portal ? (
+                <>
+                  Marque as áreas que este cliente enxerga no Portal. O que ficar desmarcado some do menu e
+                  também não abre pela URL. Sem nenhuma marcação, ele vê o Portal inteiro. As mudanças valem
+                  no próximo login do cliente.
+                </>
+              ) : (
+                <>
+                  Marque o que este colaborador pode fazer em cada módulo. Editar/Excluir habilitam Ver automaticamente.
+                  Sem nenhuma marcação, valem os padrões do papel. As mudanças valem no próximo login do colaborador.
+                </>
+              )}
             </p>
 
-            {templates.length > 0 && (
+            {modelos.length > 0 && (
               <div className="mb-3">
                 <label className="label" htmlFor={`tpl-${userId}`}>Aplicar template</label>
                 <select
@@ -135,7 +166,7 @@ export function PermissionsEditor({
                   className="input"
                 >
                   <option value="">Selecione um template…</option>
-                  {templates.map((t) => (
+                  {modelos.map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
@@ -146,17 +177,17 @@ export function PermissionsEditor({
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-ink-850">
                   <tr className="border-b border-line text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-4 py-2.5 text-left font-semibold">Módulo</th>
-                    {LEVELS.map(([, label]) => (
+                    <th className="px-4 py-2.5 text-left font-semibold">{portal ? "Área do Portal" : "Módulo"}</th>
+                    {niveis.map(([, label]) => (
                       <th key={label} className="px-3 py-2.5 text-center font-semibold">{label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/60">
-                  {(Object.keys(MODULES) as ModuleKey[]).map((key) => (
+                  {Object.keys(catalogo).map((key) => (
                     <tr key={key} className="transition hover:bg-ink-800/50">
-                      <td className="px-4 py-2 font-medium text-slate-300">{MODULES[key]}</td>
-                      {LEVELS.map(([flag]) => (
+                      <td className="px-4 py-2 font-medium text-slate-300">{catalogo[key]}</td>
+                      {niveis.map(([flag]) => (
                         <td key={flag} className="px-3 py-2 text-center">
                           <input
                             type="checkbox"
@@ -172,18 +203,31 @@ export function PermissionsEditor({
               </table>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <input
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="Nome do template (ex.: Vendedor Jr)"
-                className="input flex-1 py-2"
-              />
-              <button type="button" onClick={saveAsTemplate} className="btn-ghost py-2 text-xs">
-                Salvar como template
-              </button>
-            </div>
-            {templateMsg && <p className="mt-2 text-xs font-medium text-brand-400">{templateMsg}</p>}
+            {portal ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => marcarTodas(true)} className="btn-ghost py-2 text-xs">
+                  Liberar todas
+                </button>
+                <button type="button" onClick={() => marcarTodas(false)} className="btn-ghost py-2 text-xs">
+                  Limpar seleção
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="Nome do template (ex.: Vendedor Jr)"
+                    className="input flex-1 py-2"
+                  />
+                  <button type="button" onClick={saveAsTemplate} className="btn-ghost py-2 text-xs">
+                    Salvar como template
+                  </button>
+                </div>
+                {templateMsg && <p className="mt-2 text-xs font-medium text-brand-400">{templateMsg}</p>}
+              </>
+            )}
 
             {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
             <div className="mt-5 flex items-center justify-end gap-3">

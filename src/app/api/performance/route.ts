@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireStaff, isResponse } from "@/lib/api-guard";
+import { requirePortal, requireStaff, isResponse } from "@/lib/api-guard";
 import { allowedClientIds, canSeeClient } from "@/lib/client-scope";
 import { can } from "@/lib/rbac";
 import { invalidResponse } from "@/lib/validation";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * Cliente do portal: sempre e somente a própria empresa (parâmetro ignorado).
  */
 export async function GET(req: NextRequest) {
-  const session = await requireAuth();
+  const session = await requirePortal("portal.visao");
   if (isResponse(session)) return session;
 
   let clientId: string;

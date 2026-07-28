@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken, SESSION_COOKIE } from "@/lib/auth";
-import { allowedModules, canAccess, type ModuleKey } from "@/lib/rbac";
+import {
+  allowedModules,
+  allowedPortalModules,
+  canAccess,
+  canAccessPortal,
+  portalHref,
+  portalModuleOf,
+  type ModuleKey,
+} from "@/lib/rbac";
 
 /** Rota do admin (primeiro segmento) → módulo de permissão exigido. */
 const ADMIN_ROUTE_MODULE: Record<string, ModuleKey> = {
@@ -33,7 +41,8 @@ const moduleHref = (key: ModuleKey) => (key === "dashboard" ? "/admin" : `/admin
  * Proteção de rotas:
  *  - /admin/** → somente equipe interna, e SOMENTE nos módulos autorizados
  *    (acesso direto por URL a módulo sem permissão é redirecionado)
- *  - /portal/** → somente usuários CLIENTE (isolados por clientId)
+ *  - /portal/** → somente usuários CLIENTE (isolados por clientId), e
+ *    SOMENTE nas áreas liberadas para aquele acesso
  *  - /login → redireciona quem já está logado para sua área
  */
 export async function middleware(req: NextRequest) {
@@ -69,6 +78,18 @@ export async function middleware(req: NextRequest) {
   }
   if (pathname.startsWith("/portal") && !isClient) {
     return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  // Mesma regra do admin, do lado do cliente: área não liberada não abre
+  // nem digitando a URL. Rotas pessoais (perfil, notificações) ficam livres.
+  if (pathname.startsWith("/portal") && isClient) {
+    const area = portalModuleOf(pathname.split("/")[2] ?? "");
+    if (area && !canAccessPortal(session, area)) {
+      const fallback = allowedPortalModules(session)[0];
+      const dest = fallback ? portalHref(fallback) : "/portal/perfil";
+      if (dest !== pathname) return NextResponse.redirect(new URL(dest, req.url));
+      return NextResponse.redirect(new URL("/portal/perfil", req.url));
+    }
   }
 
   // Autorização por módulo no backend: URL direta a módulo sem permissão

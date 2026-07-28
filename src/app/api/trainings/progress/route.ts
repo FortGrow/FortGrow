@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, isResponse } from "@/lib/api-guard";
+import { requirePortal, isResponse } from "@/lib/api-guard";
 import { invalidResponse } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ const schema = z.object({
 
 /** Marca/desmarca um treinamento como assistido por completo (por usuário). */
 export async function POST(req: NextRequest) {
-  const session = await requireAuth();
+  const session = await requirePortal("portal.treinamentos");
   if (isResponse(session)) return session;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

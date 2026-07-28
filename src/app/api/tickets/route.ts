@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, isResponse } from "@/lib/api-guard";
+import { requireAuth, requirePortal, isResponse } from "@/lib/api-guard";
 
 const createSchema = z.object({
   subject: z.string().min(3),
@@ -11,7 +11,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await requireAuth();
+  const session = await requirePortal("portal.chamados");
   if (isResponse(session)) return session;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));

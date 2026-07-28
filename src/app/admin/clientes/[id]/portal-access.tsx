@@ -4,8 +4,15 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, Trash2, UserPlus } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { PermissionsEditor } from "@/app/admin/equipe/permissions-editor";
 
-export type PortalUser = { id: string; name: string; email: string; active: boolean };
+export type PortalUser = {
+  id: string;
+  name: string;
+  email: string;
+  active: boolean;
+  permissionsMatrix?: Record<string, string>;
+};
 
 /**
  * Gestão dos acessos do cliente ao Portal — criados daqui já saem
@@ -93,14 +100,22 @@ export function PortalAccessPanel({ clientId, users }: { clientId: string; users
                 <p className="text-sm font-medium text-slate-200">{u.name}</p>
                 <p className="text-xs text-slate-500">{u.email}</p>
               </div>
-              <button
-                onClick={() => onRemove(u.id)}
-                disabled={removing === u.id}
-                title="Remover acesso"
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-danger/10 hover:text-danger"
-              >
-                {removing === u.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <PermissionsEditor
+                  scope="portal"
+                  userId={u.id}
+                  userName={u.name}
+                  matrix={u.permissionsMatrix ?? {}}
+                />
+                <button
+                  onClick={() => onRemove(u.id)}
+                  disabled={removing === u.id}
+                  title="Remover acesso"
+                  className="rounded-lg p-2 text-slate-500 transition hover:bg-danger/10 hover:text-danger"
+                >
+                  {removing === u.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                </button>
+              </div>
             </div>
           ))}
         </div>

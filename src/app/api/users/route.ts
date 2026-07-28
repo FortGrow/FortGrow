@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { MODULES, PORTAL_MODULE_KEYS } from "@/lib/rbac";
 
 const createSchema = z.object({
   name: z.string().min(2),
@@ -126,14 +127,20 @@ export async function PATCH(req: NextRequest) {
   if (!target) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
 
   const data: Record<string, unknown> = { tokenVersion: { increment: 1 } };
+  const nextRole = role ?? target.role;
 
   if (permissionsMatrix !== undefined) {
-    if (target.role === "ADMIN") {
+    if (nextRole === "ADMIN") {
       return NextResponse.json({ error: "Administradores sempre têm acesso total." }, { status: 400 });
     }
+    // Cada papel aceita só as chaves do seu escopo — acesso de cliente guarda
+    // áreas do Portal, colaborador guarda módulos internos. Assim uma matriz
+    // antiga não vira permissão indevida se o papel do login mudar depois.
+    const validas: readonly string[] =
+      nextRole === "CLIENTE" ? PORTAL_MODULE_KEYS : Object.keys(MODULES);
     // Remove módulos sem nenhuma flag
     data.permissionsMatrix = Object.fromEntries(
-      Object.entries(permissionsMatrix).filter(([, flags]) => flags.length > 0)
+      Object.entries(permissionsMatrix).filter(([k, flags]) => flags.length > 0 && validas.includes(k))
     );
   }
 
@@ -147,12 +154,16 @@ export async function PATCH(req: NextRequest) {
   }
   if (password !== undefined) data.passwordHash = await bcrypt.hash(password, 10);
 
-  const nextRole = role ?? target.role;
   if (role !== undefined) {
     if (target.id === session.sub && role !== "ADMIN") {
       return NextResponse.json({ error: "Você não pode rebaixar o próprio acesso." }, { status: 400 });
     }
     data.role = role;
+    // Troca de escopo (cliente ⇄ colaborador): a matriz do escopo antigo não
+    // significa nada no novo, então zera em vez de deixar lixo bloqueando tudo.
+    if (permissionsMatrix === undefined && (target.role === "CLIENTE") !== (role === "CLIENTE")) {
+      data.permissionsMatrix = {};
+    }
   }
   // Papel CLIENTE exige empresa vinculada; demais papéis não têm empresa
   if (nextRole === "CLIENTE") {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, isResponse } from "@/lib/api-guard";
+import { requirePortal, isResponse } from "@/lib/api-guard";
 
 const schema = z.object({ content: z.string().min(1) });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await requireAuth();
+  const session = await requirePortal("portal.chamados");
   if (isResponse(session)) return session;
 
   const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
