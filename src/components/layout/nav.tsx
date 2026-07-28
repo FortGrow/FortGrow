@@ -33,6 +33,7 @@ import {
   Users,
   Wallet,
   FolderOpen,
+  Gauge,
   Instagram,
   LineChart,
   TrendingUp,
@@ -59,6 +60,7 @@ const ICONS: Record<string, LucideIcon> = {
   chamados: Headphones,
   automacoes: Sparkles,
   integracoes: PlugZap,
+  hospedagem: Gauge,
   equipe: Users,
   auditoria: ScrollText,
   // portal

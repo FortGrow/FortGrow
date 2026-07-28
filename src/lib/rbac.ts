@@ -22,6 +22,7 @@ export const MODULES = {
   chamados: "Chamados",
   automacoes: "Automações",
   integracoes: "Integrações",
+  hospedagem: "Hospedagem",
   equipe: "Equipe & Permissões",
   auditoria: "Auditoria",
 } as const;
@@ -112,6 +113,7 @@ export const MODULE_NAV_GROUP: Record<ModuleKey, string | undefined> = {
   chamados: "Sistema",
   automacoes: "Sistema",
   integracoes: "Sistema",
+  hospedagem: "Sistema",
   auditoria: "Sistema",
 };
 

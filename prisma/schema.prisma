@@ -157,6 +157,7 @@ model Client {
   staffCommissions StaffCommission[]
   performanceEntries PerformanceEntry[]
   instagramEntries   InstagramEntry[]
+  projectPlans       ProjectPlan[]
 
   /// CRM próprio da empresa (Portal → Meu CRM)
   crmStages     CrmStage[]
@@ -349,6 +350,7 @@ model Project {
   progress  Int           @default(0)
   notes     String?
   tasks     Task[]
+  plans     ProjectPlan[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -588,9 +590,53 @@ model ContentPost {
   script          String?  // roteiro da postagem
   expectedMetrics String?  // métricas esperadas (alcance, engajamento, leads…)
   status          String   @default("PLANEJADO") // PLANEJADO | APROVADO | PUBLICADO
+  /// Postagem gerada a partir de um PDF de planejamento — republicar o plano
+  /// substitui só as dele, sem tocar no que a equipe criou na mão
+  sourcePlanId    String?
+  sourcePlan      ProjectPlan? @relation(fields: [sourcePlanId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
   @@index([clientId, date])
+  @@index([sourcePlanId])
+}
+
+/// PDF de planejamento anexado a um projeto, com a leitura automática do
+/// conteúdo (objetivos, conteúdos, roteiros e calendário de postagem).
+///
+/// O texto bruto fica guardado junto do resultado: reprocessar com regras
+/// melhores (ou com IA, quando a chave estiver configurada) não exige pedir
+/// o arquivo de novo.
+model ProjectPlan {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  fileName String
+  fileUrl  String
+  fileSize Int    @default(0)
+
+  /// Texto extraído do PDF
+  rawText String @db.Text
+  /// Leitura estruturada: { objetivos[], conteudos[], roteiros[], calendario[] }
+  parsed  Json   @default("{}")
+  /// IA | HEURISTICA — como a leitura foi feita
+  method  String @default("HEURISTICA")
+  /// RASCUNHO | PUBLICADO — só o publicado chega ao cliente
+  status  String @default("RASCUNHO")
+  publishedAt DateTime?
+
+  uploadedById   String?
+  uploadedByName String?
+
+  posts ContentPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId, status])
+  @@index([projectId])
 }
 
 /// Planos/pacotes comerciais da FortGrow (personalizáveis pelo admin)

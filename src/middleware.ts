@@ -32,6 +32,7 @@ const ADMIN_ROUTE_MODULE: Record<string, ModuleKey> = {
   chamados: "chamados",
   automacoes: "automacoes",
   integracoes: "integracoes",
+  hospedagem: "hospedagem",
   equipe: "equipe",
   auditoria: "auditoria",
 };
