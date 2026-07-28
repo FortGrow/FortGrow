@@ -5,7 +5,6 @@ import type { SessionPayload } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { NavItem } from "./nav";
 import { FxLayer } from "./fx";
-import { GlobalSearch } from "./global-search";
 import { SidebarDrawer } from "./sidebar-drawer";
 
 /** Shell compartilhado entre área administrativa e portal do cliente. */
@@ -48,7 +47,6 @@ export async function AppShell({
             <FgMark size={26} className="brightness-0 invert drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]" />
             <span className="text-sm"><FgWordmark light /></span>
           </Link>
-          <GlobalSearch />
           <div className="ml-auto flex items-center gap-2">
             <Link
               href={session.role === "CLIENTE" ? "/portal/notificacoes" : "/admin/notificacoes"}
