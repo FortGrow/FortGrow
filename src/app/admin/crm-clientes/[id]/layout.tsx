@@ -29,7 +29,7 @@ export default async function AdminCrmLayout({
   }
 
   const client = await prisma.client.findUnique({
-    where: { id: ctx.clientId },
+    where: { id: params.id },
     select: { companyName: true },
   });
   if (!client) notFound();

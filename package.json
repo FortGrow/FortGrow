@@ -13,7 +13,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "automations:run": "tsx scripts/run-automations.ts",
     "sync:run": "tsx scripts/run-sync.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "crm:migrar": "tsx scripts/migrate-crm-interno.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

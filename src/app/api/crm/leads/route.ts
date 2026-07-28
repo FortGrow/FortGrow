@@ -212,7 +212,7 @@ export async function DELETE(req: NextRequest) {
 }
 
 /** Filtra ids de tag pelo tenant — conectar tag de outra empresa é proibido. */
-async function tagsDoTenant(ids: string[], clientId: string) {
+async function tagsDoTenant(ids: string[], clientId: string | null) {
   const tags = await prisma.crmTag.findMany({
     where: { id: { in: ids }, clientId },
     select: { id: true },

@@ -21,15 +21,24 @@ export default async function AdminDashboard() {
     campaignsActive,
     proposalsOpen,
     proposalsWon,
+    crmStages,
   ] = await Promise.all([
     prisma.client.findMany({ select: { status: true, monthlyValue: true, contractMonths: true } }),
     prisma.invoice.findMany({ where: { dueDate: { gte: yearStart } }, select: { amount: true, status: true, dueDate: true, paidAt: true } }),
     prisma.expense.findMany({ where: { date: { gte: yearStart } }, select: { amount: true, date: true } }),
-    prisma.lead.groupBy({ by: ["stage"], _count: true }),
+    prisma.crmLead.groupBy({
+      by: ["stageId"],
+      where: { clientId: null, deletedAt: null },
+      _count: { _all: true },
+    }),
     prisma.project.findMany({ select: { status: true, deadline: true } }),
     prisma.campaign.count({ where: { active: true } }),
     prisma.proposal.count({ where: { status: { in: ["ABERTA", "ENVIADA"] } } }),
     prisma.proposal.count({ where: { status: "ACEITA" } }),
+    prisma.crmStage.findMany({
+      where: { clientId: null },
+      select: { id: true, name: true, kind: true, position: true },
+    }),
   ]);
 
   const active = clients.filter((c) => c.status === "ATIVO");
@@ -58,13 +67,30 @@ export default async function AdminDashboard() {
     return { label, receita: rev, despesas: exp };
   });
 
-  const stageCount = (stage: string) => leadsByStage.find((l) => l.stage === stage)?._count ?? 0;
-  const funnel = [
-    { label: "Leads", value: stageCount("LEAD") + stageCount("CONTATO") + stageCount("DIAGNOSTICO") + stageCount("REUNIAO") + stageCount("PROPOSTA") + stageCount("NEGOCIACAO") + stageCount("FECHADO") },
-    { label: "Diagnóstico", value: stageCount("DIAGNOSTICO") + stageCount("REUNIAO") + stageCount("PROPOSTA") + stageCount("NEGOCIACAO") + stageCount("FECHADO") },
-    { label: "Proposta", value: stageCount("PROPOSTA") + stageCount("NEGOCIACAO") + stageCount("FECHADO") },
-    { label: "Fechado", value: stageCount("FECHADO") },
-  ];
+  /**
+   * Funil do CRM Comercial. Como as etapas agora são editáveis, o resumo é
+   * montado pela posição delas no funil (topo → fundo) em vez de nomes fixos:
+   * renomear "Diagnóstico" não pode zerar o gráfico do dashboard.
+   */
+  const etapasOrdenadas = [...crmStages].sort((a, b) => a.position - b.position);
+  const abertasEGanhas = etapasOrdenadas.filter((e) => e.kind !== "PERDIDO");
+  const contaDe = (stageId: string) =>
+    leadsByStage.find((l) => l.stageId === stageId)?._count._all ?? 0;
+  /** Quantos leads chegaram até esta etapa (ela e todas as seguintes). */
+  const acumulado = (desde: number) =>
+    abertasEGanhas.slice(desde).reduce((s, e) => s + contaDe(e.id), 0);
+
+  const meio = Math.floor(abertasEGanhas.length / 2);
+  const penultima = Math.max(0, abertasEGanhas.length - 2);
+  const ganho = etapasOrdenadas.find((e) => e.kind === "GANHO");
+  const funnel = abertasEGanhas.length
+    ? [
+        { label: abertasEGanhas[0].name, value: acumulado(0) },
+        { label: abertasEGanhas[meio]?.name ?? "—", value: acumulado(meio) },
+        { label: abertasEGanhas[penultima]?.name ?? "—", value: acumulado(penultima) },
+        { label: ganho?.name ?? "Fechado", value: ganho ? contaDe(ganho.id) : 0 },
+      ]
+    : [];
 
   const projectsLate = projects.filter(
     (p) => p.status === "ATRASADO" || (p.deadline && p.deadline < now && p.status !== "CONCLUIDO")

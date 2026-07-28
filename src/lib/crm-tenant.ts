@@ -6,12 +6,17 @@
  * assinada. Assim não existe "trocar o id no DevTools" — o parâmetro sequer
  * é lido quando quem chama é um usuário CLIENTE.
  *
- * Dois perfis chegam a este módulo:
+ * Existem três espaços de trabalho:
  *
  *  - CLIENTE  → sempre a própria empresa (`session.clientId`), sem exceção.
- *  - Equipe FortGrow → precisa informar a empresa explicitamente e ter
- *    permissão no módulo `crm-clientes`, respeitando o escopo do colaborador
+ *  - Equipe FortGrow + `INTERNO` → o CRM Comercial da própria agência
+ *    (`clientId = null`), exigindo permissão no módulo `crm`.
+ *  - Equipe FortGrow + id de empresa → o CRM daquele cliente, exigindo
+ *    permissão em `crm-clientes` e respeitando o escopo do colaborador
  *    (quem só enxerga clientes comissionados continua limitado a eles).
+ *
+ * O motor é o mesmo nos três casos: a FortGrow opera exatamente a mesma
+ * ferramenta que entrega aos clientes.
  *
  * O retorno traz `where`, o filtro obrigatório já montado — usar
  * `...ctx.where` em cada query é o que garante que nenhuma consulta
@@ -25,14 +30,23 @@ import { can, canAccessPortal } from "./rbac";
 import { prisma } from "./prisma";
 import { DEFAULT_STAGES } from "./crm";
 
+/**
+ * Valor que o front envia para pedir o espaço da própria FortGrow. É uma
+ * palavra reservada, não um id: nenhum cliente tem esse identificador, então
+ * não há como um id real colidir com o espaço interno.
+ */
+export const INTERNAL = "INTERNO";
+
 export type CrmContext = {
   session: SessionPayload;
-  /** A empresa dona dos dados — o company_id do desenho multi-tenant. */
-  clientId: string;
+  /** A empresa dona dos dados — `null` é o espaço da própria FortGrow. */
+  clientId: string | null;
   /** Filtro obrigatório de toda query do CRM. */
-  where: { clientId: string };
-  /** Equipe FortGrow olhando o CRM de um cliente (modo administrador). */
+  where: { clientId: string | null };
+  /** Equipe FortGrow (no próprio CRM ou no de um cliente). */
   staff: boolean;
+  /** CRM Comercial da própria FortGrow. */
+  internal: boolean;
   /** Pode alterar dados (cliente com a área liberada, ou equipe com edição). */
   canEdit: boolean;
 };
@@ -63,11 +77,25 @@ export async function requireCrm(clientIdParam?: string | null): Promise<CrmCont
       clientId: session.clientId,
       where: { clientId: session.clientId },
       staff: false,
+      internal: false,
       canEdit: true,
     };
   }
 
-  // Equipe FortGrow: precisa dizer de qual empresa está falando
+  // ── CRM Comercial da própria FortGrow ──
+  if (clientIdParam === INTERNAL) {
+    if (!can(session, "crm", "view")) return deny("Sem permissão no CRM Comercial.", 403);
+    return {
+      session,
+      clientId: null,
+      where: { clientId: null },
+      staff: true,
+      internal: true,
+      canEdit: can(session, "crm", "edit"),
+    };
+  }
+
+  // Equipe FortGrow no CRM de um cliente: precisa dizer de qual empresa
   if (!clientIdParam) return deny("Informe a empresa.", 400);
   if (!can(session, "crm-clientes", "view")) {
     return deny("Sem permissão para ver os CRMs dos clientes.", 403);
@@ -87,6 +115,7 @@ export async function requireCrm(clientIdParam?: string | null): Promise<CrmCont
     clientId: empresa.id,
     where: { clientId: empresa.id },
     staff: true,
+    internal: false,
     canEdit: can(session, "crm-clientes", "edit"),
   };
 }
@@ -105,7 +134,7 @@ export function isCrmError(v: CrmContext | NextResponse): v is NextResponse {
  * sete etapas padrão — ninguém começa com um quadro vazio e sem saber o
  * que fazer. Idempotente: se já existe etapa, não mexe.
  */
-export async function ensureStages(clientId: string) {
+export async function ensureStages(clientId: string | null) {
   const existentes = await prisma.crmStage.count({ where: { clientId } });
   if (existentes > 0) return;
   await prisma.crmStage.createMany({
@@ -126,7 +155,7 @@ export async function ensureStages(clientId: string) {
  * outra empresa acertaria a linha errada. Todas as escritas por id passam
  * por aqui primeiro.
  */
-export async function ownedBy<T extends { clientId: string }>(
+export async function ownedBy<T extends { clientId: string | null }>(
   row: T | null,
   ctx: CrmContext
 ): Promise<T | null> {

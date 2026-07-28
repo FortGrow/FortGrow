@@ -68,7 +68,8 @@ export default async function CrmClientesPage({
     resumo.set(c.id, { total: 0, abertos: 0, ganhos: 0, perdidos: 0, pipeline: 0, receita: 0 });
   }
   for (const linha of porEmpresa) {
-    const r = resumo.get(linha.clientId);
+    // clientId nulo é o CRM da própria FortGrow — não entra nesta lista
+    const r = linha.clientId ? resumo.get(linha.clientId) : undefined;
     if (!r) continue;
     const qtd = linha._count._all;
     const kind = kindDe.get(linha.stageId) ?? "ABERTO";

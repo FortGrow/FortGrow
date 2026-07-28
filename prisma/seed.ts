@@ -9,6 +9,7 @@
  */
 import { PrismaClient, Channel } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { migrarCrmInterno } from "../scripts/migrate-crm-interno";
 
 const prisma = new PrismaClient();
 
@@ -42,7 +43,7 @@ async function main() {
   await prisma.proposal.deleteMany();
   await prisma.leadActivity.deleteMany();
   await prisma.lead.deleteMany();
-  // CRM dos clientes — filhos antes dos pais
+  // CRM (clientes e interno) — filhos antes dos pais
   await prisma.crmFile.deleteMany();
   await prisma.crmTask.deleteMany();
   await prisma.crmActivity.deleteMany();
@@ -380,21 +381,21 @@ async function main() {
   void t1;
 
   console.log("🧲 Leads e propostas…");
-  const leadSeed: [string, string, string, number, string][] = [
-    // empresa, etapa, origem, valor, potencial
-    ["Auto Center Máxima", "LEAD", "Instagram", 2500, "Médio"],
-    ["Restaurante Sabor & Arte", "LEAD", "Indicação", 1800, "Baixo"],
-    ["Imobiliária Premium", "CONTATO", "Google", 4500, "Alto"],
-    ["Academia PowerFit", "CONTATO", "Prospecção ativa", 2200, "Médio"],
-    ["Colégio Nova Era", "DIAGNOSTICO", "Indicação", 5200, "Alto"],
-    ["Pet Shop Amigo Fiel", "REUNIAO", "Instagram", 1900, "Médio"],
-    ["Advocacia Silveira", "PROPOSTA", "LinkedIn", 3800, "Alto"],
-    ["Distribuidora Central", "PROPOSTA", "Google", 6500, "Alto"],
-    ["Ótica VisualCare", "NEGOCIACAO", "Indicação", 2700, "Médio"],
-    ["Hotel Costa Verde", "FECHADO", "Google", 7200, "Alto"],
-    ["Padaria Dois Irmãos", "PERDIDO", "Prospecção ativa", 1200, "Baixo"],
+  const leadSeed: [string, string, string, string, number, string][] = [
+    // empresa, contato, etapa, origem, valor, potencial
+    ["Auto Center Máxima", "Rogério Palma", "LEAD", "Instagram", 2500, "Médio"],
+    ["Restaurante Sabor & Arte", "Cleide Fontoura", "LEAD", "Indicação", 1800, "Baixo"],
+    ["Imobiliária Premium", "Everton Bastos", "CONTATO", "Google", 4500, "Alto"],
+    ["Academia PowerFit", "Juliana Kranz", "CONTATO", "Prospecção ativa", 2200, "Médio"],
+    ["Colégio Nova Era", "Irmã Marta Beltrame", "DIAGNOSTICO", "Indicação", 5200, "Alto"],
+    ["Pet Shop Amigo Fiel", "Douglas Pacheco", "REUNIAO", "Instagram", 1900, "Médio"],
+    ["Advocacia Silveira", "Dr. Ricardo Silveira", "PROPOSTA", "LinkedIn", 3800, "Alto"],
+    ["Distribuidora Central", "Wagner Mesquita", "PROPOSTA", "Google", 6500, "Alto"],
+    ["Ótica VisualCare", "Simone Arruda", "NEGOCIACAO", "Indicação", 2700, "Médio"],
+    ["Hotel Costa Verde", "Tarcísio Weber", "FECHADO", "Google", 7200, "Alto"],
+    ["Padaria Dois Irmãos", "Neusa Kaminski", "PERDIDO", "Prospecção ativa", 1200, "Baixo"],
   ];
-  for (const [companyName, stage, source, value, potential] of leadSeed) {
+  for (const [companyName, contactName, stage, source, value, potential] of leadSeed) {
     const lead = await prisma.lead.create({
       data: {
         companyName,
@@ -405,7 +406,8 @@ async function main() {
         segment: "Serviços",
         city: "Curitiba",
         state: "PR",
-        contactName: "Contato Comercial",
+        contactName,
+        email: `${contactName.split(" ").pop()!.toLowerCase()}@${companyName.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}.com.br`,
         whatsapp: "+55 41 99999-0000",
         ownerId: comercial.id,
         activities: { create: { type: "nota", content: "Lead importado na carga inicial", author: "Sistema" } },
@@ -653,6 +655,11 @@ async function main() {
       data: { score, temperature: score >= 65 ? "QUENTE" : score >= 35 ? "MORNO" : "FRIO", probability: prob },
     });
   }
+
+  console.log("🏢 CRM Comercial da FortGrow…");
+  // O CRM interno nasce dos mesmos leads da tabela antiga, pelo mesmo caminho
+  // que roda em produção — assim o seed exercita a migração de verdade.
+  await migrarCrmInterno(prisma);
 
   console.log("🔔 Notificações…");
   await prisma.notification.createMany({

@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui/page-header";
-import { CrmDashboard } from "@/components/crm/crm-dashboard";
-import { requireCrm, isCrmError, ensureStages } from "@/lib/crm-tenant";
-import { loadMetrics } from "@/lib/crm-page-data";
+import { CrmWorkspace } from "@/components/crm/crm-workspace";
+import { requireCrm, isCrmError } from "@/lib/crm-tenant";
 
 export const dynamic = "force-dynamic";
 
@@ -11,16 +9,15 @@ export default async function MeuCrmPage() {
   // O middleware já barrou quem não pode; aqui é a última rede de proteção
   if (isCrmError(ctx)) redirect("/portal");
 
-  await ensureStages(ctx.clientId);
-  const m = await loadMetrics(ctx);
-
   return (
-    <>
-      <PageHeader
-        title="Meu CRM"
-        subtitle="Seus leads, seu funil e seus números — dados exclusivos da sua empresa"
-      />
-      <CrmDashboard m={m} basePath="/portal/crm" />
-    </>
+    <CrmWorkspace
+      ctx={ctx}
+      scope={{}}
+      basePath="/portal/crm"
+      titulos={{
+        titulo: "Meu CRM",
+        subtitulo: "Seus leads, seu funil e seus números — dados exclusivos da sua empresa",
+      }}
+    />
   );
 }

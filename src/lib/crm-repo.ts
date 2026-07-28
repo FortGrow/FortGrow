@@ -119,7 +119,7 @@ export const tagsOf = (ctx: CrmContext) =>
  * Recalcula score/temperatura de um lead a partir do estado atual do banco.
  * Chamado depois de toda escrita — o score é derivado, nunca informado.
  */
-export async function refreshScore(leadId: string, clientId: string) {
+export async function refreshScore(leadId: string, clientId: string | null) {
   const lead = await prisma.crmLead.findFirst({
     where: { id: leadId, clientId },
     include: { stage: { select: { kind: true, position: true } } },

@@ -41,20 +41,36 @@ export async function GET(req: NextRequest) {
   if (m === "prospeccao") {
     const session = await requireStaff("prospeccao", "view");
     if (isResponse(session)) return session;
-    const grouped = await prisma.lead.groupBy({ by: ["stage"], _count: { _all: true } });
-    const count = (s: string) => grouped.find((g) => g.stage === s)?._count._all ?? 0;
-    const total = grouped.reduce((sum, g) => sum + g._count._all, 0);
-    const closed = count("FECHADO");
+    // Pipeline do CRM Comercial (espaço interno do motor multi-tenant)
+    const [porEtapa, etapas] = await Promise.all([
+      prisma.crmLead.groupBy({
+        by: ["stageId"],
+        where: { clientId: null, deletedAt: null },
+        _count: { _all: true },
+      }),
+      prisma.crmStage.findMany({ where: { clientId: null }, select: { id: true, kind: true, position: true } }),
+    ]);
+    const kindDe = new Map(etapas.map((e) => [e.id, e]));
+    let total = 0, novos = 0, negociando = 0, fechados = 0;
+    for (const g of porEtapa) {
+      const etapa = kindDe.get(g.stageId);
+      const n = g._count._all;
+      total += n;
+      if (etapa?.kind === "GANHO") fechados += n;
+      else if (etapa?.kind === "PERDIDO") continue;
+      else if ((etapa?.position ?? 0) <= 1) novos += n;
+      else negociando += n;
+    }
     return NextResponse.json({
       title: "Prospecção",
       stats: [
         { label: "Leads", value: String(total) },
-        { label: "Conversão", value: total > 0 ? `${((closed / total) * 100).toFixed(1)}%` : "—" },
+        { label: "Conversão", value: total > 0 ? `${((fechados / total) * 100).toFixed(1)}%` : "—" },
       ],
       rows: [
-        { label: "Novos leads", badge: String(count("LEAD") + count("CONTATO")) },
-        { label: "Em negociação", badge: String(count("DIAGNOSTICO") + count("REUNIAO") + count("PROPOSTA") + count("NEGOCIACAO")) },
-        { label: "Fechados", badge: String(closed) },
+        { label: "Novos leads", badge: String(novos) },
+        { label: "Em negociação", badge: String(negociando) },
+        { label: "Fechados", badge: String(fechados) },
       ],
       footer: "Mini pipeline",
     });

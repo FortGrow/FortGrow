@@ -3,15 +3,22 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { normalizeInstagram } from "@/lib/validation";
 import { REVENUE_RANGES } from "@/lib/site-config";
+import { ensureStages } from "@/lib/crm-tenant";
 
-/** Faturamento maior → potencial de fechamento maior (qualificação do lead). */
-function potentialFromRevenue(revenue?: string): string | undefined {
-  if (!revenue) return undefined;
+/**
+ * Faturamento maior → etiqueta de potencial maior.
+ *
+ * No modelo novo o "potencial" virou etiqueta: o score do lead é calculado
+ * (valor, avanço no funil, completude, tempo sem contato), então guardar
+ * também uma nota manual no mesmo campo criaria duas verdades.
+ */
+function tagFromRevenue(revenue?: string): { nome: string; cor: string } | null {
+  if (!revenue) return null;
   const i = REVENUE_RANGES.indexOf(revenue);
-  if (i < 0) return undefined;
-  if (i >= 3) return "Alto";
-  if (i >= 1) return "Médio";
-  return "Baixo";
+  if (i < 0) return null;
+  if (i >= 3) return { nome: "Potencial alto", cor: "#059669" };
+  if (i >= 1) return null;
+  return { nome: "Potencial baixo", cor: "#e11d48" };
 }
 
 /**
@@ -55,25 +62,43 @@ export async function POST(req: NextRequest) {
   const notes = noteParts.join("\n") || "Contato recebido pelo formulário da página inicial.";
 
   try {
-    const lead = await prisma.lead.create({
+    // Entra no CRM Comercial da FortGrow (espaço interno), na primeira etapa
+    await ensureStages(null);
+    const primeira = await prisma.crmStage.findFirst({
+      where: { clientId: null },
+      orderBy: { position: "asc" },
+    });
+    if (!primeira) throw new Error("funil interno ausente");
+
+    const etiqueta = tagFromRevenue(revenue);
+    let tagId: string | null = null;
+    if (etiqueta) {
+      const existente = await prisma.crmTag.findFirst({ where: { clientId: null, name: etiqueta.nome } });
+      tagId =
+        existente?.id ??
+        (await prisma.crmTag.create({ data: { clientId: null, name: etiqueta.nome, color: etiqueta.cor } })).id;
+    }
+
+    const lead = await prisma.crmLead.create({
       data: {
-        companyName: companyName || contactName,
-        contactName,
+        clientId: null,
+        name: contactName,
+        company: companyName || null,
         phone,
         whatsapp: phone,
         email: email || null,
         segment: segment || null,
         instagram: instagram || null,
-        potential: potentialFromRevenue(revenue),
         source: "Site (formulário)",
-        prospectStatus: "NOVO",
-        firstContactAt: new Date(),
+        stageId: primeira.id,
+        lastContactAt: new Date(),
         notes,
+        ...(tagId ? { tags: { connect: { id: tagId } } } : {}),
         activities: {
           create: {
-            type: "nota",
+            type: "CRIACAO",
             content: "Lead recebido pelo formulário do site",
-            author: "Site FortGrow",
+            authorName: "Site FortGrow",
           },
         },
       },

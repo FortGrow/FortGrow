@@ -51,10 +51,10 @@ export async function GET(req: NextRequest) {
     take: 20000,
   });
 
-  const empresa = await prisma.client.findUnique({
-    where: { id: ctx.clientId },
-    select: { companyName: true },
-  });
+  // No CRM da própria agência não há Client para consultar
+  const empresa = ctx.clientId
+    ? await prisma.client.findUnique({ where: { id: ctx.clientId }, select: { companyName: true } })
+    : { companyName: "FortGrow" };
 
   const dt = (d: Date | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : "");
   const money = (v: unknown) =>

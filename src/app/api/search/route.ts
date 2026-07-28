@@ -30,7 +30,15 @@ export async function GET(req: NextRequest) {
   const scope = await allowedClientIds(session);
   const [clients, leads, projects, tasks] = await Promise.all([
     prisma.client.findMany({ where: { companyName: contains, archivedAt: null, ...clientScopeWhere(scope) }, take: 5 }),
-    prisma.lead.findMany({ where: { companyName: contains }, take: 5 }),
+    // CRM Comercial (espaço interno): busca por pessoa ou empresa
+    prisma.crmLead.findMany({
+      where: {
+        clientId: null,
+        deletedAt: null,
+        OR: [{ name: contains }, { company: contains }],
+      },
+      take: 5,
+    }),
     prisma.project.findMany({ where: { name: contains }, take: 5 }),
     prisma.task.findMany({ where: { title: contains }, take: 5 }),
   ]);
@@ -38,7 +46,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     results: [
       ...clients.map((c) => ({ type: "cliente", label: c.companyName, href: `/admin/clientes/${c.id}` })),
-      ...leads.map((l) => ({ type: "lead", label: l.companyName, href: "/admin/crm" })),
+      ...leads.map((l) => ({ type: "lead", label: l.company ?? l.name, href: `/admin/crm/leads/${l.id}` })),
       ...projects.map((p) => ({ type: "projeto", label: p.name, href: "/admin/projetos" })),
       ...tasks.map((t) => ({ type: "tarefa", label: t.title, href: "/admin/tarefas" })),
     ],

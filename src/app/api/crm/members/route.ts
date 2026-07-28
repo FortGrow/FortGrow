@@ -95,13 +95,19 @@ export async function DELETE(req: NextRequest) {
 }
 
 /**
- * Só aceita vincular um login que pertence à MESMA empresa. Sem esta
- * checagem daria para amarrar o usuário de outro cliente ao time daqui.
+ * Só aceita vincular um login do MESMO espaço. Sem esta checagem daria para
+ * amarrar o usuário de outro cliente ao time daqui.
+ *
+ * No CRM da própria FortGrow (`clientId = null`) o vínculo é com um
+ * colaborador interno; no de um cliente, com um acesso do Portal daquela
+ * empresa.
  */
-async function loginDoTenant(userId: string | null | undefined, clientId: string) {
+async function loginDoTenant(userId: string | null | undefined, clientId: string | null) {
   if (!userId) return null;
   const user = await prisma.user.findFirst({
-    where: { id: userId, clientId, role: "CLIENTE" },
+    where: clientId
+      ? { id: userId, clientId, role: "CLIENTE" }
+      : { id: userId, role: { not: "CLIENTE" } },
     select: { id: true },
   });
   return user?.id ?? null;

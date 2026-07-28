@@ -21,15 +21,21 @@ export async function GET(_req: NextRequest, { params }: { params: { type: strin
 
   switch (params.type) {
     case "leads": {
-      const leads = await prisma.lead.findMany({ orderBy: { createdAt: "desc" } });
+      const leads = await prisma.crmLead.findMany({
+        where: { clientId: null, deletedAt: null },
+        include: { stage: { select: { name: true } }, owner: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      });
       rows = leads.map((l) => ({
-        empresa: l.companyName,
-        contato: l.contactName,
+        empresa: l.company,
+        contato: l.name,
         email: l.email,
         telefone: l.phone,
-        etapa: l.stage,
+        etapa: l.stage.name,
         origem: l.source,
-        potencial: l.potential,
+        responsavel: l.owner?.name ?? null,
+        score: l.score,
+        temperatura: l.temperature,
         valor_estimado: Number(l.estimatedValue),
         cidade: l.city,
         estado: l.state,
