@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FortGrow — Proposta Comercial</title>
+<link rel="stylesheet" href="../carrossel-alcance-x-faturamento/assets/fonts/fonts.css">
+<style>
+  :root {
+    --bg-0: #030710;
+    --bg-1: #061021;
+    --blue: #2372f5;
+    --blue-bright: #3b82f8;
+    --blue-soft: #7fb0ff;
+    --ink: #ffffff;
+    --muted: #c7d4ea;
+    --muted-2: #8fa3c4;
+    --card-bg: rgba(10, 22, 48, 0.55);
+    --card-line: rgba(96, 148, 255, 0.28);
+    --hairline: rgba(148, 180, 235, 0.22);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: A4; margin: 0; }
+
+  html, body { background: #000; }
+  body { font-family: "Montserrat", sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .page {
+    position: relative;
+    width: 210mm;
+    height: 297mm;
+    overflow: hidden;
+    page-break-after: always;
+    background:
+      radial-gradient(620px 430px at 85% -6%, rgba(30, 107, 240, 0.30), transparent 62%),
+      radial-gradient(520px 390px at -12% 16%, rgba(23, 78, 176, 0.22), transparent 60%),
+      radial-gradient(760px 620px at 50% 118%, rgba(12, 42, 96, 0.35), transparent 65%),
+      linear-gradient(160deg, var(--bg-1) 0%, var(--bg-0) 55%, #020509 100%);
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .bg-watermark {
+    position: absolute; top: 60px; right: -170px; width: 520px;
+    opacity: 0.05; filter: brightness(0) invert(1); pointer-events: none;
+  }
+  .bg-stadium { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; }
+  .bg-tactics { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.4; pointer-events: none; }
+
+  .topbar {
+    position: absolute; top: 34px; left: 52px; right: 52px;
+    display: flex; align-items: center; justify-content: space-between; z-index: 30;
+  }
+  .wordmark { display: flex; align-items: center; gap: 11px; }
+  .wordmark img { width: 32px; height: 32px; }
+  .wordmark span { font-weight: 800; font-size: 20px; letter-spacing: 2px; }
+  .wordmark i { color: var(--blue-bright); font-style: normal; }
+  .badge {
+    width: 56px; height: 56px; border-radius: 13px; background: #f4f7fd;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  }
+  .badge img { width: 37px; height: 37px; filter: brightness(0); opacity: 0.92; }
+
+  .h1, .h2 {
+    font-family: "Anton", sans-serif; font-weight: 400; text-transform: uppercase;
+    line-height: 1.04; letter-spacing: 0; text-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  }
+  .h1 { font-size: 84px; }
+  .h2 { font-size: 52px; }
+  .blue { color: var(--blue-bright); }
+  .chip {
+    display: inline-block; background: var(--blue); color: var(--ink);
+    padding: 1px 16px 5px; border-radius: 4px;
+    box-shadow: 0 10px 28px rgba(35, 114, 245, 0.45);
+  }
+  .brush {
+    height: 7px; width: 300px; margin-top: 22px; border-radius: 6px;
+    background: linear-gradient(90deg, rgba(228, 238, 252, 0.95), rgba(228, 238, 252, 0.25) 80%, transparent);
+    transform: rotate(-1.2deg);
+  }
+  .kicker {
+    font-size: 15px; font-weight: 700; letter-spacing: 5px;
+    text-transform: uppercase; color: var(--blue-soft);
+  }
+  .body { font-size: 17px; line-height: 1.55; font-weight: 500; color: var(--muted); }
+  .body .strong { color: var(--ink); font-weight: 700; }
+  .body .blue { font-weight: 700; }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-line);
+    border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .content { position: absolute; inset: 0; padding: 128px 52px 64px; z-index: 20; }
+
+  .pagenum {
+    position: absolute; bottom: 26px; right: 52px; z-index: 30;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; color: var(--muted-2);
+  }
+  .pagefoot {
+    position: absolute; bottom: 26px; left: 52px; z-index: 30;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--muted-2);
+  }
+
+  /* ===== capa ===== */
+  .cover .content { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 210px; }
+  .cover .kicker { margin-bottom: 30px; }
+  .cover .rule { width: 110px; height: 3px; background: var(--blue-bright); margin: 40px auto 34px; }
+  .cover .sub { font-size: 21px; max-width: 540px; line-height: 1.55; font-weight: 500; color: var(--muted); }
+  .cover .client-box {
+    margin-top: auto; width: 100%; max-width: 560px;
+    padding: 26px 36px; text-align: left;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .cover .client-box .lbl { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--blue-soft); }
+  .cover .client-box .line { flex: 1; border-bottom: 1.5px solid rgba(148, 180, 235, 0.4); height: 22px; }
+  .cover .date { margin-top: 20px; font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--muted-2); }
+
+  /* ===== pilares ===== */
+  .pillars { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pillar { padding: 22px 24px; display: flex; gap: 16px; align-items: flex-start; }
+  .pillar svg { flex: 0 0 auto; margin-top: 2px; }
+  .pillar .t { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  .pillar .d { margin-top: 5px; font-size: 14px; line-height: 1.5; color: var(--muted); font-weight: 500; }
+  .quote-pill {
+    margin-top: 26px; border-radius: 999px; padding: 20px 26px; text-align: center;
+    font-family: "Anton", sans-serif; font-size: 24px; letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* ===== escopo ===== */
+  .scope-row {
+    display: flex; gap: 18px; align-items: flex-start;
+    padding: 18px 4px; border-bottom: 1px solid var(--hairline);
+  }
+  .scope-row:last-child { border-bottom: none; }
+  .scope-row .n {
+    flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(35, 114, 245, 0.16); border: 1.5px solid var(--card-line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Anton", sans-serif; font-size: 20px; color: var(--blue-bright);
+  }
+  .scope-row .t { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .scope-row .d { margin-top: 4px; font-size: 14px; line-height: 1.5; color: var(--muted); font-weight: 500; }
+
+  /* ===== plataforma ===== */
+  .platform-cols { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .pcol { padding: 26px 26px 20px; }
+  .pcol .tag {
+    display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase; padding: 7px 16px; border-radius: 4px; margin-bottom: 18px;
+  }
+  .pcol.admin .tag { background: #e8ebf1; color: #10141b; }
+  .pcol.portal .tag { background: var(--blue); color: #fff; }
+  .pcol li {
+    list-style: none; display: flex; gap: 10px; align-items: flex-start;
+    font-size: 13.5px; line-height: 1.45; color: var(--muted); font-weight: 500;
+    padding: 7px 0; border-bottom: 1px solid var(--hairline);
+  }
+  .pcol li:last-child { border-bottom: none; }
+  .pcol li b { color: var(--ink); font-weight: 700; }
+  .pcol li svg { flex: 0 0 auto; margin-top: 2px; }
+
+  /* ===== investimento ===== */
+  .plans { margin-top: 42px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .plan { border-radius: 14px; position: relative; }
+  .plan .tag {
+    position: absolute; top: -15px; left: 24px; z-index: 5;
+    font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    padding: 7px 16px; border-radius: 4px;
+  }
+  .plan.fixed { background: linear-gradient(170deg, #10182a, #0a0f1c); border: 1px solid rgba(190, 210, 245, 0.18); }
+  .plan.fixed .tag { background: #e8ebf1; color: #10141b; }
+  .plan.variable { background: linear-gradient(170deg, #0c1f45, #071228); border: 1px solid var(--card-line); box-shadow: 0 16px 46px rgba(35, 114, 245, 0.22); }
+  .plan.variable .tag { background: var(--blue); color: #fff; }
+  .plan-inner { padding: 46px 26px 26px; display: flex; flex-direction: column; height: 100%; }
+  .price { font-family: "Anton", sans-serif; font-size: 52px; line-height: 1; }
+  .price .cents { font-size: 26px; }
+  .price-note { margin-top: 9px; font-family: "Anton", sans-serif; font-size: 20px; text-transform: uppercase; }
+  .plan.fixed .price-note { color: #9aa8bf; }
+  .plan.variable .price-note {
+    display: inline-block; align-self: flex-start; background: var(--blue); color: #fff;
+    padding: 4px 12px 7px; border-radius: 5px;
+  }
+  .plan-desc { margin-top: 16px; font-size: 14px; line-height: 1.5; font-weight: 500; color: var(--muted); }
+  .plan-desc b { color: var(--ink); }
+  .plan-foot {
+    margin-top: auto; padding-top: 18px; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--blue-soft);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .includes { margin-top: 24px; padding: 20px 26px; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  .includes .inc {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 600; color: var(--muted);
+  }
+
+  /* ===== individuais / próximos passos ===== */
+  .svc-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 4px; border-bottom: 1px solid var(--hairline);
+    font-size: 15px; font-weight: 600;
+  }
+  .svc-row:last-child { border-bottom: none; }
+  .svc-row .pill {
+    margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--blue-soft);
+    border: 1.5px solid rgba(127, 176, 255, 0.45); border-radius: 999px; padding: 6px 14px;
+  }
+  .team { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .member { padding: 18px 16px; text-align: center; }
+  .member .avatar {
+    width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 10px;
+    background: radial-gradient(circle at 30% 25%, rgba(61, 134, 255, 0.4), rgba(10, 26, 56, 0.95));
+    border: 1.5px solid var(--card-line);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Anton", sans-serif; font-size: 20px; color: var(--blue-soft);
+  }
+  .member .nm { font-size: 14.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .member .rl { margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--blue-bright); }
+  .steps { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .step { padding: 20px 18px; }
+  .step .n { font-family: "Anton", sans-serif; font-size: 30px; color: var(--blue-bright); }
+  .step .t { margin-top: 8px; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .step .d { margin-top: 5px; font-size: 12.5px; line-height: 1.5; color: var(--muted); font-weight: 500; }
+  .contact-bar {
+    margin-top: 22px; padding: 18px 28px; display: flex; align-items: center; gap: 20px;
+  }
+  .contact-bar .divider { width: 2px; align-self: stretch; background: var(--hairline); }
+  .contact-bar .txt { font-size: 14.5px; line-height: 1.55; font-weight: 500; color: var(--muted); }
+  .contact-bar .txt b { color: var(--ink); }
+
+  .section-lead { margin-top: 22px; max-width: 620px; }
+</style>
+</head>
+<body>
+
+<!-- ============ PÁGINA 1 — CAPA ============ -->
+<div class="page cover">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-stadium" src="../carrossel-alcance-x-faturamento/assets/stadium.svg" alt="">
+
+  <div class="topbar">
+    <div class="wordmark">
+      <img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+      <span>FORT<i>GROW</i></span>
+    </div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Proposta Comercial</div>
+    <div class="h1">ESTRUTURAÇÃO<br><span class="chip">FORTGROW.</span></div>
+    <div class="rule"></div>
+    <div class="sub">
+      Estratégia, tecnologia própria e execução para transformar
+      <span style="color:#fff;font-weight:700;">atenção em faturamento</span>.
+    </div>
+
+    <div class="client-box card">
+      <div class="lbl">Preparada para</div>
+      <div class="line"></div>
+    </div>
+    <div class="date">Julho de 2026</div>
+  </div>
+</div>
+
+<!-- ============ PÁGINA 2 — POSICIONAMENTO ============ -->
+<div class="page">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-tactics" src="../carrossel-alcance-x-faturamento/assets/tactics.svg" alt="">
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Nosso posicionamento</div>
+    <div class="h2" style="margin-top:14px;">ANTES DA VENDA,<br>VEM A <span class="chip">ESTRUTURAÇÃO.</span></div>
+    <div class="brush"></div>
+
+    <div class="body section-lead">
+      Muitas empresas querem vender mais, mas não possuem <span class="blue">estratégia</span>:
+      não têm calendário, não têm campanhas e não sabem transformar acontecimentos em
+      oportunidades de negócio. <span class="strong">Veem o mercado faturando enquanto apenas assistem.</span>
+    </div>
+
+    <div class="pillars">
+      <div class="pillar card">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <div>
+          <div class="t">Estratégia</div>
+          <div class="d">Posicionamento e oferta claros antes de qualquer conteúdo.</div>
+        </div>
+      </div>
+      <div class="pillar card">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+        <div>
+          <div class="t">Calendário</div>
+          <div class="d">Planejamento feito meses antes, não na correria do momento.</div>
+        </div>
+      </div>
+      <div class="pillar card">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        <div>
+          <div class="t">Campanhas</div>
+          <div class="d">Prontas para entrar em campo quando a atenção do mercado chegar.</div>
+        </div>
+      </div>
+      <div class="pillar card">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div>
+          <div class="t">Oportunidades</div>
+          <div class="d">Acontecimentos transformados em faturamento, no segundo certo.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-pill card">
+      Quem improvisa, publica. <span class="blue">Quem planeja, fatura.</span>
+    </div>
+  </div>
+
+  <div class="pagefoot">FortGrow · Proposta Comercial</div>
+  <div class="pagenum">02</div>
+</div>
+
+<!-- ============ PÁGINA 3 — ESCOPO ============ -->
+<div class="page">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-tactics" src="../carrossel-alcance-x-faturamento/assets/tactics.svg" alt="">
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Escopo da Estruturação</div>
+    <div class="h2" style="margin-top:14px;">O QUE <span class="chip">ENTREGAMOS.</span></div>
+    <div class="brush"></div>
+
+    <div style="margin-top:30px;">
+      <div class="scope-row">
+        <div class="n">1</div>
+        <div>
+          <div class="t">Planejamento estratégico</div>
+          <div class="d">Posicionamento, calendário anual e campanhas mapeadas meses antes — para agir quando a atenção do mercado estiver no tema certo.</div>
+        </div>
+      </div>
+      <div class="scope-row">
+        <div class="n">2</div>
+        <div>
+          <div class="t">CRM</div>
+          <div class="d">Pipeline comercial completo na plataforma FortGrow: do lead ao fechamento, com funil Kanban, histórico e atividades de cada negociação.</div>
+        </div>
+      </div>
+      <div class="scope-row">
+        <div class="n">3</div>
+        <div>
+          <div class="t">Roteiros</div>
+          <div class="d">Conteúdo estratégico pautado por oferta e conversão — likes são consequência, não objetivo.</div>
+        </div>
+      </div>
+      <div class="scope-row">
+        <div class="n">4</div>
+        <div>
+          <div class="t">Consultoria estratégica</div>
+          <div class="d">Reuniões de direção com o time FortGrow para ajustar rota, oferta e prioridades do mês.</div>
+        </div>
+      </div>
+      <div class="scope-row">
+        <div class="n">5</div>
+        <div>
+          <div class="t">Gestão de tráfego</div>
+          <div class="d">Tráfego pago, estratégias de aquisição de clientes e otimização de campanhas digitais para geração de resultados.</div>
+        </div>
+      </div>
+      <div class="scope-row">
+        <div class="n">6</div>
+        <div>
+          <div class="t">Grupo de suporte</div>
+          <div class="d">Canal direto com a equipe no dia a dia — dúvidas, aprovações e ajustes sem burocracia.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pagefoot">FortGrow · Proposta Comercial</div>
+  <div class="pagenum">03</div>
+</div>
+
+<!-- ============ PÁGINA 4 — PLATAFORMA ============ -->
+<div class="page">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-tactics" src="../carrossel-alcance-x-faturamento/assets/tactics.svg" alt="">
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Tecnologia própria</div>
+    <div class="h2" style="margin-top:14px;">PLATAFORMA <span class="chip">FORTGROW.</span></div>
+    <div class="brush"></div>
+
+    <div class="body section-lead">
+      Toda a operação roda na nossa plataforma: a equipe FortGrow gerencia sua conta na
+      <span class="strong">área administrativa</span> e você acompanha tudo no
+      <span class="blue">Portal do Cliente</span> — em tempo real.
+    </div>
+
+    <div class="platform-cols">
+      <div class="pcol card admin">
+        <span class="tag">Gestão da operação</span>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Funil comercial Kanban</b> — do lead ao fechado, com histórico completo.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Projetos e tarefas</b> — prazos, prioridades e responsáveis definidos.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Campanhas consolidadas</b> — CTR, ROAS e investimento por canal.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Contratos e automações</b> — renovações e vencimentos sem surpresa.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Inteligência (IA)</b> — insights de desempenho e previsão de faturamento.</span></li>
+        </ul>
+      </div>
+      <div class="pcol card portal">
+        <span class="tag">Portal do Cliente</span>
+        <ul>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Resultados em tempo real</b> — leads, conversões, ROI, ROAS, CAC e CPL.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Dashboards por canal</b> — Google Ads, Meta Ads, Instagram e SEO.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Financeiro transparente</b> — mensalidades, pagamentos e contratos.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Documentos e criativos</b> — briefings, relatórios e apresentações.</span></li>
+          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg><span><b>Chamados com chat</b> — atendimento direto com a equipe, com prioridade.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="quote-pill card" style="font-size:20px;">
+      Transparência total: resultados, financeiro e entregas <span class="blue">em um só lugar.</span>
+    </div>
+  </div>
+
+  <div class="pagefoot">FortGrow · Proposta Comercial</div>
+  <div class="pagenum">04</div>
+</div>
+
+<!-- ============ PÁGINA 5 — INVESTIMENTO ============ -->
+<div class="page">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-tactics" src="../carrossel-alcance-x-faturamento/assets/tactics.svg" alt="">
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Investimento</div>
+    <div class="h2" style="margin-top:14px;">ESCOLHA O SEU <span class="chip">FORMATO.</span></div>
+    <div class="brush"></div>
+
+    <div class="plans">
+      <div class="plan fixed">
+        <div class="tag">Formato Fixo</div>
+        <div class="plan-inner">
+          <div class="price">R$ 3.497<span class="cents">,00</span></div>
+          <div class="price-note">por mês</div>
+          <div class="plan-desc">Investimento <b>fixo mensal</b>. Previsibilidade total para o seu planejamento financeiro.</div>
+          <div class="plan-foot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>
+            Entrega completa
+          </div>
+        </div>
+      </div>
+      <div class="plan variable">
+        <div class="tag">Formato Variável</div>
+        <div class="plan-inner">
+          <div class="price">R$ 997<span class="cents">,00</span></div>
+          <div class="price-note">+ 10% do lucro gerado</div>
+          <div class="plan-desc">Entrada menor e <b>risco compartilhado</b>: crescemos junto com o seu resultado.</div>
+          <div class="plan-foot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>
+            Entrega completa
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="includes card">
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Planejamento estratégico</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>CRM</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Roteiros</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Consultoria estratégica</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Gestão de tráfego</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Grupo de suporte</div>
+      <div class="inc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>Acesso ao Portal do Cliente</div>
+    </div>
+
+    <div class="quote-pill card" style="font-size:22px;">
+      A entrega é a mesma. <span class="blue">O formato, você escolhe.</span>
+    </div>
+  </div>
+
+  <div class="pagefoot">FortGrow · Proposta Comercial</div>
+  <div class="pagenum">05</div>
+</div>
+
+<!-- ============ PÁGINA 6 — INDIVIDUAIS + EQUIPE + PRÓXIMOS PASSOS ============ -->
+<div class="page">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-stadium" src="../carrossel-alcance-x-faturamento/assets/stadium.svg" alt="" style="opacity:.55;">
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="kicker">Serviços individuais</div>
+    <div class="h2" style="margin-top:14px;">POR <span class="chip">ESCOPO.</span></div>
+
+    <div style="margin-top:20px;">
+      <div class="svc-row">Planejamento estratégico <span class="pill">Sob consulta</span></div>
+      <div class="svc-row">Implantação de CRM <span class="pill">Sob consulta</span></div>
+      <div class="svc-row">Roteiros de conteúdo <span class="pill">Sob consulta</span></div>
+      <div class="svc-row">Consultoria estratégica <span class="pill">Sob consulta</span></div>
+      <div class="svc-row">Gestão de tráfego <span class="pill">Sob consulta</span></div>
+    </div>
+
+    <div class="kicker" style="margin-top:24px;">Especialistas dedicados</div>
+    <div class="team">
+      <div class="member card">
+        <div class="avatar">YC</div>
+        <div class="nm">Yuri Cavichiolo</div>
+        <div class="rl">Diretor Estratégico</div>
+      </div>
+      <div class="member card">
+        <div class="avatar">ET</div>
+        <div class="nm">Emily Tavares</div>
+        <div class="rl">Diretora Criativa</div>
+      </div>
+      <div class="member card">
+        <div class="avatar">TL</div>
+        <div class="nm">Thiago Lamin</div>
+        <div class="rl">Gestor de Tráfego</div>
+      </div>
+    </div>
+
+    <div class="kicker" style="margin-top:24px;">Próximos passos</div>
+    <div class="steps">
+      <div class="step card">
+        <div class="n">01</div>
+        <div class="t">Diagnóstico</div>
+        <div class="d">Reunião para entender o momento e os objetivos da sua empresa.</div>
+      </div>
+      <div class="step card">
+        <div class="n">02</div>
+        <div class="t">Formato</div>
+        <div class="d">Definição do modelo de investimento: fixo ou variável.</div>
+      </div>
+      <div class="step card">
+        <div class="n">03</div>
+        <div class="t">Onboarding</div>
+        <div class="d">Acesso ao Portal do Cliente e início da estruturação.</div>
+      </div>
+    </div>
+
+    <div class="contact-bar card">
+      <img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="" style="width:44px;height:44px;">
+      <div class="divider"></div>
+      <div class="txt">
+        <b>Vamos estruturar o seu crescimento?</b><br>
+        Responda esta proposta e agende o diagnóstico com o nosso time.<br>
+        <span style="color:var(--blue-bright);font-weight:700;">Antes da venda, vem a estruturação.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pagefoot">FortGrow · Proposta Comercial</div>
+  <div class="pagenum">06</div>
+</div>
+
+</body>
+</html>
