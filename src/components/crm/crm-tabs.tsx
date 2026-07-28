@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarDays, KanbanSquare, LayoutDashboard, Settings2, Users2, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadBar } from "@/components/ui/load-bar";
 
 /**
  * Navegação interna do CRM.
@@ -35,13 +36,14 @@ export function CrmTabs({ basePath }: { basePath: string }) {
             key={slug}
             href={href}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
+              "group relative inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
               ativo
                 ? "border-brand-500/40 bg-brand-500/15 text-brand-300"
                 : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
             )}
           >
             <Icon size={13} /> {label}
+            {!ativo && <LoadBar tone="brand" className="inset-x-3 bottom-[3px]" />}
           </Link>
         );
       })}

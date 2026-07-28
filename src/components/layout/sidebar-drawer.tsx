@@ -54,7 +54,7 @@ export function SidebarDrawer({
         onClick={() => setOpen(true)}
         aria-label="Abrir menu"
         title="Menu"
-        className="rounded-xl border border-line p-2.5 text-slate-400 transition hover:bg-ink-800 hover:text-slate-200"
+        className="rounded-xl border border-white/30 p-2.5 text-white/90 transition hover:border-white/50 hover:bg-white/15 hover:text-white"
       >
         <Menu size={16} />
       </button>
@@ -69,20 +69,21 @@ export function SidebarDrawer({
               open ? "translate-x-0" : "-translate-x-full"
             )}
           >
-            <div className="flex items-center justify-between px-4 py-4">
+            {/* Faixa azul da marca, igual à barra do topo e à do site */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-[#1b5fd0] via-[#2d7ef2] to-[#1b5fd0] px-4 py-4">
               <div className="flex items-center gap-2.5">
-                <FgMark size={34} />
+                <FgMark size={34} className="brightness-0 invert drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]" />
                 <div>
                   <p className="text-sm">
-                    <FgWordmark />
+                    <FgWordmark light />
                   </p>
-                  <p className="text-[11px] text-slate-500">{areaLabel}</p>
+                  <p className="text-[11px] text-white/70">{areaLabel}</p>
                 </div>
               </div>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Fechar menu"
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-ink-800 hover:text-slate-200"
+                className="rounded-lg p-2 text-white/80 transition hover:bg-white/15 hover:text-white"
               >
                 <X size={16} />
               </button>

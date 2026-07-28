@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { LoadBar } from "@/components/ui/load-bar";
 import {
   type LucideIcon,
   BarChart3,
@@ -165,7 +166,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
         onMouseEnter={(e) => enter(item.icon, e.currentTarget)}
         onMouseLeave={() => timer.current && clearTimeout(timer.current)}
         className={cn(
-          "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
           active
             ? "bg-brand-500/10 text-brand-300 ring-1 ring-inset ring-brand-500/20"
             : "text-slate-400 hover:bg-ink-800 hover:text-slate-200"
@@ -173,6 +174,8 @@ export function NavLinks({ items }: { items: NavItem[] }) {
       >
         <Icon size={17} className={cn(active ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300")} />
         {item.label}
+        {/* Mesmo retorno do menu do site: a barra preenche só de passar o mouse */}
+        {!active && <LoadBar tone="brand" className="inset-x-3 bottom-0.5" />}
       </Link>
     );
   }

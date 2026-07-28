@@ -51,7 +51,7 @@ export function GlobalSearch() {
 
   return (
     <div className="relative w-full max-w-md">
-      <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+      <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/70" />
       <input
         ref={inputRef}
         value={q}
@@ -59,9 +59,12 @@ export function GlobalSearch() {
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Pesquisar…  (⌘K)"
-        className="input pl-10 pr-8 py-2"
+        /* Campo sobre a barra azul: vidro ESCURO, não claro. Branco sobre
+           azul clareado fica em ~3,4:1 — abaixo do mínimo legível; escurecer
+           o fundo do campo leva o texto digitado para acima de 6:1. */
+        className="w-full rounded-xl border border-white/25 bg-[#0a1220]/35 py-2 pl-10 pr-8 text-sm text-white placeholder:text-white/70 outline-none transition focus:border-white/50 focus:bg-[#0a1220]/50"
       />
-      {loading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-500" />}
+      {loading && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-white/70" />}
       {open && results.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-line bg-ink-850 shadow-card">
           {results.slice(0, 8).map((r, i) => (
