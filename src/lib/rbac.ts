@@ -5,6 +5,7 @@ export const MODULES = {
   dashboard: "Dashboard",
   agenda: "Agenda",
   crm: "CRM Comercial",
+  "crm-clientes": "CRMs dos clientes",
   prospeccao: "Prospecção",
   clientes: "Clientes",
   servicos: "Serviços",
@@ -38,6 +39,7 @@ export type ModuleKey = keyof typeof MODULES;
  */
 export const PORTAL_MODULES = {
   "portal.visao": "Visão geral",
+  "portal.crm": "Meu CRM",
   "portal.resultados": "Resultados",
   "portal.google-ads": "Google Ads",
   "portal.meta-ads": "Meta Ads",
@@ -92,6 +94,7 @@ export const MODULE_NAV_GROUP: Record<ModuleKey, string | undefined> = {
   dashboard: undefined,
   agenda: undefined,
   crm: "Comercial",
+  "crm-clientes": "Comercial",
   prospeccao: "Comercial",
   clientes: "Comercial",
   campanhas: "Comercial",
@@ -117,7 +120,7 @@ export const ROLE_DEFAULTS: Record<string, ModuleKey[]> = {
   ADMIN: Object.keys(MODULES) as ModuleKey[],
   FINANCEIRO: ["dashboard", "agenda", "financeiro", "comissoes", "custos", "contratos", "relatorios", "clientes"],
   COMERCIAL: ["dashboard", "agenda", "crm", "prospeccao", "clientes", "relatorios"],
-  GESTOR: ["dashboard", "agenda", "crm", "clientes", "projetos", "tarefas", "campanhas", "ia", "relatorios", "chamados"],
+  GESTOR: ["dashboard", "agenda", "crm", "crm-clientes", "clientes", "projetos", "tarefas", "campanhas", "ia", "relatorios", "chamados"],
   SOCIAL_MEDIA: ["dashboard", "agenda", "tarefas", "projetos", "campanhas"],
   DESIGNER: ["dashboard", "agenda", "tarefas", "projetos"],
   TRAFEGO_PAGO: ["dashboard", "agenda", "campanhas", "tarefas", "relatorios"],

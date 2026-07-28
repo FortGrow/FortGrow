@@ -42,6 +42,14 @@ async function main() {
   await prisma.proposal.deleteMany();
   await prisma.leadActivity.deleteMany();
   await prisma.lead.deleteMany();
+  // CRM dos clientes — filhos antes dos pais
+  await prisma.crmFile.deleteMany();
+  await prisma.crmTask.deleteMany();
+  await prisma.crmActivity.deleteMany();
+  await prisma.crmLead.deleteMany();
+  await prisma.crmTag.deleteMany();
+  await prisma.crmMember.deleteMany();
+  await prisma.crmStage.deleteMany();
   await prisma.automation.deleteMany();
   await prisma.integration.deleteMany();
   await prisma.session.deleteMany();
@@ -439,6 +447,212 @@ async function main() {
       { provider: "openai", connected: false },
     ],
   });
+
+
+  // ─────────────── CRM próprio de cada cliente (multi-tenant) ───────────────
+  console.log("🏢 CRM dos clientes…");
+
+  const NOMES = [
+    "Ana Paula Ribeiro", "Bruno Carvalho", "Camila Nogueira", "Diego Fontes",
+    "Eduarda Lima", "Felipe Andrade", "Gabriela Moraes", "Henrique Dias",
+    "Isabela Tavares", "João Pedro Alves", "Karina Souza", "Lucas Ferreira",
+    "Mariana Costa", "Nicolas Barbosa", "Olívia Ramos", "Paulo Vitor Nunes",
+    "Queila Martins", "Rafael Siqueira", "Sabrina Duarte", "Thiago Machado",
+    "Ursula Prado", "Vinícius Rocha", "Wanda Teixeira", "Yasmin Cordeiro",
+  ];
+  const EMPRESAS_LEAD = [
+    "Óptica Central", "Mercado Bom Preço", "Studio Bellíssima", "Auto Peças Duarte",
+    "Padaria Trigo de Ouro", "Academia Corpo & Vida", "Escola Saber Mais", "Pet Shop Focinhos",
+    "Restaurante Sabor Caseiro", "Imobiliária Lar Ideal", "Clínica Sorriso", "Loja Casa Nova",
+  ];
+  const ORIGENS = ["Indicação", "Tráfego Pago", "Orgânico / SEO", "Instagram", "WhatsApp", "Site", "Evento"];
+  const CIDADES: [string, string][] = [
+    ["São Paulo", "SP"], ["Campinas", "SP"], ["Rio de Janeiro", "RJ"], ["Belo Horizonte", "MG"],
+    ["Curitiba", "PR"], ["Porto Alegre", "RS"], ["Goiânia", "GO"], ["Salvador", "BA"],
+  ];
+
+  const EQUIPES: Record<string, { nome: string; dep: string; meta: number }[]> = {
+    [solaris.id]: [
+      { nome: "Renata Alencar", dep: "Comercial", meta: 60000 },
+      { nome: "Marcos Vinícius", dep: "Comercial", meta: 45000 },
+      { nome: "Patrícia Gomes", dep: "Pré-vendas", meta: 15000 },
+    ],
+    [vitalle.id]: [
+      { nome: "Dra. Helena Pires", dep: "Atendimento", meta: 30000 },
+      { nome: "Caio Bernardes", dep: "Comercial", meta: 25000 },
+    ],
+    [horizonte.id]: [
+      { nome: "Sérgio Matos", dep: "Comercial", meta: 120000 },
+      { nome: "Larissa Fontana", dep: "Comercial", meta: 90000 },
+      { nome: "Otávio Reis", dep: "Engenharia comercial", meta: 70000 },
+    ],
+  };
+
+  const ETIQUETAS = [
+    { name: "Alta prioridade", color: "#e11d48" },
+    { name: "Retorno agendado", color: "#d97706" },
+    { name: "Indicado", color: "#059669" },
+    { name: "Grande conta", color: "#8b5cf6" },
+  ];
+
+  const ETAPAS_PADRAO = [
+    { name: "Novos Leads", color: "#64748b", kind: "ABERTO" },
+    { name: "Primeiro Contato", color: "#0284c7", kind: "ABERTO" },
+    { name: "Qualificação", color: "#06b6d4", kind: "ABERTO" },
+    { name: "Proposta Enviada", color: "#6366f1", kind: "ABERTO" },
+    { name: "Negociação", color: "#d97706", kind: "ABERTO" },
+    { name: "Fechado", color: "#059669", kind: "GANHO" },
+    { name: "Perdido", color: "#e11d48", kind: "PERDIDO" },
+  ];
+
+  // Pesos por etapa: funil real afunila — muita gente no topo, poucos no fim
+  const PESOS = [26, 20, 16, 12, 10, 10, 6];
+
+  for (const [empresaId, time] of Object.entries(EQUIPES)) {
+    const etapas = [];
+    for (let i = 0; i < ETAPAS_PADRAO.length; i++) {
+      etapas.push(
+        await prisma.crmStage.create({
+          data: { clientId: empresaId, ...ETAPAS_PADRAO[i], position: i },
+        })
+      );
+    }
+
+    const membros = [];
+    for (const m of time) {
+      membros.push(
+        await prisma.crmMember.create({
+          data: {
+            clientId: empresaId,
+            name: m.nome,
+            email: `${m.nome.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}@empresa.com.br`,
+            department: m.dep,
+            goal: m.meta,
+          },
+        })
+      );
+    }
+
+    const tags = [];
+    for (const t of ETIQUETAS) {
+      tags.push(await prisma.crmTag.create({ data: { clientId: empresaId, ...t } }));
+    }
+
+    const total = int(38, 52);
+    for (let i = 0; i < total; i++) {
+      // Sorteia a etapa respeitando o afunilamento
+      const soma = PESOS.reduce((a, b) => a + b, 0);
+      let alvo = rand() * soma;
+      let idx = 0;
+      for (let k = 0; k < PESOS.length; k++) {
+        alvo -= PESOS[k];
+        if (alvo <= 0) { idx = k; break; }
+      }
+      const etapa = etapas[idx];
+      const membro = membros[int(0, membros.length - 1)];
+      const [cidade, uf] = CIDADES[int(0, CIDADES.length - 1)];
+      const criado = new Date(Date.now() - int(1, 300) * 86400000);
+      const fechado = etapa.kind === "ABERTO" ? null : new Date(criado.getTime() + int(3, 45) * 86400000);
+      const valor = Math.round(between(1200, 45000) / 100) * 100;
+      const contato = rand() > 0.25 ? new Date(criado.getTime() + int(0, 20) * 86400000) : null;
+
+      const lead = await prisma.crmLead.create({
+        data: {
+          clientId: empresaId,
+          name: NOMES[int(0, NOMES.length - 1)],
+          company: rand() > 0.35 ? EMPRESAS_LEAD[int(0, EMPRESAS_LEAD.length - 1)] : null,
+          jobTitle: rand() > 0.6 ? "Sócio-proprietário" : null,
+          email: `contato${i + 1}@exemplo.com.br`,
+          phone: `(11) 9${int(1000, 9999)}-${int(1000, 9999)}`,
+          whatsapp: `55119${int(10000000, 99999999)}`,
+          city: cidade,
+          state: uf,
+          source: ORIGENS[int(0, ORIGENS.length - 1)],
+          stageId: etapa.id,
+          ownerId: rand() > 0.15 ? membro.id : null,
+          estimatedValue: valor,
+          wonValue: etapa.kind === "GANHO" ? valor : null,
+          createdAt: criado,
+          stageSince: fechado ?? criado,
+          closedAt: fechado,
+          lastContactAt: contato,
+          nextContactAt: etapa.kind === "ABERTO" && rand() > 0.5
+            ? new Date(Date.now() + int(-6, 20) * 86400000)
+            : null,
+          notes: rand() > 0.7 ? "Pediu para retornar depois do dia 10." : null,
+          ...(rand() > 0.6
+            ? { tags: { connect: [{ id: tags[int(0, tags.length - 1)].id }] } }
+            : {}),
+        },
+      });
+
+      await prisma.crmActivity.create({
+        data: {
+          clientId: empresaId,
+          leadId: lead.id,
+          type: "CRIACAO",
+          content: "Lead cadastrado",
+          authorName: membro.name,
+          createdAt: criado,
+        },
+      });
+      if (etapa.position > 0) {
+        await prisma.crmActivity.create({
+          data: {
+            clientId: empresaId,
+            leadId: lead.id,
+            type: "ETAPA",
+            content: `Novos Leads → ${etapa.name}`,
+            meta: { de: "Novos Leads", para: etapa.name },
+            authorName: membro.name,
+            createdAt: fechado ?? new Date(criado.getTime() + 86400000),
+          },
+        });
+      }
+
+      // Atividade agendada para parte dos leads em aberto
+      if (etapa.kind === "ABERTO" && rand() > 0.62) {
+        const tipos = ["LIGACAO", "REUNIAO", "FOLLOW_UP", "PROPOSTA"];
+        const quando = new Date();
+        quando.setDate(quando.getDate() + int(-3, 12));
+        quando.setHours(int(8, 18), rand() > 0.5 ? 30 : 0, 0, 0);
+        await prisma.crmTask.create({
+          data: {
+            clientId: empresaId,
+            leadId: lead.id,
+            ownerId: membro.id,
+            type: tipos[int(0, tipos.length - 1)],
+            title: `Retornar para ${lead.name.split(" ")[0]}`,
+            start: quando,
+            end: new Date(quando.getTime() + 30 * 60000),
+            remindMin: 60,
+            done: quando < new Date() && rand() > 0.5,
+          },
+        });
+      }
+    }
+  }
+
+  // Score inicial coerente com o estado de cada lead
+  const todosCrmLeads = await prisma.crmLead.findMany({
+    select: { id: true, estimatedValue: true, email: true, phone: true, whatsapp: true,
+              company: true, lastContactAt: true, createdAt: true,
+              stage: { select: { kind: true, position: true } } },
+  });
+  for (const l of todosCrmLeads) {
+    const prob = l.stage.kind === "GANHO" ? 100 : l.stage.kind === "PERDIDO" ? 0 : Math.round(((l.stage.position + 1) / 5) * 90);
+    const dias = Math.floor((Date.now() - (l.lastContactAt ?? l.createdAt).getTime()) / 86400000);
+    const calor = dias <= 2 ? 15 : dias <= 7 ? 8 : dias <= 14 ? 0 : dias <= 30 ? -12 : -25;
+    const score = Math.max(0, Math.min(100,
+      Math.min(30, Math.round((Number(l.estimatedValue) / 50000) * 30)) +
+      Math.round((prob / 100) * 35) +
+      (l.email ? 5 : 0) + (l.phone ? 5 : 0) + (l.whatsapp ? 5 : 0) + (l.company ? 5 : 0) +
+      calor));
+    await prisma.crmLead.update({
+      where: { id: l.id },
+      data: { score, temperature: score >= 65 ? "QUENTE" : score >= 35 ? "MORNO" : "FRIO", probability: prob },
+    });
+  }
 
   console.log("🔔 Notificações…");
   await prisma.notification.createMany({

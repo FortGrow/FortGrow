@@ -41,6 +41,7 @@ const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   agenda: CalendarDays,
   crm: KanbanSquare,
+  "crm-clientes": Building2,
   prospeccao: Search,
   clientes: Building2,
   servicos: Briefcase,
@@ -61,6 +62,7 @@ const ICONS: Record<string, LucideIcon> = {
   auditoria: ScrollText,
   // portal
   visao: LayoutDashboard,
+  meucrm: KanbanSquare,
   resultados: TrendingUp,
   performance: LineChart,
   calendario: CalendarCheck2,

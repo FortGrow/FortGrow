@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 /** Cada item carrega a área que o libera — o menu é filtrado por ela. */
 const ITEMS: (NavItem & { perm: PortalModuleKey })[] = [
   { perm: "portal.visao", href: "/portal", label: "Visão geral", icon: "visao" },
+  { perm: "portal.crm", href: "/portal/crm", label: "Meu CRM", icon: "meucrm" },
   { perm: "portal.resultados", href: "/portal/resultados", label: "Resultados", icon: "resultados", group: "Canais & Resultados" },
   { perm: "portal.google-ads", href: "/portal/google-ads", label: "Google Ads", icon: "google-ads", group: "Canais & Resultados" },
   { perm: "portal.meta-ads", href: "/portal/meta-ads", label: "Meta Ads", icon: "meta-ads", group: "Canais & Resultados" },

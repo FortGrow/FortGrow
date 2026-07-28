@@ -12,12 +12,25 @@ const SLICE_COLORS = [
 ];
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const contagem = (v: number) => v.toLocaleString("pt-BR");
 
 /**
  * Rosca de participação (% + valor) com legenda lateral.
- * Usada para mostrar quanto cada cliente representa no faturamento.
+ *
+ * Serve tanto para dinheiro (participação no faturamento) quanto para
+ * contagem (origem dos leads) — daí o `format`: sem ele, "6 leads" saía
+ * como "R$ 6,00" na legenda.
  */
-export function DonutChart({ data, height = 260 }: { data: DonutSlice[]; height?: number }) {
+export function DonutChart({
+  data,
+  height = 260,
+  format = "brl",
+}: {
+  data: DonutSlice[];
+  height?: number;
+  format?: "brl" | "number";
+}) {
+  const fmt = format === "number" ? contagem : brl;
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total <= 0) return <p className="text-sm text-slate-500">Sem dados no período.</p>;
 
@@ -29,7 +42,7 @@ export function DonutChart({ data, height = 260 }: { data: DonutSlice[]; height?
             <Tooltip
               contentStyle={TOOLTIP_STYLE}
               formatter={(value: number, name: string) => [
-                `${brl(value)} · ${((value / total) * 100).toFixed(1)}%`,
+                `${fmt(value)} · ${((value / total) * 100).toFixed(1)}%`,
                 name,
               ]}
             />
@@ -57,7 +70,7 @@ export function DonutChart({ data, height = 260 }: { data: DonutSlice[]; height?
               style={{ backgroundColor: SLICE_COLORS[i % SLICE_COLORS.length] }}
             />
             <span className="min-w-0 flex-1 truncate text-slate-300">{d.label}</span>
-            <span className="shrink-0 font-semibold text-slate-200">{brl(d.value)}</span>
+            <span className="shrink-0 font-semibold text-slate-200">{fmt(d.value)}</span>
             <span className="w-14 shrink-0 text-right text-xs font-bold text-slate-400">
               {((d.value / total) * 100).toFixed(1)}%
             </span>

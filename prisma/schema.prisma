@@ -57,6 +57,8 @@ model User {
   logs          ActivityLog[]
   sessions      Session[]
   trainingProgress TrainingProgress[]
+  /// Vínculo com o time comercial da empresa no CRM do cliente
+  crmMember     CrmMember?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -155,6 +157,15 @@ model Client {
   staffCommissions StaffCommission[]
   performanceEntries PerformanceEntry[]
   instagramEntries   InstagramEntry[]
+
+  /// CRM próprio da empresa (Portal → Meu CRM)
+  crmStages     CrmStage[]
+  crmMembers    CrmMember[]
+  crmTags       CrmTag[]
+  crmLeads      CrmLead[]
+  crmActivities CrmActivity[]
+  crmTasks      CrmTask[]
+  crmFiles      CrmFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -896,4 +907,219 @@ model PermissionTemplate {
   name      String   @unique
   matrix    Json     @default("{}")
   createdAt DateTime @default(now())
+}
+
+// ═══════════════════════ CRM do Cliente (multi-tenant) ═══════════════════════
+//
+// O CRM que cada empresa cliente opera dentro do Portal, separado do CRM
+// comercial da própria FortGrow (models Lead/LeadActivity acima).
+//
+// Regra da área: TODA tabela carrega `clientId` — é o `company_id` do
+// desenho multi-tenant. Nenhuma consulta pode rodar sem ele; o acesso passa
+// obrigatoriamente por `requireCrm()` (src/lib/crm-tenant.ts), que resolve a
+// empresa a partir da sessão e devolve o filtro pronto.
+
+/// Etapa do funil de uma empresa — cada cliente desenha o próprio pipeline.
+model CrmStage {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name     String
+  color    String @default("#64748b")
+  position Int    @default(0)
+  /// ABERTO | GANHO | PERDIDO — o que a etapa significa nas métricas.
+  /// Sem isso o dashboard teria que adivinhar pelo nome da coluna.
+  kind     String @default("ABERTO")
+
+  leads CrmLead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId, position])
+}
+
+/// Time comercial da empresa cliente: quem atende os leads.
+/// Pode ou não ter login na plataforma (`userId`) — vendedor sem acesso ao
+/// Portal continua sendo responsável por leads e contando nas metas.
+model CrmMember {
+  id         String  @id @default(cuid())
+  clientId   String
+  client     Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  department String?
+  /// Meta mensal de receita fechada
+  goal       Decimal @default(0) @db.Decimal(12, 2)
+  active     Boolean @default(true)
+  /// Login do Portal vinculado, quando existe
+  userId     String? @unique
+  user       User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  leads CrmLead[]
+  tasks CrmTask[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId, active])
+}
+
+/// Etiqueta livre da empresa (segmento, campanha, prioridade…).
+model CrmTag {
+  id       String    @id @default(cuid())
+  clientId String
+  client   Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name     String
+  color    String    @default("#0284c7")
+  leads    CrmLead[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([clientId, name])
+  @@index([clientId])
+}
+
+model CrmLead {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  name      String
+  company   String?
+  jobTitle  String?
+  email     String?
+  phone     String?
+  whatsapp  String?
+  city      String?
+  state     String?
+  /// Origem do lead (INDICACAO | TRAFEGO_PAGO | ORGANICO | SOCIAL | OUTRO…)
+  source    String?
+  notes     String?
+
+  stageId String   @default("")
+  stage   CrmStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  /// Ordem do cartão dentro da coluna do Kanban
+  order   Int      @default(0)
+
+  estimatedValue Decimal  @default(0) @db.Decimal(12, 2)
+  /// Valor efetivamente fechado — gravado quando o lead entra numa etapa GANHO
+  wonValue       Decimal? @db.Decimal(12, 2)
+
+  ownerId String?
+  owner   CrmMember? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  tags    CrmTag[]
+
+  lastContactAt DateTime?
+  nextContactAt DateTime?
+  /// Momento em que entrou na etapa atual — base do "tempo médio de conversão"
+  stageSince    DateTime  @default(now())
+  /// Momento do ganho/perda, para medir o ciclo de vendas
+  closedAt      DateTime?
+
+  /// Lead Score 0–100, recalculado a cada alteração (src/lib/crm-score.ts)
+  score       Int    @default(0)
+  /// FRIO | MORNO | QUENTE — derivado do score
+  temperature String @default("MORNO")
+  /// Probabilidade de fechamento 0–100 (manual, ou herdada da etapa)
+  probability Int    @default(0)
+
+  createdById String?
+  updatedById String?
+  /// Soft delete — lixeira do CRM, nunca some do banco por acidente
+  deletedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activities CrmActivity[]
+  tasks      CrmTask[]
+  files      CrmFile[]
+
+  @@index([clientId, deletedAt, updatedAt])
+  @@index([clientId, stageId, order])
+  @@index([clientId, ownerId])
+  @@index([clientId, createdAt])
+  @@index([clientId, nextContactAt])
+}
+
+/// Linha do tempo do lead: tudo o que aconteceu, quem fez e quando.
+model CrmActivity {
+  id       String  @id @default(cuid())
+  clientId String
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadId   String
+  lead     CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  /// CRIACAO | ETAPA | NOTA | EDICAO | ARQUIVO | TAREFA | CONTATO | EXCLUSAO
+  type     String  @default("NOTA")
+  content  String
+  /// Detalhe estruturado do evento (ex.: { de: "Novos", para: "Proposta" })
+  meta     Json    @default("{}")
+
+  authorId   String?
+  authorName String?
+
+  createdAt DateTime @default(now())
+
+  @@index([clientId, leadId, createdAt])
+  @@index([clientId, createdAt])
+}
+
+/// Atividade agendada: ligação, reunião, tarefa, follow-up, proposta, lembrete.
+/// É também o registro da Agenda — toda atividade tem hora e cai no calendário.
+model CrmTask {
+  id       String   @id @default(cuid())
+  clientId String
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadId   String?
+  lead     CrmLead? @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  /// LIGACAO | REUNIAO | TAREFA | FOLLOW_UP | PROPOSTA | LEMBRETE
+  type  String   @default("TAREFA")
+  title String
+  notes String?
+  start DateTime
+  end   DateTime
+
+  done   Boolean   @default(false)
+  doneAt DateTime?
+
+  ownerId String?
+  owner   CrmMember? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  /// Minutos de antecedência do lembrete (null = sem lembrete)
+  remindMin   Int?
+  /// Lembrete já disparado — evita notificar duas vezes
+  remindedAt  DateTime?
+
+  createdById String?
+  deletedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId, start])
+  @@index([clientId, done, start])
+  @@index([clientId, leadId])
+}
+
+/// Arquivo anexado a um lead (proposta, contrato, print de conversa…).
+model CrmFile {
+  id       String  @id @default(cuid())
+  clientId String
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadId   String
+  lead     CrmLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  name     String
+  url      String
+  size     Int     @default(0)
+  mime     String?
+
+  uploadedById   String?
+  uploadedByName String?
+
+  createdAt DateTime @default(now())
+
+  @@index([clientId, leadId])
 }

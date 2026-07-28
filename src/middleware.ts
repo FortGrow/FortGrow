@@ -15,6 +15,7 @@ const ADMIN_ROUTE_MODULE: Record<string, ModuleKey> = {
   "": "dashboard",
   agenda: "agenda",
   crm: "crm",
+  "crm-clientes": "crm-clientes",
   prospeccao: "prospeccao",
   clientes: "clientes",
   servicos: "servicos",
