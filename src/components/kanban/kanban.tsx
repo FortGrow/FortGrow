@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { hueOf } from "@/lib/glass";
 
 export type KanbanCard = {
   id: string;
@@ -42,6 +43,35 @@ export const CARD_COLORS: Record<string, string> = {
   ciano: "#06b6d4",
   amarelo: "#eab308",
 };
+
+/**
+ * Estilos da coluna a partir da cor da etapa.
+ *
+ * A cor tinge a coluna inteira — fundo, moldura, cabeçalho e contador —
+ * em vez de ficar num pontinho de 2px. O tingimento é fraco de propósito:
+ * os cartões dentro têm cores próprias e precisam continuar legíveis por
+ * cima. O rótulo usa a versão clareada do tom (`hueOf` aplica piso de
+ * luminosidade), porque cores como o cinza-ardósia e o verde-escuro somem
+ * quando usadas cruas como texto sobre fundo escuro.
+ */
+function colStyles(accent: string, ativa: boolean) {
+  const claro = `hsl(${hueOf(accent)})`;
+  return {
+    coluna: {
+      background: `linear-gradient(180deg, ${accent}26, ${accent}0d 18%, rgba(11,14,20,0.6) 55%)`,
+      borderColor: ativa ? claro : `${accent}59`,
+      boxShadow: ativa ? `0 0 0 1px ${claro}, 0 18px 44px -26px ${accent}` : undefined,
+    } as React.CSSProperties,
+    cabecalho: { borderBottom: `1px solid ${accent}40` } as React.CSSProperties,
+    rotulo: { color: claro } as React.CSSProperties,
+    contador: {
+      background: `${accent}2e`,
+      color: claro,
+      boxShadow: `inset 0 0 0 1px ${accent}59`,
+    } as React.CSSProperties,
+    vazio: { borderColor: `${accent}40` } as React.CSSProperties,
+  };
+}
 
 function cardStyle(color?: string | null): React.CSSProperties | undefined {
   const hex = color ? CARD_COLORS[color] : undefined;
@@ -116,7 +146,9 @@ export function KanbanBoard({
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
-      {board.map((col) => (
+      {board.map((col) => {
+        const st = colStyles(col.accent ?? "#64748b", overCol === col.key);
+        return (
         <div
           key={col.key}
           onDragOver={(e) => {
@@ -131,17 +163,17 @@ export function KanbanBoard({
             setDragging(null);
             if (id) moveCard(id, col.key);
           }}
-          className={cn(
-            "flex w-72 shrink-0 flex-col rounded-2xl border border-line bg-ink-900/60 transition",
-            overCol === col.key && "border-brand-500/40 bg-brand-500/5"
-          )}
+          style={st.coluna}
+          className="flex w-72 shrink-0 flex-col rounded-2xl border transition-[border-color,box-shadow] duration-200"
         >
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3" style={st.cabecalho}>
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: col.accent ?? "#64748b" }} />
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{col.label}</p>
+              <p className="text-xs font-bold uppercase tracking-wider" style={st.rotulo}>
+                {col.label}
+              </p>
             </div>
-            <span className="rounded-full bg-ink-700 px-2 py-0.5 text-[11px] font-semibold text-slate-400">
+            <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold" style={st.contador}>
               {col.cards.length}
             </span>
           </div>
@@ -226,13 +258,17 @@ export function KanbanBoard({
               </div>
             ))}
             {col.cards.length === 0 && (
-              <div className="rounded-xl border border-dashed border-line px-3 py-6 text-center text-xs text-slate-600">
+              <div
+                className="rounded-xl border border-dashed px-3 py-6 text-center text-xs text-slate-500"
+                style={st.vazio}
+              >
                 Arraste cartões para cá
               </div>
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
