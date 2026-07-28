@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FortGrow — Pit de Vendas — Slide 3</title>
+<link rel="stylesheet" href="../carrossel-alcance-x-faturamento/styles.css">
+<style>
+  .content { position: absolute; inset: 0; padding: 196px 84px 100px; z-index: 20; }
+  .content .h1 { font-size: 100px; }
+
+  .plans {
+    margin-top: 92px;
+    display: flex;
+    align-items: stretch;
+    gap: 34px;
+  }
+  .plan { flex: 1; border-radius: 20px; position: relative; }
+  .plan .tag {
+    position: absolute;
+    top: -24px;
+    left: 40px;
+    z-index: 5;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 26px;
+    border-radius: 4px;
+  }
+
+  .plan.fixed {
+    background: linear-gradient(170deg, #10182a, #0a0f1c);
+    border: 1px solid rgba(190, 210, 245, 0.18);
+  }
+  .plan.fixed .tag { background: #e8ebf1; color: #10141b; }
+
+  .plan.variable {
+    background: linear-gradient(170deg, #0c1f45, #071228);
+    border: 1px solid var(--card-line);
+    box-shadow: 0 24px 70px rgba(35, 114, 245, 0.22);
+  }
+  .plan.variable .tag { background: var(--blue); color: #fff; }
+
+  .plan-inner { padding: 78px 42px 46px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+
+  .price {
+    font-family: "Anton", sans-serif;
+    font-size: 88px;
+    line-height: 1;
+    color: #fff;
+  }
+  .price .cents { font-size: 44px; }
+  .price-note {
+    margin-top: 14px;
+    font-family: "Anton", sans-serif;
+    font-size: 34px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .plan.fixed .price-note { color: #9aa8bf; }
+  .plan.variable .price-note {
+    display: inline-block;
+    align-self: flex-start;
+    background: var(--blue);
+    color: #fff;
+    padding: 6px 18px 10px;
+    border-radius: 6px;
+  }
+
+  .plan-desc {
+    margin-top: 30px;
+    font-size: 27px;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .plan-desc .blue { color: var(--blue-bright); font-weight: 700; }
+  .plan-desc .strong { color: var(--ink); font-weight: 700; }
+
+  .plan-foot {
+    margin-top: auto;
+    padding-top: 30px;
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue-soft);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bottom-pill {
+    position: absolute;
+    left: 84px;
+    right: 84px;
+    bottom: 84px;
+    border-radius: 999px;
+    padding: 36px 30px;
+    text-align: center;
+    font-family: "Anton", sans-serif;
+    font-size: 40px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .bottom-pill .blue { color: var(--blue-bright); }
+</style>
+</head>
+<body>
+<div class="slide">
+  <img class="bg-watermark" src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt="">
+  <img class="bg-tactics" src="../carrossel-alcance-x-faturamento/assets/tactics.svg" alt="">
+  <div class="bg-grid-light"></div>
+  <div class="flare a"></div>
+  <div class="flare c"></div>
+
+  <div class="topbar">
+    <div></div>
+    <div class="badge"><img src="../carrossel-alcance-x-faturamento/assets/fg-mark.png" alt=""></div>
+  </div>
+
+  <div class="content">
+    <div class="h1">
+      ESCOLHA O<br>
+      SEU <span class="chip">FORMATO.</span>
+    </div>
+    <div class="brush"></div>
+
+    <div class="plans">
+      <div class="plan fixed">
+        <div class="tag">Formato Fixo</div>
+        <div class="plan-inner">
+          <div class="price">R$ 3.497<span class="cents">,00</span></div>
+          <div class="price-note">por mês</div>
+          <div class="plan-desc">
+            Investimento <span class="strong">fixo mensal</span>.<br>
+            Previsibilidade total para o seu planejamento.
+          </div>
+          <div class="plan-foot">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>
+            Entrega completa
+          </div>
+        </div>
+      </div>
+
+      <div class="plan variable">
+        <div class="tag">Formato Variável</div>
+        <div class="plan-inner">
+          <div class="price">R$ 997<span class="cents">,00</span></div>
+          <div class="price-note">+ 10% do lucro gerado</div>
+          <div class="plan-desc">
+            Entrada menor e <span class="blue">risco compartilhado</span>:<br>
+            <span class="strong">crescemos junto</span> com o seu resultado.
+          </div>
+          <div class="plan-foot">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12.2 2.2 2.2 4.4-4.6"/><circle cx="12" cy="12" r="10"/></svg>
+            Entrega completa
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-pill card">
+    A entrega é a mesma. <span class="blue">O formato, você escolhe.</span>
+  </div>
+</div>
+</body>
+</html>
