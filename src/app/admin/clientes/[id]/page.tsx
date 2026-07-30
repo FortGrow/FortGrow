@@ -99,10 +99,10 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     }),
   ]);
 
-  /* Janela de apuração da comissão: a competência corrente (a que contém a
-     data de hoje, pelo dia de fechamento do cliente) e a anterior, já
-     fechada. Fechamento dia 20 em 30/07 → corrente = agosto (21/07 a 20/08),
-     fechada = julho (21/06 a 20/07). */
+  /* Janela de apuração da comissão: a competência já FECHADA (a que gera o
+     valor a receber agora) e a corrente, ainda acumulando. Fechamento dia 20
+     em 30/07 → fechada = julho (21/06 a 20/07), corrente = agosto (21/07 a
+     20/08). */
   const compAtual = competenciaOf(new Date(), client.closingDay);
   const compFechada = competenciaAnterior(compAtual);
   const janelaAtual = closingPeriod(compAtual.year, compAtual.month, client.closingDay);
@@ -263,20 +263,18 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             hint="faturas a receber / atrasadas"
             accent="warn"
           />
+          {/* Destaque na competência FECHADA — é a comissão a receber agora.
+              A corrente, ainda acumulando vendas, vai como nota no rodapé. */}
           <StatCard
             label={
               isCommissionClient
-                ? `Comissão · ${competenciaLabel(compAtual.year, compAtual.month)}`
+                ? `Comissão a receber · ${competenciaLabel(compFechada.year, compFechada.month)}`
                 : "Comissão FortGrow"
             }
-            value={brl(isCommissionClient ? comissaoCompetenciaAtual : comissaoPaga)}
+            value={brl(isCommissionClient ? comissaoCompetenciaFechada : comissaoPaga)}
             hint={
               isCommissionClient
-                ? `vendas de ${periodoLabel(janelaAtual)}: ${brl(volumeAtual)} × ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}%${
-                    volumeFechado > 0
-                      ? ` · ${competenciaLabel(compFechada.year, compFechada.month)} fechou em ${brl(comissaoCompetenciaFechada)}`
-                      : ""
-                  }`
+                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(volumeFechado)} × ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
                 : comissaoTotal > 0
                   ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"
