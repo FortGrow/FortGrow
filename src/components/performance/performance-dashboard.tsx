@@ -949,7 +949,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         )}
 
         <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Financeiro</p>
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <StatCard
+            label="Investimento total"
+            value={brl(t.investment)}
+            delta={delta(t.investment, pt.investment)}
+            hint="soma de todas as campanhas no período"
+            accent="warn"
+          />
           <StatCard
             label="Receita bruta"
             value={brl(t.revenue)}
