@@ -245,7 +245,8 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const [cfg, setCfg] = useState<PerfConfig>({ convPercent: 100, commissionPercent: 100 });
   const [period, setPeriod] = useState<PeriodKey>("30");
   const [source, setSource] = useState<string>("TODAS");
-  const [campaign, setCampaign] = useState<string>("");
+  /* Campanhas selecionadas (uma ou mais); vazio = todas */
+  const [campaigns, setCampaigns] = useState<string[]>([]);
   const [campaignType, setCampaignType] = useState<string>("");
   // Filtros recolhidos por padrão — menos poluição visual; abrem só quando o usuário clica
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -405,7 +406,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     const all = rows ?? [];
     const bySource = (list: PerfRow[]) =>
       (source === "TODAS" ? list : list.filter((r) => r.source === source))
-        .filter((r) => !campaign || (r.campaign ?? "") === campaign)
+        .filter((r) => campaigns.length === 0 || campaigns.includes(r.campaign ?? ""))
         .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType);
     if (period === "tudo") {
       return {
@@ -437,7 +438,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       rangeLabel: `${start.split("-").reverse().join("/")} a ${end.split("-").reverse().join("/")}`,
       range: { start, end },
     };
-  }, [rows, period, from, to, source, campaign, campaignType]);
+  }, [rows, period, from, to, source, campaigns, campaignType]);
 
   const t = totalsOf(current, cfg);
   const pt = totalsOf(previous, cfg);
@@ -470,11 +471,11 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
     () =>
       [...(rows ?? [])]
         .filter((r) => source === "TODAS" || r.source === source)
-        .filter((r) => !campaign || (r.campaign ?? "") === campaign)
+        .filter((r) => campaigns.length === 0 || campaigns.includes(r.campaign ?? ""))
         .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType)
         .filter((r) => !(editable && monthScope) || r.date.slice(0, 7) === entryMonth)
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [rows, source, campaign, campaignType, editable, monthScope, entryMonth]
+    [rows, source, campaigns, campaignType, editable, monthScope, entryMonth]
   );
 
   const entryMonthLabel = useMemo(
@@ -661,10 +662,10 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
   const filterSummary = [
     PERIODS.find((p) => p.key === period)?.label,
     source !== "TODAS" ? sourceLabel(source) : null,
-    campaign || null,
+    campaigns.length > 0 ? campaigns.join(" + ") : null,
     campaignType ? campaignTypeLabel(campaignType) : null,
   ].filter(Boolean) as string[];
-  const activeFilterCount = (source !== "TODAS" ? 1 : 0) + (campaign ? 1 : 0) + (campaignType ? 1 : 0);
+  const activeFilterCount = (source !== "TODAS" ? 1 : 0) + campaigns.length + (campaignType ? 1 : 0);
 
   return (
     <div className="space-y-5">
@@ -740,15 +741,18 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             ))}
           </div>
 
-          {/* Filtro por campanha — definida na coluna Campanha da tabela */}
+          {/* Filtro por campanha — seleção múltipla: clique para incluir/tirar
+              cada campanha; os KPIs e gráficos somam as selecionadas */}
           {campaignNames.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Campanha:</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Campanhas <span className="normal-case text-slate-600">(uma ou mais)</span>:
+              </span>
               <button
-                onClick={() => setCampaign("")}
+                onClick={() => setCampaigns([])}
                 className={cn(
                   "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-                  campaign === ""
+                  campaigns.length === 0
                     ? "border-violet/40 bg-violet/15 text-violet"
                     : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
                 )}
@@ -758,17 +762,25 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
               {campaignNames.map((name) => (
                 <button
                   key={name}
-                  onClick={() => setCampaign(name)}
+                  onClick={() =>
+                    setCampaigns((prev) =>
+                      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
+                    )
+                  }
                   className={cn(
                     "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
-                    campaign === name
+                    campaigns.includes(name)
                       ? "border-violet/40 bg-violet/15 text-violet"
                       : "border-line text-slate-400 hover:border-line-strong hover:text-slate-200"
                   )}
                 >
+                  {campaigns.includes(name) && "✓ "}
                   {name} ({(rows ?? []).filter((r) => (r.campaign ?? "") === name).length})
                 </button>
               ))}
+              {campaigns.length > 1 && (
+                <span className="text-xs font-medium text-violet">somando {campaigns.length} campanhas</span>
+              )}
             </div>
           )}
 

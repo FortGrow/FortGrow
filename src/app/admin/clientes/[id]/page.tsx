@@ -18,13 +18,20 @@ import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integratio
 import { ContentCalendarPanel } from "./content-calendar";
 import { StaffCommissionsPanel } from "./staff-commissions";
 import { EditClientForm } from "./edit-client-form";
+import { PeriodoFilter } from "./periodo-filter";
 import { ClientServicesPanel } from "./client-services-panel";
 import { BillingPanel } from "./billing-panel";
 import { DeleteClientButton } from "../delete-client-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClienteDetalhe({ params }: { params: { id: string } }) {
+export default async function ClienteDetalhe({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: { periodo?: string; de?: string; ate?: string };
+}) {
   const session = (await getSession())!;
   const scope = await allowedClientIds(session);
   if (!canSeeClient(scope, params.id)) {
@@ -121,10 +128,41 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     }),
   ]);
   const perfEntries90 = perfEntries;
-  const perfEntries30 = perfEntries90.filter((e) => e.date.getTime() >= Date.now() - 30 * 86400000);
 
-  // KPIs do dashboard de Performance (30d): receita real usa a base de cálculo do cliente
-  const perf = perfEntries30.reduce(
+  /* Período do Resumo do cliente: vem da query string (?periodo=7|30|90|tudo
+     ou ?periodo=custom&de=...&ate=...). Padrão: 30 dias. */
+  const isDia = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const pParam = searchParams?.periodo;
+  const periodo: "7" | "30" | "90" | "tudo" | "custom" =
+    pParam === "7" || pParam === "90" || pParam === "tudo"
+      ? pParam
+      : pParam === "custom" && isDia(searchParams?.de) && isDia(searchParams?.ate)
+        ? "custom"
+        : "30";
+  let periodoWhere: { gte?: Date; lte?: Date } | undefined;
+  let periodoTag: string;
+  if (periodo === "tudo") {
+    periodoWhere = undefined;
+    periodoTag = "todo o histórico";
+  } else if (periodo === "custom") {
+    const de = searchParams!.de!;
+    const ate = searchParams!.ate!;
+    periodoWhere = { gte: new Date(`${de}T00:00:00`), lte: new Date(`${ate}T23:59:59`) };
+    periodoTag = `${de.split("-").reverse().join("/")} a ${ate.split("-").reverse().join("/")}`;
+  } else {
+    // Corte no INÍCIO do dia-limite: um lançamento do próprio dia entra
+    // independentemente da hora em que a página é aberta.
+    const corte = new Date(Date.now() - (Number(periodo) - 1) * 86400000);
+    periodoWhere = { gte: new Date(corte.getFullYear(), corte.getMonth(), corte.getDate()) };
+    periodoTag = `${periodo}d`;
+  }
+  const resumoEntries = await prisma.performanceEntry.findMany({
+    where: { clientId: client.id, ...(periodoWhere ? { date: periodoWhere } : {}) },
+    orderBy: { date: "asc" },
+  });
+
+  // KPIs do Resumo: receita real usa a base de cálculo do cliente
+  const perf = resumoEntries.reduce(
     (t, e) => {
       const conv = Number(e.convPercent ?? client.perfConvPercent);
       const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
@@ -141,7 +179,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
   const perfCac = perf.sales > 0 ? perf.investment / perf.sales : null;
   const perfCpl = perf.leads > 0 ? perf.investment / perf.leads : null;
   const perfRoi = perf.investment > 0 ? ((perf.real - perf.investment) / perf.investment) * 100 : null;
-  const hasPerf = perfEntries30.length > 0;
+  const hasPerf = resumoEntries.length > 0;
   const comissaoPaga = Number(comissaoPagaAgg._sum.amount ?? 0);
   const comissaoTotal = Number(comissaoTotalAgg._sum.amount ?? 0);
 
@@ -247,9 +285,12 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
         <DeleteClientButton clientId={client.id} companyName={client.companyName} />
       </PageHeader>
 
-      {/* Resumo do cliente: quanto gera para a FortGrow + performance recente */}
+      {/* Resumo do cliente: quanto gera para a FortGrow + performance do período */}
       <div className="mb-6">
-        <h2 className="mb-3 text-sm font-bold text-slate-300">Resumo do cliente</h2>
+        <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <h2 className="text-sm font-bold text-slate-300">Resumo do cliente</h2>
+          <PeriodoFilter periodo={periodo} de={searchParams?.de ?? ""} ate={searchParams?.ate ?? ""} />
+        </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             label="Gerado para a FortGrow"
@@ -282,31 +323,31 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             accent="violet"
           />
           <StatCard
-            label="Receita real gerada (30d)"
+            label={`Receita real gerada (${periodoTag})`}
             value={hasPerf ? brl(perf.real) : "—"}
-            hint={hasPerf ? `bruta ${brl(perf.revenue)} × base de cálculo` : "sem lançamentos de performance"}
+            hint={hasPerf ? `bruta ${brl(perf.revenue)} × base de cálculo` : "sem lançamentos de performance no período"}
             accent="grow"
           />
           <StatCard
-            label="CAC (30d)"
+            label={`CAC (${periodoTag})`}
             value={perfCac === null ? "—" : brl(perfCac)}
             hint="investimento / vendas"
             accent="brand"
           />
           <StatCard
-            label="CPL (30d)"
+            label={`CPL (${periodoTag})`}
             value={perfCpl === null ? "—" : brl(perfCpl)}
             hint="investimento / leads"
             accent="violet"
           />
           <StatCard
-            label="Investimento (30d)"
+            label={`Investimento (${periodoTag})`}
             value={hasPerf ? brl(perf.investment) : "—"}
-            hint={hasPerf ? `${num(perf.leads)} leads · ${num(perf.sales)} vendas` : "sem lançamentos de performance"}
+            hint={hasPerf ? `${num(perf.leads)} leads · ${num(perf.sales)} vendas` : "sem lançamentos de performance no período"}
             accent="warn"
           />
           <StatCard
-            label="ROI (30d)"
+            label={`ROI (${periodoTag})`}
             value={perfRoi === null ? "—" : `${perfRoi.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
             hint="(receita real − investimento) / investimento"
             accent="violet"
