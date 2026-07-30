@@ -146,11 +146,17 @@ export function InstagramPanel({
     if (!res?.ok) setSave({ state: "error" });
   }
 
-  /* Janela do período vinda do dashboard (null = todo o histórico) */
-  const current = useMemo(() => {
+  /* Janela do período vinda do dashboard (null = todo o histórico).
+     Fallback: com menos de 2 lançamentos dentro do período (ex.: métricas
+     lançadas uma vez por mês, ou com datas do mês anterior), gráficos e
+     resumo usam o histórico completo, com aviso — dado lançado tem que
+     aparecer, não sumir atrás do filtro de período. */
+  const { current, fallbackAll } = useMemo(() => {
     const all = [...(rows ?? [])].sort((a, b) => a.date.localeCompare(b.date));
-    if (!range) return all;
-    return all.filter((r) => r.date >= range.start && r.date <= range.end);
+    if (!range) return { current: all, fallbackAll: false };
+    const inPeriod = all.filter((r) => r.date >= range.start && r.date <= range.end);
+    if (inPeriod.length < 2 && all.length > inPeriod.length) return { current: all, fallbackAll: true };
+    return { current: inPeriod, fallbackAll: false };
   }, [rows, range]);
 
   /* Crescimento de seguidores no período: primeiro × último lançamento */
@@ -210,7 +216,11 @@ export function InstagramPanel({
       <div className="flex items-center gap-2 pt-2">
         <Instagram size={18} className="text-violet" />
         <h2 className="text-base font-bold text-slate-100">Instagram</h2>
-        <span className="text-xs text-slate-500">métricas do perfil, estilo Insights — seguem o período selecionado acima</span>
+        <span className={cn("text-xs", fallbackAll ? "font-medium text-warn" : "text-slate-500")}>
+          {fallbackAll
+            ? "o período selecionado tem menos de 2 lançamentos — mostrando todo o histórico"
+            : "métricas do perfil, estilo Insights — seguem o período selecionado acima"}
+        </span>
       </div>
 
       {/* Gráficos estilo Insights */}
