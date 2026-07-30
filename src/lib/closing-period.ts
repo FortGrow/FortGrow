@@ -59,3 +59,31 @@ export const MONTH_NAMES_PT = [
 export function competenciaLabel(year: number, month: number): string {
   return `${MONTH_NAMES_PT[month - 1]}/${year}`;
 }
+
+/**
+ * A competência em que uma data cai.
+ *
+ * Com fechamento no dia 20: até o dia 20 a data pertence à competência do
+ * próprio mês (a janela 21/mês-anterior a 20/mês fecha nela); do dia 21 em
+ * diante já é a competência do mês SEGUINTE. Sem fechamento, é o mês civil.
+ */
+export function competenciaOf(
+  data: Date,
+  closingDay: number | null | undefined
+): { year: number; month: number } {
+  let year = data.getFullYear();
+  let month = data.getMonth() + 1;
+  if (closingDay && closingDay >= 1 && closingDay <= 28 && data.getDate() > closingDay) {
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  return { year, month };
+}
+
+/** A competência imediatamente anterior. */
+export function competenciaAnterior(c: { year: number; month: number }): { year: number; month: number } {
+  return c.month === 1 ? { year: c.year - 1, month: 12 } : { year: c.year, month: c.month - 1 };
+}

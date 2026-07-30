@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { brl, fullDate, num } from "@/lib/utils";
 import { kpis, sumTotals } from "@/lib/metrics";
+import { closingPeriod, competenciaAnterior, competenciaLabel, competenciaOf, periodoLabel } from "@/lib/closing-period";
 import { UploadDocForm } from "./upload-doc-form";
 import { PortalAccessPanel } from "./portal-access";
 import { CampaignIntegrationPanel, type AdAccounts } from "./campaign-integration";
@@ -76,7 +77,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
     prisma.service.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
   ]);
 
-  const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries, perfRevenueTotalAgg] = await Promise.all([
+  const [paidAgg, pendingAgg, comissaoPagaAgg, comissaoTotalAgg, perfEntries] = await Promise.all([
     prisma.invoice.aggregate({ where: { clientId: client.id, status: "PAGO" }, _sum: { amount: true } }),
     prisma.invoice.aggregate({
       where: { clientId: client.id, status: { in: ["EM_ABERTO", "ATRASADO"] } },
@@ -96,8 +97,28 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
       where: { clientId: client.id, date: { gte: new Date(Date.now() - 90 * 86400000) } },
       orderBy: { date: "asc" },
     }),
-    // Receita total lançada em Performance — base da comissão de clientes variáveis
-    prisma.performanceEntry.aggregate({ where: { clientId: client.id }, _sum: { revenue: true } }),
+  ]);
+
+  /* Janela de apuração da comissão: a competência corrente (a que contém a
+     data de hoje, pelo dia de fechamento do cliente) e a anterior, já
+     fechada. Fechamento dia 20 em 30/07 → corrente = agosto (21/07 a 20/08),
+     fechada = julho (21/06 a 20/07). */
+  const compAtual = competenciaOf(new Date(), client.closingDay);
+  const compFechada = competenciaAnterior(compAtual);
+  const janelaAtual = closingPeriod(compAtual.year, compAtual.month, client.closingDay);
+  const janelaFechada = closingPeriod(compFechada.year, compFechada.month, client.closingDay);
+  const fimDoDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+  const inicioDoDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const [receitaAtualAgg, receitaFechadaAgg] = await Promise.all([
+    prisma.performanceEntry.aggregate({
+      where: { clientId: client.id, date: { gte: inicioDoDia(janelaAtual.from), lte: fimDoDia(janelaAtual.to) } },
+      _sum: { revenue: true },
+    }),
+    prisma.performanceEntry.aggregate({
+      where: { clientId: client.id, date: { gte: inicioDoDia(janelaFechada.from), lte: fimDoDia(janelaFechada.to) } },
+      _sum: { revenue: true },
+    }),
   ]);
   const perfEntries90 = perfEntries;
   const perfEntries30 = perfEntries90.filter((e) => e.date.getTime() >= Date.now() - 30 * 86400000);
@@ -124,15 +145,16 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
   const comissaoPaga = Number(comissaoPagaAgg._sum.amount ?? 0);
   const comissaoTotal = Number(comissaoTotalAgg._sum.amount ?? 0);
 
-  /* Comissão da FortGrow para clientes variáveis (COMISSAO): calculada
-     automaticamente sobre a receita lançada em Performance —
-     volume × base% × repasse% (mesma fórmula dos lançamentos de comissão).
-     Atualiza sozinha conforme os resultados são lançados. */
+  /* Comissão da FortGrow para clientes variáveis (COMISSAO), POR COMPETÊNCIA:
+     vendas lançadas em Performance dentro da janela de fechamento do cliente
+     × base% × repasse%. Fechamento dia 20 → julho apura 21/06 a 20/07.
+     Atualiza sozinha conforme as vendas do período são lançadas. */
   const isCommissionClient = client.billingType === "COMISSAO";
-  const perfRevenueTotal = Number(perfRevenueTotalAgg._sum.revenue ?? 0);
-  const generatedCommission = isCommissionClient
-    ? Math.round(perfRevenueTotal * (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100) * 100) / 100
-    : 0;
+  const taxa = (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100);
+  const volumeAtual = Number(receitaAtualAgg._sum.revenue ?? 0);
+  const volumeFechado = Number(receitaFechadaAgg._sum.revenue ?? 0);
+  const comissaoCompetenciaAtual = isCommissionClient ? Math.round(volumeAtual * taxa * 100) / 100 : 0;
+  const comissaoCompetenciaFechada = isCommissionClient ? Math.round(volumeFechado * taxa * 100) / 100 : 0;
 
   /* Painel de 90 dias: quando há lançamentos de Performance, eles são a fonte
      (o que a equipe aponta é o que aparece); sem lançamentos, cai para as
@@ -242,13 +264,19 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             accent="warn"
           />
           <StatCard
-            label="Comissão FortGrow"
-            value={brl(isCommissionClient ? generatedCommission : comissaoPaga)}
+            label={
+              isCommissionClient
+                ? `Comissão · ${competenciaLabel(compAtual.year, compAtual.month)}`
+                : "Comissão FortGrow"
+            }
+            value={brl(isCommissionClient ? comissaoCompetenciaAtual : comissaoPaga)}
             hint={
               isCommissionClient
-                ? perfRevenueTotal > 0
-                  ? `${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% sobre ${brl(perfRevenueTotal)} em resultados${comissaoTotal > 0 ? ` · ${brl(comissaoTotal)} lançado` : ""}`
-                  : "sem resultados de performance lançados ainda"
+                ? `vendas de ${periodoLabel(janelaAtual)}: ${brl(volumeAtual)} × ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}%${
+                    volumeFechado > 0
+                      ? ` · ${competenciaLabel(compFechada.year, compFechada.month)} fechou em ${brl(comissaoCompetenciaFechada)}`
+                      : ""
+                  }`
                 : comissaoTotal > 0
                   ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"
