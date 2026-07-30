@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  AlertTriangle, CheckCircle2, Cpu, Database, ExternalLink, Gauge, HardDrive, Rocket, Wifi,
+  AlertTriangle, CheckCircle2, Cpu, Database, ExternalLink, Gauge, Globe, HardDrive, Rocket, Wifi,
 } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { can } from "@/lib/rbac";
@@ -10,6 +10,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { DataTable, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { loadRenderSnapshot, projetarMes, situacao } from "@/lib/render-api";
+import { SITE } from "@/lib/site-config";
 import { PlanoForm } from "./plano-form";
 
 /**
@@ -39,6 +40,8 @@ export default async function HospedagemPage() {
   if (!can(session, "hospedagem", "view")) redirect("/admin");
 
   const s = await loadRenderSnapshot();
+  // Domínio oficial configurado no site — usado para conferir o apontamento
+  const dominioOficial = SITE.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const { nivel, percent } = situacao(s.banda.totalGB, s.plano.francaGB);
   const projecao = projetarMes(s.banda.totalGB, s.periodo.diaAtual, s.periodo.diasNoMes);
   const proj = situacao(projecao, s.plano.francaGB);
@@ -213,6 +216,60 @@ export default async function HospedagemPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Domínios */}
+          <div className="mt-4 card p-5">
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-bold text-slate-300">
+              <Globe size={14} className="text-brand-400" /> Endereço do site
+            </h2>
+            <p className="mb-4 text-xs text-slate-500">
+              Domínios apontados para os serviços deste workspace
+            </p>
+            {s.dominios.length === 0 ? (
+              <p className="text-xs text-slate-600">
+                Nenhum domínio próprio conectado — o site responde pelo endereço do Render. Para usar{" "}
+                <strong className="text-slate-400">{dominioOficial}</strong>, adicione-o em Settings →
+                Custom Domains no serviço web.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {s.dominios.map((d) => {
+                  const oficial = d.nome.replace(/^www\./, "") === dominioOficial;
+                  return (
+                    <div
+                      key={`${d.servico}-${d.nome}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-ink-850 px-3 py-2.5"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <a
+                          href={`https://${d.nome}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="truncate text-sm font-semibold text-slate-200 hover:text-brand-300"
+                        >
+                          {d.nome}
+                        </a>
+                        {oficial && <Badge tone="brand">oficial</Badge>}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className="text-[11px] text-slate-500">{d.servico}</span>
+                        <Badge tone={d.verificado ? "grow" : "warn"}>
+                          {d.verificado ? "VERIFICADO" : "PENDENTE"}
+                        </Badge>
+                      </span>
+                    </div>
+                  );
+                })}
+                {!s.dominios.some((d) => d.nome.replace(/^www\./, "") === dominioOficial) && (
+                  <p className="pt-1 text-xs text-warn">
+                    O endereço oficial configurado no sistema é{" "}
+                    <strong>{dominioOficial}</strong>, mas ele não aparece entre os domínios do Render.
+                    Confira o apontamento de DNS.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bancos */}

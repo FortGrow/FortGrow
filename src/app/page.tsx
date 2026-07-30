@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Landing } from "@/components/site/landing";
 
+/**
+ * Título e descrição vêm do layout raiz (que os lê de `SITE`), então a aba do
+ * navegador, o resultado no Google e a prévia do link no WhatsApp contam
+ * sempre a mesma história.
+ */
 export const metadata: Metadata = {
-  title: "FortGrow · Estruturação de Marketing e Performance",
-  description:
-    "A FortGrow estrutura o marketing da sua empresa de ponta a ponta — do posicionamento ao tráfego pago que vira venda. Estratégia, execução e dados para transformar investimento em resultado previsível.",
+  alternates: { canonical: "/" },
 };
 
 export default function Home() {

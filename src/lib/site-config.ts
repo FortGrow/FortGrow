@@ -9,6 +9,20 @@
  * FortGrow. Enquanto ficarem vazios, os botões de contato levam para o login.
  */
 export const SITE = {
+  /**
+   * Endereço oficial do site. É a base de tudo que precisa de URL absoluta:
+   * link canônico, prévia ao compartilhar no WhatsApp/Instagram, robots e
+   * sitemap. Sem ele, o Next monta esses links a partir do host que atendeu
+   * a requisição — e o endereço do Render acabaria vazando nas prévias.
+   */
+  url: "https://fortgrow.com.br",
+
+  /** Título e descrição oficiais — usados na aba do navegador, no Google e
+   *  na prévia ao compartilhar o link. Ficam aqui para não divergirem. */
+  titulo: "FortGrow · Estruturação de Marketing e Performance",
+  descricao:
+    "A FortGrow estrutura o marketing da sua empresa de ponta a ponta — do posicionamento ao tráfego pago que vira venda. Estratégia, execução e dados para transformar investimento em resultado previsível.",
+
   // Link direto do WhatsApp (click-to-chat). Tem prioridade sobre o número.
   whatsappLink: "https://wa.me/message/BZPPXKFGWV2EC1",
   // Contatos oficiais — PREENCHER com os dados reais da FortGrow

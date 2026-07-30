@@ -43,6 +43,13 @@ export type RenderService = {
 
 export type SerieValor = { timestamp: string; value: number };
 
+export type DominioCustom = {
+  nome: string;
+  tipo: string;
+  verificado: boolean;
+  servico: string;
+};
+
 export type RenderSnapshot = {
   configurado: boolean;
   erro: string | null;
@@ -54,6 +61,8 @@ export type RenderSnapshot = {
   banda: { porServico: { id: string; nome: string; gb: number }[]; totalGB: number };
   disco: { nome: string; usadoGB: number; totalGB: number }[];
   bancos: { id: string; nome: string; plano: string; status: string; usadoGB: number | null }[];
+  /** Domínios apontados para o serviço (fortgrow.com.br e afins) */
+  dominios: DominioCustom[];
   /** Último uso de CPU/memória do serviço web principal */
   instancia: { cpu: number | null; memoriaMB: number | null } | null;
   ultimoDeploy: { status: string; quando: string; commit: string | null } | null;
@@ -123,6 +132,7 @@ export async function loadRenderSnapshot(): Promise<RenderSnapshot> {
     banda: { porServico: [], totalGB: 0 },
     disco: [],
     bancos: [],
+    dominios: [],
     instancia: null,
     ultimoDeploy: null,
   };
@@ -214,6 +224,30 @@ export async function loadRenderSnapshot(): Promise<RenderSnapshot> {
         };
       })
     );
+
+    // ── Domínios apontados para os serviços web ──
+    // É o que confirma que fortgrow.com.br está de fato servido por aqui, e
+    // que o certificado/DNS foi verificado pelo Render.
+    const webs = ativos.filter((s) => s.type === "web_service" || s.type === "static_site");
+    const dominios = await Promise.all(
+      webs.map(async (s) => {
+        try {
+          const lista = await apiGet<{ customDomain: Record<string, unknown> }[]>(
+            `/services/${s.id}/custom-domains?limit=20`,
+            key
+          );
+          return lista.map(({ customDomain: d }) => ({
+            nome: String(d.name ?? ""),
+            tipo: String(d.domainType ?? ""),
+            verificado: String(d.verificationStatus ?? "") === "verified",
+            servico: s.name,
+          }));
+        } catch {
+          return [];
+        }
+      })
+    );
+    base.dominios = dominios.flat();
 
     // ── CPU/memória e último deploy do serviço web principal ──
     const web = ativos.find((s) => s.type === "web_service") ?? ativos[0];
