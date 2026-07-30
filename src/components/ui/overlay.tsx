@@ -22,9 +22,17 @@ export function Overlay({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!mounted) return null;
+  /* Duas camadas de propósito: a de fora rola, a de dentro centraliza com
+     `min-h-full`. Centralizar direto na camada rolável (`items-center` +
+     overflow) corta o TOPO de um modal mais alto que a tela em região
+     inalcançável — não existe rolagem para cima do início do conteúdo. Com
+     `min-h-full`, a camada interna cresce junto com o modal e a rolagem
+     alcança tudo; modais baixos continuam centralizados. */
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/80 p-4 py-10 backdrop-blur-sm sm:items-center">
-      {children}
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-ink-950/80 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4 py-10">
+        {children}
+      </div>
     </div>,
     document.body
   );
