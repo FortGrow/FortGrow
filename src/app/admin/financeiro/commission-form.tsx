@@ -1,20 +1,36 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Percent } from "lucide-react";
+import { CalendarRange, Loader2, Percent, RefreshCw } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
+import { closingPeriod, competenciaLabel, MONTH_NAMES_PT } from "@/lib/closing-period";
 
 export type CommissionClient = {
   id: string;
   name: string;
   base: number; // % de comissão do cliente
   share: number; // % da FortGrow
+  /// Dia de fechamento do período de apuração (null = mês civil)
+  closingDay: number | null;
 };
 
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const isoDia = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/** Lançamento de faturamento para contratos por comissão, com prévia do cálculo. */
+/**
+ * Lançamento de faturamento por comissão, com período de apuração explícito.
+ *
+ * Clientes como a Axton não fecham do dia 1 ao 30: a comissão de julho apura
+ * as vendas de 21/06 a 20/07. O período nasce do dia de fechamento do
+ * cliente e da competência escolhida — e continua editável, porque um mês ou
+ * outro o fechamento muda por feriado ou acordo.
+ *
+ * O volume vendido é buscado dos lançamentos de Performance dentro do
+ * período (não digitado de memória), mas o campo permanece aberto: se as
+ * vendas ainda não estão todas lançadas, o admin pode sobrescrever.
+ */
 export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +39,45 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   const [volume, setVolume] = useState("");
   const [base, setBase] = useState(String(clients[0]?.base ?? ""));
   const [share, setShare] = useState(String(clients[0]?.share ?? ""));
+
+  // Competência padrão: o mês atual
+  const hoje = new Date();
+  const [ano, setAno] = useState(hoje.getFullYear());
+  const [mes, setMes] = useState(hoje.getMonth() + 1);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [apuracao, setApuracao] = useState<{ volume: number; lancamentos: number } | null>(null);
+  const [buscando, setBuscando] = useState(false);
   const router = useRouter();
+
+  const cliente = clients.find((c) => c.id === clientId);
+
+  // Competência ou cliente mudou → recalcula o período pelo dia de fechamento
+  useEffect(() => {
+    if (!cliente) return;
+    const p = closingPeriod(ano, mes, cliente.closingDay);
+    setDe(isoDia(p.from));
+    setAte(isoDia(p.to));
+  }, [clientId, ano, mes, cliente]);
+
+  // Período definido → busca as vendas lançadas em Performance na janela
+  useEffect(() => {
+    if (!clientId || !de || !ate) return;
+    let ativo = true;
+    setBuscando(true);
+    fetch(`/api/commissions?clientId=${clientId}&from=${de}&to=${ate}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!ativo || !j) return;
+        setApuracao({ volume: j.volume, lancamentos: j.lancamentos });
+        // Pré-preenche sem brigar com quem já digitou outro valor
+        setVolume((v) => (v === "" || Number(v) === 0 ? (j.volume > 0 ? String(j.volume) : v) : v));
+      })
+      .finally(() => ativo && setBuscando(false));
+    return () => {
+      ativo = false;
+    };
+  }, [clientId, de, ate]);
 
   const preview = useMemo(() => {
     const v = Number(volume);
@@ -35,7 +89,12 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   }, [volume, base, share]);
 
   function selectClient(id: string) {
+    // Reselecionar o mesmo cliente não pode limpar o volume: o período não
+    // muda, a busca não dispara de novo, e o campo ficaria vazio para sempre
+    if (id === clientId) return;
     setClientId(id);
+    setVolume("");
+    setApuracao(null);
     const c = clients.find((c) => c.id === id);
     if (c) {
       setBase(String(c.base));
@@ -57,8 +116,10 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
           salesVolume: volume,
           basePercent: base,
           sharePercent: share,
-          reference: form.get("reference"),
+          reference: competenciaLabel(ano, mes),
           dueDate: form.get("dueDate") || undefined,
+          periodStart: de,
+          periodEnd: ate,
         }),
       });
       if (!res.ok) {
@@ -84,12 +145,18 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
     );
   }
 
+  const fmtBR = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
   return (
     <Overlay>
       <form onSubmit={onSubmit} className="card w-full max-w-lg animate-fade-up p-6">
         <h2 className="mb-1 text-lg font-bold text-slate-100">Lançar faturamento por comissão</h2>
         <p className="mb-4 text-sm text-slate-500">
-          Informe o volume vendido pelo cliente no período — o valor da FortGrow é calculado automaticamente.
+          Escolha a competência — o período de apuração vem do dia de fechamento do cliente, e as
+          vendas lançadas em Performance preenchem o volume.
         </p>
 
         <div className="space-y-4">
@@ -97,10 +164,81 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
             <label className="label" htmlFor="cf-client">Cliente *</label>
             <select id="cf-client" value={clientId} onChange={(e) => selectClient(e.target.value)} className="input">
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.closingDay ? ` · fecha dia ${c.closingDay}` : ""}
+                </option>
               ))}
             </select>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label" htmlFor="cf-mes">Competência *</label>
+              <select
+                id="cf-mes"
+                value={mes}
+                onChange={(e) => setMes(Number(e.target.value))}
+                className="input"
+              >
+                {MONTH_NAMES_PT.map((nome, i) => (
+                  <option key={nome} value={i + 1}>{nome}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="cf-ano">Ano</label>
+              <select id="cf-ano" value={ano} onChange={(e) => setAno(Number(e.target.value))} className="input">
+                {[hoje.getFullYear() - 1, hoje.getFullYear(), hoje.getFullYear() + 1].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Período de apuração — nasce do fechamento, mas é editável */}
+          <div className="rounded-xl border border-line bg-ink-850 p-3">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <CalendarRange size={12} /> Período de apuração das vendas
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="cf-de">De</label>
+                <input id="cf-de" type="date" value={de} onChange={(e) => setDe(e.target.value)} className="input py-2" />
+              </div>
+              <div>
+                <label className="label" htmlFor="cf-ate">Até</label>
+                <input id="cf-ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="input py-2" />
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+              {cliente?.closingDay
+                ? `Fechamento do cliente: dia ${cliente.closingDay} — a competência de ${MONTH_NAMES_PT[mes - 1]} apura ${de && fmtBR(de)} a ${ate && fmtBR(ate)}.`
+                : "Cliente sem dia de fechamento definido: vale o mês civil. Defina o dia no cadastro do cliente para o período vir certo sozinho."}
+            </p>
+            {buscando ? (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
+                <Loader2 size={12} className="animate-spin" /> Somando as vendas do período…
+              </p>
+            ) : apuracao ? (
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs">
+                <span className="font-semibold text-grow-400">{brl(apuracao.volume)}</span>
+                <span className="text-slate-500">
+                  em {apuracao.lancamentos} lançamento(s) de Performance no período
+                </span>
+                {apuracao.volume > 0 && Number(volume) !== apuracao.volume && (
+                  <button
+                    type="button"
+                    onClick={() => setVolume(String(apuracao.volume))}
+                    className="inline-flex items-center gap-1 font-semibold text-brand-300 hover:underline"
+                  >
+                    <RefreshCw size={11} /> usar este valor
+                  </button>
+                )}
+              </p>
+            ) : null}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label" htmlFor="cf-volume">Volume vendido (R$) *</label>
@@ -115,13 +253,15 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
                 className="input"
                 placeholder="1000000"
               />
+              <p className="mt-1 text-[11px] text-slate-600">editável — ajuste se nem tudo foi lançado</p>
             </div>
             <div>
-              <label className="label" htmlFor="cf-reference">Competência *</label>
-              <input id="cf-reference" name="reference" required className="input" placeholder="julho/2026" />
+              <label className="label" htmlFor="cf-due">Vencimento</label>
+              <input id="cf-due" name="dueDate" type="date" className="input" />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label" htmlFor="cf-base">Base do cliente (%)</label>
               <input
@@ -151,10 +291,6 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
                 className="input"
               />
             </div>
-            <div>
-              <label className="label" htmlFor="cf-due">Vencimento</label>
-              <input id="cf-due" name="dueDate" type="date" className="input" />
-            </div>
           </div>
 
           {preview && (
@@ -163,7 +299,8 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
                 Comissão do cliente: <span className="font-semibold text-slate-200">{brl(preview.clientCommission)}</span>
               </p>
               <p className="mt-0.5 text-slate-400">
-                Faturamento FortGrow: <span className="text-base font-bold text-grow-400">{brl(preview.amount)}</span>
+                Faturamento FortGrow ({competenciaLabel(ano, mes)}):{" "}
+                <span className="text-base font-bold text-grow-400">{brl(preview.amount)}</span>
               </p>
             </div>
           )}

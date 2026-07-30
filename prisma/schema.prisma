@@ -113,6 +113,10 @@ model Client {
   commissionBase  Decimal     @default(0) @db.Decimal(6, 3)
   /// Contratos por comissão: % da FortGrow sobre a comissão do cliente (ex.: 10%)
   commissionShare Decimal     @default(0) @db.Decimal(6, 3)
+  /// Contratos por comissão: dia de fechamento do período de apuração.
+  /// Ex.: 20 → a competência de julho apura as vendas de 21/06 a 20/07.
+  /// Null = mês civil (01 a 30/31). Limitado a 1–28 para valer em fevereiro.
+  closingDay     Int?
   contractStart  DateTime?
   contractMonths Int?
   projectStatus  String?      @default("Em andamento")
@@ -474,6 +478,11 @@ model Invoice {
   status      InvoiceStatus @default(EM_ABERTO)
   method      PaymentMethod?
   nfeUrl      String?
+  /// Lançamentos de comissão: período de vendas apurado (de/até, inclusivo).
+  /// Fica na fatura para o cálculo continuar auditável mesmo se o dia de
+  /// fechamento do cliente mudar depois.
+  periodStart DateTime?
+  periodEnd   DateTime?
   /// Cobrança gerada por uma mensalidade (null = cobrança avulsa)
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)

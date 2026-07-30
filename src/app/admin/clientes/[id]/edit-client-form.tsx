@@ -23,6 +23,7 @@ export type EditableClient = {
   monthlyValue: number;
   commissionBase: number;
   commissionShare: number;
+  closingDay: number | null;
   contractStart: string | null;
   contractMonths: number | null;
   projectStatus: string | null;
@@ -168,6 +169,22 @@ export function EditClientForm({ client, plans = [] }: { client: EditableClient;
                   <div>
                     <label className="label" htmlFor="ec-commissionShare">Percentual FortGrow (%)</label>
                     <input id="ec-commissionShare" name="commissionShare" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionShare} className="input" />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="ec-closingDay">Dia de fechamento</label>
+                    <input
+                      id="ec-closingDay"
+                      name="closingDay"
+                      type="number"
+                      min="1"
+                      max="28"
+                      defaultValue={client.closingDay ?? ""}
+                      placeholder="vazio = mês civil (01 ao fim do mês)"
+                      className="input"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      Ex.: 20 → a comissão de julho apura as vendas de 21/06 a 20/07.
+                    </p>
                   </div>
                 </>
               )}

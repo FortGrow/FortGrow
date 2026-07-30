@@ -181,6 +181,21 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                 />
                 <p className="mt-1 text-xs text-slate-600">% da FortGrow sobre a comissão do cliente.</p>
               </div>
+              <div>
+                <label className="label" htmlFor="nc-closingDay">Dia de fechamento</label>
+                <input
+                  id="nc-closingDay"
+                  name="closingDay"
+                  type="number"
+                  min="1"
+                  max="28"
+                  className="input"
+                  placeholder="vazio = mês civil"
+                />
+                <p className="mt-1 text-xs text-slate-600">
+                  Ex.: 20 → a comissão de julho apura as vendas de 21/06 a 20/07.
+                </p>
+              </div>
               <p className="text-xs leading-relaxed text-slate-500 sm:col-span-2">
                 Exemplo: R$ 1.000.000 vendidos × 3% = R$ 30.000 de comissão do cliente → FortGrow recebe 10% = R$ 3.000.
                 Se a base variar no mês (ex.: parcela fechada em 50% → 1,5%), ajuste na hora de lançar o faturamento em

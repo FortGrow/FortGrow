@@ -15,6 +15,8 @@ const createSchema = z.object({
   monthlyValue: z.coerce.number().min(0).optional(),
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
+  /// Dia de fechamento da apuração (1–28); vazio = mês civil
+  closingDay: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(28).nullish()),
   contractMonths: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(120).nullish()),
   contractStart: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { email, contractStart, monthlyValue, billingType, commissionBase, commissionShare, ...rest } = parsed.data;
+  const { email, contractStart, monthlyValue, billingType, commissionBase, commissionShare, closingDay, ...rest } = parsed.data;
 
   if (billingType === "COMISSAO" && (!commissionBase || !commissionShare)) {
     return NextResponse.json(
@@ -54,6 +56,7 @@ export async function POST(req: NextRequest) {
       monthlyValue: monthlyValue ?? 0,
       commissionBase: billingType === "COMISSAO" ? commissionBase! : 0,
       commissionShare: billingType === "COMISSAO" ? commissionShare! : 0,
+      closingDay: billingType === "COMISSAO" ? closingDay ?? null : null,
       contractStart: contractStart ? new Date(contractStart) : new Date(),
       status: "ONBOARDING",
       accountManagerId: session.sub,
@@ -154,6 +157,7 @@ const updateSchema = z.object({
   monthlyValue: z.coerce.number().min(0).optional(),
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
+  closingDay: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(28).nullish()),
   contractStart: z.string().nullish(),
   contractMonths: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(120).nullish()),
   projectStatus: nullableStr(80),

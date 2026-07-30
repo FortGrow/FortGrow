@@ -212,6 +212,7 @@ export default async function ClienteDetalhe({ params }: { params: { id: string 
             monthlyValue: Number(client.monthlyValue),
             commissionBase: Number(client.commissionBase),
             commissionShare: Number(client.commissionShare),
+            closingDay: client.closingDay,
             contractStart: client.contractStart?.toISOString().slice(0, 10) ?? null,
             contractMonths: client.contractMonths,
             projectStatus: client.projectStatus,
