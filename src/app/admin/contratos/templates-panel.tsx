@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileStack, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { FileStack, FileUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { TEMPLATE_PLACEHOLDERS } from "@/lib/contract-doc";
 
@@ -20,8 +20,32 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TemplateRow | null>(null);
+
+  /** Importa a estrutura que já existe em PDF: extrai o texto para o editor. */
+  async function importarPdf(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setImporting(true);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const res = await fetch("/api/contract-templates/extract", { method: "POST", body: form });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(d.error ?? "Não foi possível ler o PDF.");
+        return;
+      }
+      setBody(d.text);
+      if (!name.trim()) setName(file.name.replace(/\.pdf$/i, ""));
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function abrirNovo() {
     setEditing(null);
@@ -121,8 +145,10 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
               {editing ? "Editar modelo" : "Adicionar modelo de contrato"}
             </h2>
             <p className="mb-4 text-xs text-slate-500">
-              Cole o texto do seu contrato. Linha em CAIXA-ALTA ou começando com “CLÁUSULA” vira título de
-              seção; “ASSINATURA: Nome — Parte” vira linha de assinatura com régua.
+              Cole o texto do seu contrato ou use “Importar do PDF” para trazer a estrutura que você já tem
+              pronta. Depois, troque os dados do cliente pelos marcadores (legenda abaixo). Linha em CAIXA-ALTA
+              ou começando com “CLÁUSULA” vira título de seção; “ASSINATURA: Nome — Parte” vira linha de
+              assinatura com régua.
             </p>
 
             <label className="label" htmlFor="tpl-nome">Nome do modelo *</label>
@@ -135,7 +161,14 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
               className="input mb-3"
             />
 
-            <label className="label" htmlFor="tpl-body">Texto do contrato *</label>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <label className="label !mb-0" htmlFor="tpl-body">Texto do contrato *</label>
+              <label className="btn-ghost ml-auto cursor-pointer !px-3 !py-1.5 text-xs">
+                {importing ? <Loader2 size={13} className="animate-spin" /> : <FileUp size={13} />}
+                {importing ? "Lendo PDF…" : "Importar do PDF"}
+                <input type="file" accept="application/pdf,.pdf" onChange={importarPdf} className="hidden" />
+              </label>
+            </div>
             <textarea
               id="tpl-body"
               required
