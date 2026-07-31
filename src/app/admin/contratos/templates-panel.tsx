@@ -24,7 +24,7 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TemplateRow | null>(null);
 
-  /** Importa a estrutura que já existe em PDF: extrai o texto para o editor. */
+  /** Importa a estrutura que já existe em PDF ou Word: extrai o texto para o editor. */
   async function importarPdf(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -37,11 +37,11 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
       const res = await fetch("/api/contract-templates/extract", { method: "POST", body: form });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? "Não foi possível ler o PDF.");
+        setError(d.error ?? "Não foi possível ler o arquivo.");
         return;
       }
       setBody(d.text);
-      if (!name.trim()) setName(file.name.replace(/\.pdf$/i, ""));
+      if (!name.trim()) setName(file.name.replace(/\.(pdf|docx)$/i, ""));
     } finally {
       setImporting(false);
     }
@@ -145,8 +145,8 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
               {editing ? "Editar modelo" : "Adicionar modelo de contrato"}
             </h2>
             <p className="mb-4 text-xs text-slate-500">
-              Cole o texto do seu contrato ou use “Importar do PDF” para trazer a estrutura que você já tem
-              pronta. Depois, troque os dados do cliente pelos marcadores (legenda abaixo). Linha em CAIXA-ALTA
+              Cole o texto do seu contrato ou use “Importar de PDF ou Word” para trazer a estrutura que você
+              já tem pronta (.pdf ou .docx). Depois, troque os dados do cliente pelos marcadores (legenda abaixo). Linha em CAIXA-ALTA
               ou começando com “CLÁUSULA” vira título de seção; “ASSINATURA: Nome — Parte” vira linha de
               assinatura com régua.
             </p>
@@ -165,8 +165,13 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
               <label className="label !mb-0" htmlFor="tpl-body">Texto do contrato *</label>
               <label className="btn-ghost ml-auto cursor-pointer !px-3 !py-1.5 text-xs">
                 {importing ? <Loader2 size={13} className="animate-spin" /> : <FileUp size={13} />}
-                {importing ? "Lendo PDF…" : "Importar do PDF"}
-                <input type="file" accept="application/pdf,.pdf" onChange={importarPdf} className="hidden" />
+                {importing ? "Lendo arquivo…" : "Importar de PDF ou Word"}
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={importarPdf}
+                  className="hidden"
+                />
               </label>
             </div>
             <textarea

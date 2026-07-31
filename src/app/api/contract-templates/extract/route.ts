@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff, isResponse } from "@/lib/api-guard";
+import { extrairTextoDocx } from "@/lib/docx-text";
 
 export const dynamic = "force-dynamic";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 /**
- * Extrai o texto de um PDF de contrato para virar modelo editável — a
- * estrutura que o admin já tem em PDF entra no editor sem redigitação.
- * Nada é gravado em disco: o retorno é só o texto.
+ * Extrai o texto de um PDF ou Word (.docx) de contrato para virar modelo
+ * editável — a estrutura que o admin já tem entra no editor sem
+ * redigitação. Nada é gravado em disco: o retorno é só o texto.
  */
 export async function POST(req: NextRequest) {
   const session = await requireStaff("contratos", "edit");
@@ -17,31 +18,51 @@ export async function POST(req: NextRequest) {
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: "Envie o PDF da sua estrutura de contrato." }, { status: 400 });
+    return NextResponse.json({ error: "Envie o PDF ou Word (.docx) da sua estrutura de contrato." }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "Arquivo excede 10 MB." }, { status: 400 });
   }
-  if (!(file.type === "application/pdf" || /\.pdf$/i.test(file.name))) {
-    return NextResponse.json({ error: "Envie um arquivo PDF." }, { status: 400 });
+  const ehPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  const ehDocx =
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    /\.docx$/i.test(file.name);
+  if (!ehPdf && !ehDocx) {
+    if (/\.doc$/i.test(file.name)) {
+      return NextResponse.json(
+        { error: "Formato .doc antigo não é suportado — abra no Word e salve como .docx (ou exporte em PDF)." },
+        { status: 422 }
+      );
+    }
+    return NextResponse.json({ error: "Envie um arquivo PDF ou Word (.docx)." }, { status: 400 });
   }
 
   let texto = "";
-  try {
-    const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
-    const out = await extractText(pdf, { mergePages: true });
-    texto = String(out.text ?? "");
-  } catch {
-    return NextResponse.json(
-      { error: "Não consegui ler este PDF. Se ele for digitalizado (imagem), exporte uma versão com texto." },
-      { status: 422 }
-    );
+  if (ehDocx) {
+    texto = extrairTextoDocx(Buffer.from(await file.arrayBuffer())) ?? "";
+    if (!texto) {
+      return NextResponse.json(
+        { error: "Não consegui ler este .docx — confira se o arquivo abre no Word e tente de novo." },
+        { status: 422 }
+      );
+    }
+  } else {
+    try {
+      const { extractText, getDocumentProxy } = await import("unpdf");
+      const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
+      const out = await extractText(pdf, { mergePages: true });
+      texto = String(out.text ?? "");
+    } catch {
+      return NextResponse.json(
+        { error: "Não consegui ler este PDF. Se ele for digitalizado (imagem), exporte uma versão com texto." },
+        { status: 422 }
+      );
+    }
   }
 
   if (texto.replace(/\s/g, "").length < 40) {
     return NextResponse.json(
-      { error: "O PDF não tem texto selecionável — parece um documento escaneado. Envie a versão original." },
+      { error: "O arquivo não tem texto legível — se for um PDF escaneado (imagem), envie a versão original." },
       { status: 422 }
     );
   }
