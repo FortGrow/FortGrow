@@ -1,4 +1,6 @@
-import { docPdf, type DocBloco } from "@/lib/pdf";
+import { readFileSync } from "fs";
+import path from "path";
+import { docPdf, type DocBloco, type DocMarca, type PdfImagem } from "@/lib/pdf";
 import { brl } from "@/lib/utils";
 
 /**
@@ -43,24 +45,44 @@ export type DadosContrato = {
 
 const data = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
+/* ————— Identidade FortGrow no documento ————— */
+
+/** Azul da marca (#2d7ef2, o mesmo do site), em RGB 0–1. */
+const COR_MARCA: [number, number, number] = [0.176, 0.494, 0.949];
+
+/** Largura/altura de um JPEG lidas do marcador SOF — sem hardcode. */
+function dimensoesJpeg(bytes: Buffer): { width: number; height: number } | null {
+  for (let i = 2; i < bytes.length - 9; ) {
+    if (bytes[i] !== 0xff) return null;
+    const marker = bytes[i + 1];
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { height: bytes.readUInt16BE(i + 5), width: bytes.readUInt16BE(i + 7) };
+    }
+    i += 2 + bytes.readUInt16BE(i + 2);
+  }
+  return null;
+}
+
+/** Logo + cores + rodapé da FortGrow; sem a logo no disco, segue sem ela. */
+function marcaFortGrow(): DocMarca {
+  let logo: PdfImagem | undefined;
+  try {
+    const data = readFileSync(path.join(process.cwd(), "public", "brand", "contract-logo.jpg"));
+    const dim = dimensoesJpeg(data);
+    if (dim) logo = { data, ...dim };
+  } catch {
+    logo = undefined;
+  }
+  return {
+    logo,
+    cor: COR_MARCA,
+    rodape: "FortGrow · Estruturação de Marketing e Performance · fortgrow.com.br",
+  };
+}
+
 /* ————— Estrutura própria (modelo colado pelo admin) ————— */
 
-/** Marcadores aceitos no modelo — mostrados na legenda da tela. */
-export const TEMPLATE_PLACEHOLDERS: { chave: string; descricao: string }[] = [
-  { chave: "EMPRESA", descricao: "razão social do cliente" },
-  { chave: "CNPJ", descricao: "CNPJ do cliente" },
-  { chave: "EMAIL", descricao: "e-mail do cliente" },
-  { chave: "TELEFONE", descricao: "telefone do cliente" },
-  { chave: "CIDADE_UF", descricao: "cidade/UF do cliente" },
-  { chave: "PLANO", descricao: "plano contratado" },
-  { chave: "VALOR", descricao: "valor mensal (R$)" },
-  { chave: "COMISSAO_BASE", descricao: "% base de comissão" },
-  { chave: "COMISSAO_REPASSE", descricao: "% de repasse FortGrow" },
-  { chave: "DIA_FECHAMENTO", descricao: "dia de fechamento da apuração" },
-  { chave: "INICIO", descricao: "data de início da vigência" },
-  { chave: "TERMINO", descricao: "data de término (ou prazo indeterminado)" },
-  { chave: "DATA_HOJE", descricao: "data da geração do contrato" },
-];
+export { TEMPLATE_PLACEHOLDERS } from "@/lib/contract-placeholders";
 
 /** Os valores de cada marcador para um cliente/contrato. */
 export function valoresDoContrato(cliente: DadosCliente, contrato: DadosContrato): Record<string, string> {
@@ -99,7 +121,10 @@ export function gerarContratoDeTemplate(
   body: string
 ) {
   const texto = preencherTemplate(body, valoresDoContrato(cliente, contrato));
+  // Título de seção: marcador explícito "## " (vindo da importação, que
+  // preserva os títulos do arquivo original) ou as heurísticas de texto.
   const ehTitulo = (linha: string) =>
+    linha.startsWith("## ") ||
     /^cl[áa]usula/i.test(linha) ||
     (linha === linha.toUpperCase() && /[A-ZÀ-Ü]{3,}/.test(linha) && linha.length <= 90);
 
@@ -118,14 +143,14 @@ export function gerarContratoDeTemplate(
         blocos.push({ tipo: "assinatura", texto: linha.replace(/^assinatura\s*:\s*/i, "") });
       } else if (ehTitulo(linha)) {
         fechaCorpo();
-        blocos.push({ tipo: "titulo", texto: linha });
+        blocos.push({ tipo: "titulo", texto: linha.replace(/^##\s+/, "") });
       } else {
         corpo.push(linha);
       }
     }
     fechaCorpo();
   }
-  return docPdf(titulo, `Contrato · ${cliente.companyName} · FortGrow`, blocos);
+  return docPdf(titulo, `Contrato · ${cliente.companyName} · FortGrow`, blocos, marcaFortGrow());
 }
 
 export function gerarContratoPdf(
@@ -249,6 +274,7 @@ export function gerarContratoPdf(
   return docPdf(
     contrato.title,
     `Contrato de prestação de serviços · ${cliente.companyName} · FortGrow`,
-    blocos
+    blocos,
+    marcaFortGrow()
   );
 }

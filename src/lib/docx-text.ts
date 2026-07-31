@@ -83,7 +83,21 @@ export function extrairTextoDocx(bytes: Buffer): string | null {
     const trechos = [...comQuebras.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map((m) =>
       decodificarEntidades(m[1])
     );
-    linhas.push(trechos.join(""));
+    let textoP = trechos.join("");
+
+    /* Layout do arquivo preservado: parágrafo com estilo de título
+       (Heading/Título) ou todo em negrito vira título de seção — o marcador
+       "## " é o que o gerador entende (e o admin pode ajustar no editor). */
+    if (textoP.trim()) {
+      const temEstiloTitulo = /<w:pStyle\s[^>]*w:val="(?:Heading|Ttulo|Titulo|Title)[^"]*"/i.test(p);
+      const runs = p.match(/<w:r[ >][\s\S]*?<\/w:r>/g) ?? [];
+      const runsComTexto = runs.filter((r) => /<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/.test(r));
+      const todoNegrito =
+        runsComTexto.length > 0 && runsComTexto.every((r) => /<w:b\s*(?:\/>|w:val="(?!0|false)[^"]*")/.test(r));
+      const curto = textoP.trim().length <= 90 && !/\n/.test(textoP);
+      if ((temEstiloTitulo || todoNegrito) && curto) textoP = `## ${textoP.trim()}`;
+    }
+    linhas.push(textoP);
   }
   // Cada <w:p> é um parágrafo de verdade → linha em branco entre eles, que é
   // como o editor de modelos separa parágrafos; vazios consecutivos colapsam.

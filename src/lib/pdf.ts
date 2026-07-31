@@ -129,21 +129,28 @@ export function tablePdf(
   return montarPdf(streams, A4);
 }
 
+/** Imagem JPEG embutível (o PDF aceita JPEG cru via DCTDecode). */
+export type PdfImagem = { data: Uint8Array; width: number; height: number };
+
 /** Junta os streams de página no arquivo final (catálogo, fontes, xref).
     Sem anotação de retorno de propósito: herda o Uint8Array<ArrayBuffer>
     do concat(), que é o que Blob/NextResponse aceitam. */
-function montarPdf(streams: Uint8Array[], box: { w: number; h: number }) {
+function montarPdf(streams: Uint8Array[], box: { w: number; h: number }, imagem?: PdfImagem) {
   const objs: Uint8Array[] = [];
   const add = (body: Uint8Array | string) =>
     objs.push(typeof body === "string" ? ascii(body) : body);
 
   const kids = streams.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
+  // A imagem (logo) é o último objeto — numeração fixa e fácil de referenciar
+  const imgNum = 4 + streams.length * 2;
 
   add(`<< /Type /Catalog /Pages 2 0 R >>`);
   add(`<< /Type /Pages /Count ${streams.length} /Kids [${kids}] >>`);
   add(
     `<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> ` +
-      `/F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> >> >>`
+      `/F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> >>` +
+      (imagem ? ` /XObject << /Im1 ${imgNum} 0 R >>` : "") +
+      ` >>`
   );
   streams.forEach((stream, i) => {
     add(
@@ -151,6 +158,18 @@ function montarPdf(streams: Uint8Array[], box: { w: number; h: number }) {
     );
     add(concat([ascii(`<< /Length ${stream.length} >>\nstream\n`), stream, ascii(`\nendstream`)]));
   });
+  if (imagem) {
+    add(
+      concat([
+        ascii(
+          `<< /Type /XObject /Subtype /Image /Width ${imagem.width} /Height ${imagem.height} ` +
+            `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagem.data.length} >>\nstream\n`
+        ),
+        imagem.data,
+        ascii(`\nendstream`),
+      ])
+    );
+  }
 
   const partes: Uint8Array[] = [ascii("%PDF-1.4\n")];
   const offsets: number[] = [];
@@ -197,22 +216,36 @@ function wrapTexto(texto: string, maxChars: number): string[] {
   return linhas.length ? linhas : [""];
 }
 
+/** Identidade visual aplicada ao documento (logo, cor e rodapé). */
+export type DocMarca = {
+  logo?: PdfImagem;
+  /** Cor de destaque das réguas, em RGB 0–1 */
+  cor?: [number, number, number];
+  /** Linha institucional impressa no rodapé de todas as páginas */
+  rodape?: string;
+};
+
 /**
  * PDF de documento em retrato (A4) com título, seções e parágrafos com
  * quebra de linha — usado para gerar o contrato que o cliente assina no
- * gov.br. Mesma base minimalista do gerador de tabelas.
+ * gov.br. Mesma base minimalista do gerador de tabelas; com `marca`, o
+ * cabeçalho ganha a logo e as réguas saem na cor da marca.
  */
-export function docPdf(titulo: string, subtitulo: string, blocos: DocBloco[]) {
+export function docPdf(titulo: string, subtitulo: string, blocos: DocBloco[], marca?: DocMarca) {
   const M = 56;
   const corpo = 10.5;
   const charsPorLinha = Math.floor((RETRATO.w - M * 2) / (corpo * 0.5));
   const alturaLinha = (size: number) => size * 1.45;
+  const [cr, cg, cb] = marca?.cor ?? [0.25, 0.25, 0.25];
+  // Logo no cabeçalho da 1ª página: 52pt de altura, largura proporcional
+  const logoH = 52;
+  const logoW = marca?.logo ? Math.round((logoH * marca.logo.width) / marca.logo.height) : 0;
 
-  type L = { texto: string; size: number; bold: boolean; gap: number; regua?: boolean };
+  type L = { texto: string; size: number; bold: boolean; gap: number; regua?: boolean; destaque?: boolean };
   const linhas: L[] = [];
   for (const b of blocos) {
     if (b.tipo === "titulo") {
-      linhas.push({ texto: b.texto, size: 11.5, bold: true, gap: 18 });
+      linhas.push({ texto: b.texto, size: 11.5, bold: true, gap: 18, destaque: true });
     } else if (b.tipo === "assinatura") {
       linhas.push({ texto: b.texto, size: corpo, bold: false, gap: 48, regua: true });
     } else {
@@ -224,14 +257,16 @@ export function docPdf(titulo: string, subtitulo: string, blocos: DocBloco[]) {
 
   // Pagina calculando a posição de cada linha
   const topo = RETRATO.h - M;
+  // 1ª página desconta o cabeçalho (maior quando há logo)
+  const alturaCabecalho = marca?.logo ? logoH + 26 : 64;
   type Pos = { l: L; y: number };
   const paginas: Pos[][] = [];
   let pagina: Pos[] = [];
-  let y = topo - 64; // 1ª página desconta o cabeçalho
+  let y = topo - alturaCabecalho;
   for (const l of linhas) {
     y -= l.gap;
     const lh = alturaLinha(l.size);
-    if (y - lh < M + 20) {
+    if (y - lh < M + 26) {
       paginas.push(pagina);
       pagina = [];
       y = topo - 24;
@@ -251,19 +286,34 @@ export function docPdf(titulo: string, subtitulo: string, blocos: DocBloco[]) {
     };
 
     if (idx === 0) {
-      texto(M, topo - 6, titulo, 14, true);
-      texto(M, topo - 24, subtitulo, 9);
-      push(`0.8 0.8 0.8 RG 0.6 w ${M} ${topo - 34} m ${RETRATO.w - M} ${topo - 34} l S\n0 0 0 RG\n`);
+      if (marca?.logo) {
+        // Logo no topo esquerdo; título e subtítulo ao lado, régua na cor da marca
+        push(`q ${logoW} 0 0 ${logoH} ${M} ${topo - logoH + 6} cm /Im1 Do Q\n`);
+        const tx = M + logoW + 16;
+        texto(tx, topo - 16, titulo, 13.5, true);
+        texto(tx, topo - 32, subtitulo, 9);
+        push(`${cr} ${cg} ${cb} RG 1.4 w ${M} ${topo - logoH - 6} m ${RETRATO.w - M} ${topo - logoH - 6} l S\n0 0 0 RG\n`);
+      } else {
+        texto(M, topo - 6, titulo, 14, true);
+        texto(M, topo - 24, subtitulo, 9);
+        push(`${cr} ${cg} ${cb} RG 1 w ${M} ${topo - 34} m ${RETRATO.w - M} ${topo - 34} l S\n0 0 0 RG\n`);
+      }
     }
     for (const { l, y: yy } of ps) {
       if (l.regua) {
         push(`0.25 0.25 0.25 RG 0.7 w ${M} ${yy + l.size + 5} m ${M + 250} ${yy + l.size + 5} l S\n0 0 0 RG\n`);
       }
+      // Títulos de seção saem na cor da marca
+      if (l.destaque && marca?.cor) push(`${cr} ${cg} ${cb} rg\n`);
       texto(M, yy, l.texto, l.size, l.bold);
+      if (l.destaque && marca?.cor) push(`0 0 0 rg\n`);
     }
-    texto(M, M - 18, `Página ${idx + 1} de ${paginas.length}`, 7.5);
+    // Rodapé institucional em todas as páginas, na cor da marca
+    push(`${cr} ${cg} ${cb} RG 0.8 w ${M} ${M - 8} m ${RETRATO.w - M} ${M - 8} l S\n0 0 0 RG\n`);
+    if (marca?.rodape) texto(M, M - 20, marca.rodape, 7.5);
+    texto(RETRATO.w - M - 66, M - 20, `Página ${idx + 1} de ${paginas.length}`, 7.5);
     return concat(ops);
   });
 
-  return montarPdf(streams, RETRATO);
+  return montarPdf(streams, RETRATO, marca?.logo);
 }

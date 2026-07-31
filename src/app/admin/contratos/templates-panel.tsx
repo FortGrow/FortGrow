@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileStack, FileUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
-import { TEMPLATE_PLACEHOLDERS } from "@/lib/contract-doc";
+import { TEMPLATE_PLACEHOLDERS } from "@/lib/contract-placeholders";
 
 export type TemplateRow = { id: string; name: string; body: string; updatedAt: string };
 
@@ -146,9 +146,10 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
             </h2>
             <p className="mb-4 text-xs text-slate-500">
               Cole o texto do seu contrato ou use “Importar de PDF ou Word” para trazer a estrutura que você
-              já tem pronta (.pdf ou .docx). Depois, troque os dados do cliente pelos marcadores (legenda abaixo). Linha em CAIXA-ALTA
-              ou começando com “CLÁUSULA” vira título de seção; “ASSINATURA: Nome — Parte” vira linha de
-              assinatura com régua.
+              já tem pronta (.pdf ou .docx) — títulos e negritos do Word são preservados como títulos de seção.
+              Depois, troque os dados do cliente pelos marcadores (legenda abaixo). Vira título de seção: linha
+              começando com “## ”, em CAIXA-ALTA ou começando com “CLÁUSULA”; “ASSINATURA: Nome — Parte” vira
+              linha de assinatura com régua. O PDF final sai no layout oficial FortGrow (logo, cores e rodapé).
             </p>
 
             <label className="label" htmlFor="tpl-nome">Nome do modelo *</label>
