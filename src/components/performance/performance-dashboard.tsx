@@ -449,6 +449,12 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
 
   const t = totalsOf(current, cfg);
   const pt = totalsOf(previous, cfg);
+  /* Total de leads de TODO o histórico — ignora filtros; o card mostra o
+     período no número grande e este total no rodapé. */
+  const leadsHistorico = (rows ?? []).reduce(
+    (s, r) => s + (isConversionType(r.campaignType) ? r.leads : 0),
+    0
+  );
   const k = kpisOf(t);
   const p = kpisOf(pt);
 
@@ -901,7 +907,7 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
             label="Leads gerados"
             value={num(t.leads)}
             delta={delta(t.leads, pt.leads)}
-            hint={`${num(t.sales)} viraram vendas no período`}
+            hint={`${num(t.sales)} viraram vendas · total desde o início: ${num(leadsHistorico)}`}
             accent="grow"
           />
           <StatCard
