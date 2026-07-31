@@ -39,8 +39,8 @@ export function ContractRowActions({ contractId, title }: { contractId: string; 
           <div className="card w-full max-w-md p-6">
             <h2 className="mb-2 text-base font-bold text-slate-100">Excluir contrato?</h2>
             <p className="mb-4 text-sm text-slate-400">
-              “{title}” será removido, inclusive da área de assinatura no portal do cliente. Os PDFs já salvos em
-              Documentos permanecem.
+              “{title}” será removido por completo — sai da área de assinatura E dos Documentos do portal do
+              cliente, e os arquivos deixam de existir. O cliente não verá mais nada deste contrato.
             </p>
             <div className="flex items-center justify-end gap-2">
               <button onClick={() => setConfirm(false)} className="btn-ghost">Cancelar</button>

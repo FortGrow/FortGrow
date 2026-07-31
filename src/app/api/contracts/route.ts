@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -183,6 +183,12 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ contract });
 }
 
+/**
+ * Excluir contrato some com ele POR COMPLETO do lado do cliente: além do
+ * registro (que já tirava a área de assinatura do portal), saem os
+ * documentos que a criação/assinatura colocaram em Documentos e os
+ * próprios arquivos do disco — nada continua baixável.
+ */
 export async function DELETE(req: NextRequest) {
   const session = await requireStaff("contratos", "edit");
   if (isResponse(session)) return session;
@@ -190,10 +196,25 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const existing = await prisma.contract.findUnique({ where: { id }, select: { id: true } });
+  const existing = await prisma.contract.findUnique({
+    where: { id },
+    select: { id: true, clientId: true, fileUrl: true, signedFileUrl: true },
+  });
   if (!existing) return NextResponse.json({ error: "Contrato não encontrado." }, { status: 404 });
 
   await prisma.contract.delete({ where: { id } });
+
+  const urls = [existing.fileUrl, existing.signedFileUrl].filter(Boolean) as string[];
+  if (urls.length) {
+    await prisma.document.deleteMany({ where: { clientId: existing.clientId, url: { in: urls } } });
+    for (const u of urls) {
+      const rel = u.replace(/^\/api\/files\//, "");
+      if (rel && !rel.includes("..")) {
+        await unlink(path.join(process.cwd(), "uploads", rel)).catch(() => {});
+      }
+    }
+  }
+
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "contract.delete", entity: "Contract", entityId: id },
   });
