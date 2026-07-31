@@ -117,16 +117,31 @@ export default async function ClienteDetalhe({
   const fimDoDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
   const inicioDoDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-  const [receitaAtualAgg, receitaFechadaAgg] = await Promise.all([
-    prisma.performanceEntry.aggregate({
+  /* A comissão da FortGrow apura sobre a receita REAL (bruta × base de
+     cálculo do cliente, com ajustes por lançamento), não sobre o bruto —
+     por isso os lançamentos inteiros, não só a soma da receita. */
+  const [entriesJanelaAtual, entriesJanelaFechada] = await Promise.all([
+    prisma.performanceEntry.findMany({
       where: { clientId: client.id, date: { gte: inicioDoDia(janelaAtual.from), lte: fimDoDia(janelaAtual.to) } },
-      _sum: { revenue: true },
+      select: { revenue: true, convPercent: true, commissionPercent: true },
     }),
-    prisma.performanceEntry.aggregate({
+    prisma.performanceEntry.findMany({
       where: { clientId: client.id, date: { gte: inicioDoDia(janelaFechada.from), lte: fimDoDia(janelaFechada.to) } },
-      _sum: { revenue: true },
+      select: { revenue: true, convPercent: true, commissionPercent: true },
     }),
   ]);
+  const somaJanela = (list: { revenue: unknown; convPercent: unknown; commissionPercent: unknown }[]) =>
+    list.reduce(
+      (t, e) => {
+        const conv = Number(e.convPercent ?? client.perfConvPercent);
+        const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
+        return {
+          bruto: t.bruto + Number(e.revenue),
+          real: t.real + Number(e.revenue) * (conv / 100) * (comm / 100),
+        };
+      },
+      { bruto: 0, real: 0 }
+    );
   const perfEntries90 = perfEntries;
 
   /* Período do Resumo do cliente: vem da query string (?periodo=7|30|90|tudo
@@ -188,15 +203,17 @@ export default async function ClienteDetalhe({
      × base% × repasse%. Fechamento dia 20 → julho apura 21/06 a 20/07.
      Atualiza sozinha conforme as vendas do período são lançadas. */
   const isCommissionClient = client.billingType === "COMISSAO";
-  /* Três fatores: % do valor bruto que entra na base (ex.: Axton 50%) ×
-     base % × repasse FortGrow %. Clientes de dois fatores ficam com 100. */
-  const grossPct = Number(client.commissionGrossPercent);
-  const taxa = (grossPct / 100) * (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100);
-  const formulaLabel = `${grossPct !== 100 ? `${grossPct}% × ` : ""}${Number(client.commissionBase)}% × ${Number(client.commissionShare)}%`;
-  const volumeAtual = Number(receitaAtualAgg._sum.revenue ?? 0);
-  const volumeFechado = Number(receitaFechadaAgg._sum.revenue ?? 0);
-  const comissaoCompetenciaAtual = isCommissionClient ? Math.round(volumeAtual * taxa * 100) / 100 : 0;
-  const comissaoCompetenciaFechada = isCommissionClient ? Math.round(volumeFechado * taxa * 100) / 100 : 0;
+  /* Comissão FortGrow = receita REAL da janela × repasse %. A receita real
+     vem da base de cálculo do cliente (Performance), então a base é uma só
+     — não existe percentual duplicado do lado da comissão. */
+  const share = Number(client.commissionShare);
+  const formulaLabel = `receita real × ${share}%`;
+  const janAtual = somaJanela(entriesJanelaAtual);
+  const janFechada = somaJanela(entriesJanelaFechada);
+  const comissaoCompetenciaAtual = isCommissionClient ? Math.round(janAtual.real * (share / 100) * 100) / 100 : 0;
+  const comissaoCompetenciaFechada = isCommissionClient
+    ? Math.round(janFechada.real * (share / 100) * 100) / 100
+    : 0;
 
   /* Painel de 90 dias: quando há lançamentos de Performance, eles são a fonte
      (o que a equipe aponta é o que aparece); sem lançamentos, cai para as
@@ -320,7 +337,7 @@ export default async function ClienteDetalhe({
             value={brl(isCommissionClient ? comissaoCompetenciaFechada : comissaoPaga)}
             hint={
               isCommissionClient
-                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(volumeFechado)} × ${formulaLabel} · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
+                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(janFechada.bruto)} brutos → receita real ${brl(janFechada.real)} × ${share}% · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
                 : comissaoTotal > 0
                   ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"

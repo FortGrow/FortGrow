@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   const client = await prisma.client.findUnique({
     where: { id: clientId },
-    select: { closingDay: true },
+    select: { closingDay: true, perfConvPercent: true, perfCommissionPercent: true },
   });
   if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
 
@@ -39,31 +39,43 @@ export async function GET(req: NextRequest) {
     to = new Date(periodo.to.getFullYear(), periodo.to.getMonth(), periodo.to.getDate(), 23, 59, 59);
   }
 
-  const agregado = await prisma.performanceEntry.aggregate({
+  const lancs = await prisma.performanceEntry.findMany({
     where: { clientId, date: { gte: from, lte: to } },
-    _sum: { revenue: true, sales: true },
-    _count: { _all: true },
+    select: { revenue: true, sales: true, convPercent: true, commissionPercent: true },
   });
+  // Receita REAL = bruta × base de cálculo do cliente (com ajuste por linha):
+  // é sobre ela que a comissão da FortGrow incide.
+  const soma = lancs.reduce(
+    (t, e) => {
+      const conv = Number(e.convPercent ?? client.perfConvPercent);
+      const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
+      return {
+        bruto: t.bruto + Number(e.revenue),
+        real: t.real + Number(e.revenue) * (conv / 100) * (comm / 100),
+        vendas: t.vendas + e.sales,
+      };
+    },
+    { bruto: 0, real: 0, vendas: 0 }
+  );
 
   return NextResponse.json({
     from: from.toISOString().slice(0, 10),
     to: to.toISOString().slice(0, 10),
     closingDay: client.closingDay,
-    volume: Number(agregado._sum.revenue ?? 0),
-    vendas: agregado._sum.sales ?? 0,
-    lancamentos: agregado._count._all,
+    volume: soma.bruto,
+    real: Math.round(soma.real * 100) / 100,
+    vendas: soma.vendas,
+    lancamentos: lancs.length,
   });
 }
 
 const schema = z.object({
   clientId: z.string().min(1),
-  /// Volume vendido pelo cliente no período (ex.: 1.000.000)
+  /// Volume BRUTO vendido no período — referência no texto da fatura
   salesVolume: z.coerce.number().positive(),
-  /// % de comissão do cliente sobre o volume (ex.: 3 ou 1.5) — prefixado do cadastro, editável por lançamento
-  /// % do valor bruto que entra na base (Axton: 50); ausente = 100
-  grossPercent: z.coerce.number().positive().max(100).optional(),
-  basePercent: z.coerce.number().positive().max(100),
-  /// % da FortGrow sobre a comissão do cliente (ex.: 10)
+  /// Receita REAL do período (bruta × base de cálculo) — a base da comissão
+  realValue: z.coerce.number().positive(),
+  /// % da FortGrow sobre a receita real (ex.: 10)
   sharePercent: z.coerce.number().positive().max(100),
   /// Competência do lançamento, ex.: "julho/2026"
   reference: z.string().min(2).max(40),
@@ -87,7 +99,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { clientId, salesVolume, grossPercent, basePercent, sharePercent, reference, dueDate, periodStart, periodEnd } = parsed.data;
+  const { clientId, salesVolume, realValue, sharePercent, reference, dueDate, periodStart, periodEnd } = parsed.data;
 
   const client = await prisma.client.findUnique({ where: { id: clientId } });
   if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
@@ -95,9 +107,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Este cliente não tem contrato por comissão." }, { status: 400 });
   }
 
-  const gp = grossPercent ?? 100;
-  const clientCommission = salesVolume * (gp / 100) * (basePercent / 100);
-  const amount = Math.round(clientCommission * (sharePercent / 100) * 100) / 100;
+  const amount = Math.round(realValue * (sharePercent / 100) * 100) / 100;
 
   const inicio = periodStart ? new Date(`${periodStart}T12:00:00`) : null;
   const fim = periodEnd ? new Date(`${periodEnd}T12:00:00`) : null;
@@ -110,7 +120,7 @@ export async function POST(req: NextRequest) {
   const invoice = await prisma.invoice.create({
     data: {
       clientId,
-      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos × ${gp !== 100 ? `${gp}% × ` : ""}${basePercent}% × ${sharePercent}%`,
+      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita real ${fmt(realValue)} × ${sharePercent}%`,
       amount,
       dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 86400000),
       status: "EM_ABERTO",
@@ -123,15 +133,13 @@ export async function POST(req: NextRequest) {
     data: { userId: session.sub, action: "commission.launch", entity: "Invoice", entityId: invoice.id },
   });
 
-  return NextResponse.json({ invoice, amount, clientCommission }, { status: 201 });
+  return NextResponse.json({ invoice, amount }, { status: 201 });
 }
 
 const patchSchema = z.object({
   invoiceId: z.string().min(1),
   salesVolume: z.coerce.number().positive(),
-  /// % do valor bruto que entra na base (Axton: 50); ausente = 100
-  grossPercent: z.coerce.number().positive().max(100).optional(),
-  basePercent: z.coerce.number().positive().max(100),
+  realValue: z.coerce.number().positive(),
   sharePercent: z.coerce.number().positive().max(100),
   reference: z.string().min(2).max(40),
   periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -149,13 +157,11 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { invoiceId, salesVolume, grossPercent, basePercent, sharePercent, reference, periodStart, periodEnd } = parsed.data;
+  const { invoiceId, salesVolume, realValue, sharePercent, reference, periodStart, periodEnd } = parsed.data;
   const existing = await prisma.invoice.findUnique({ where: { id: invoiceId } });
   if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
 
-  const gp = grossPercent ?? 100;
-  const clientCommission = salesVolume * (gp / 100) * (basePercent / 100);
-  const amount = Math.round(clientCommission * (sharePercent / 100) * 100) / 100;
+  const amount = Math.round(realValue * (sharePercent / 100) * 100) / 100;
 
   const inicio = periodStart ? new Date(`${periodStart}T12:00:00`) : existing.periodStart;
   const fim = periodEnd ? new Date(`${periodEnd}T12:00:00`) : existing.periodEnd;
@@ -164,7 +170,7 @@ export async function PATCH(req: NextRequest) {
   const invoice = await prisma.invoice.update({
     where: { id: invoiceId },
     data: {
-      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos × ${gp !== 100 ? `${gp}% × ` : ""}${basePercent}% × ${sharePercent}%`,
+      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita real ${fmt(realValue)} × ${sharePercent}%`,
       amount,
       periodStart: inicio,
       periodEnd: fim,
@@ -175,5 +181,5 @@ export async function PATCH(req: NextRequest) {
     data: { userId: session.sub, action: "commission.launch_update", entity: "Invoice", entityId: invoiceId },
   });
 
-  return NextResponse.json({ ok: true, invoice, amount, clientCommission });
+  return NextResponse.json({ ok: true, invoice, amount });
 }

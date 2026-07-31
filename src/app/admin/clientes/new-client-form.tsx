@@ -152,38 +152,7 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                 />
               </div>
               <div>
-                <label className="label" htmlFor="nc-commissionGross">% do valor bruto (base)</label>
-                <input
-                  id="nc-commissionGross"
-                  name="commissionGrossPercent"
-                  type="number"
-                  min="0.001"
-                  max="100"
-                  step="0.001"
-                  defaultValue={100}
-                  className="input"
-                />
-                <p className="mt-1 text-xs text-slate-600">
-                  Quanto do valor bruto entra na conta (ex.: Axton 50). Sem base intermediária, deixe 100.
-                </p>
-              </div>
-              <div>
-                <label className="label" htmlFor="nc-commissionBase">Base de comissão do cliente (%) *</label>
-                <input
-                  id="nc-commissionBase"
-                  name="commissionBase"
-                  type="number"
-                  min="0.001"
-                  max="100"
-                  step="0.001"
-                  required
-                  className="input"
-                  placeholder="ex.: 3"
-                />
-                <p className="mt-1 text-xs text-slate-600">% que o cliente fatura sobre o volume vendido.</p>
-              </div>
-              <div>
-                <label className="label" htmlFor="nc-commissionShare">Percentual da FortGrow (%) *</label>
+                <label className="label" htmlFor="nc-commissionShare">Repasse da FortGrow (%) *</label>
                 <input
                   id="nc-commissionShare"
                   name="commissionShare"
@@ -196,8 +165,8 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   placeholder="ex.: 10"
                 />
                 <p className="mt-1 text-xs text-slate-600">
-                  Comissão = bruto × % do valor bruto × base % × este % (ex. Axton: 50% × 3% × 10%). Conta
-                  separada do faturamento do cliente (Performance → Base de cálculo).
+                  Comissão = receita REAL × este % (ex.: Axton 10%). A receita real nasce da base de cálculo do
+                  cliente, em Performance → Base de cálculo (ex.: bruto × 50% × 3%).
                 </p>
               </div>
               <div>

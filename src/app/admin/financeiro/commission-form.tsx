@@ -9,9 +9,7 @@ import { closingPeriod, competenciaLabel, MONTH_NAMES_PT } from "@/lib/closing-p
 export type CommissionClient = {
   id: string;
   name: string;
-  gross: number; // % do valor bruto que entra na base (100 = bruto inteiro)
-  base: number; // % de comissão do cliente
-  share: number; // % da FortGrow
+  share: number; // % da FortGrow sobre a receita real
   /// Dia de fechamento do período de apuração (null = mês civil)
   closingDay: number | null;
 };
@@ -38,8 +36,8 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
   const [volume, setVolume] = useState("");
-  const [gross, setGross] = useState(String(clients[0]?.gross ?? "100"));
-  const [base, setBase] = useState(String(clients[0]?.base ?? ""));
+  /// Receita REAL do período — a base da comissão (pré-buscada, editável)
+  const [real, setReal] = useState("");
   const [share, setShare] = useState(String(clients[0]?.share ?? ""));
 
   // Competência padrão: o mês atual
@@ -74,6 +72,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
         setApuracao({ volume: j.volume, lancamentos: j.lancamentos });
         // Pré-preenche sem brigar com quem já digitou outro valor
         setVolume((v) => (v === "" || Number(v) === 0 ? (j.volume > 0 ? String(j.volume) : v) : v));
+        setReal((v) => (v === "" || Number(v) === 0 ? (j.real > 0 ? String(j.real) : v) : v));
       })
       .finally(() => ativo && setBuscando(false));
     return () => {
@@ -82,15 +81,12 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   }, [clientId, de, ate]);
 
   const preview = useMemo(() => {
-    const v = Number(volume);
-    const g = Number(gross);
-    const b = Number(base);
+    const r = Number(real);
     const s = Number(share);
-    if (!(v > 0 && g > 0 && b > 0 && s > 0)) return null;
-    // Comissão em três fatores: bruto × % do valor bruto × base % × repasse %
-    const clientCommission = v * (g / 100) * (b / 100);
-    return { clientCommission, amount: clientCommission * (s / 100) };
-  }, [volume, gross, base, share]);
+    if (!(r > 0 && s > 0)) return null;
+    // Comissão FortGrow = receita REAL × repasse %
+    return { clientCommission: r, amount: r * (s / 100) };
+  }, [real, share]);
 
   function selectClient(id: string) {
     // Reselecionar o mesmo cliente não pode limpar o volume: o período não
@@ -98,13 +94,10 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
     if (id === clientId) return;
     setClientId(id);
     setVolume("");
+    setReal("");
     setApuracao(null);
     const c = clients.find((c) => c.id === id);
-    if (c) {
-      setGross(String(c.gross));
-      setBase(String(c.base));
-      setShare(String(c.share));
-    }
+    if (c) setShare(String(c.share));
   }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -119,8 +112,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
         body: JSON.stringify({
           clientId,
           salesVolume: volume,
-          grossPercent: gross,
-          basePercent: base,
+          realValue: real,
           sharePercent: share,
           reference: competenciaLabel(ano, mes),
           dueDate: form.get("dueDate") || undefined,
@@ -267,39 +259,25 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label" htmlFor="cf-gross">% do valor bruto</label>
+              <label className="label" htmlFor="cf-real">Receita real do período (R$) *</label>
               <input
-                id="cf-gross"
+                id="cf-real"
                 type="number"
-                min="0.001"
-                max="100"
-                step="0.001"
+                min="0.01"
+                step="0.01"
                 required
-                value={gross}
-                onChange={(e) => setGross(e.target.value)}
+                value={real}
+                onChange={(e) => setReal(e.target.value)}
                 className="input"
               />
-              <p className="mt-1 text-[11px] text-slate-600">ex.: Axton 50 · sem base intermediária = 100</p>
+              <p className="mt-1 text-[11px] text-slate-600">
+                bruto × base de cálculo do cliente — buscada dos lançamentos, editável
+              </p>
             </div>
             <div>
-              <label className="label" htmlFor="cf-base">Base do cliente (%)</label>
-              <input
-                id="cf-base"
-                type="number"
-                min="0.001"
-                max="100"
-                step="0.001"
-                required
-                value={base}
-                onChange={(e) => setBase(e.target.value)}
-                className="input"
-              />
-              <p className="mt-1 text-[11px] text-slate-600">ajuste se a parcela variar (ex.: 1,5)</p>
-            </div>
-            <div>
-              <label className="label" htmlFor="cf-share">FortGrow (%)</label>
+              <label className="label" htmlFor="cf-share">Repasse FortGrow (%) *</label>
               <input
                 id="cf-share"
                 type="number"
@@ -311,13 +289,14 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
                 onChange={(e) => setShare(e.target.value)}
                 className="input"
               />
+              <p className="mt-1 text-[11px] text-slate-600">comissão = receita real × este %</p>
             </div>
           </div>
 
           {preview && (
             <div className="rounded-xl bg-grow-500/10 px-4 py-3 text-sm ring-1 ring-inset ring-grow-500/20">
               <p className="text-slate-400">
-                Comissão do cliente: <span className="font-semibold text-slate-200">{brl(preview.clientCommission)}</span>
+                Receita real (base): <span className="font-semibold text-slate-200">{brl(preview.clientCommission)}</span>
               </p>
               <p className="mt-0.5 text-slate-400">
                 Faturamento FortGrow ({competenciaLabel(ano, mes)}):{" "}

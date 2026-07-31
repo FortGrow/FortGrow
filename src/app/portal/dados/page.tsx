@@ -33,7 +33,7 @@ export default async function PortalDadosPage() {
 
   const monetizacao =
     client.billingType === "COMISSAO"
-      ? `Comissão sobre vendas — ${Number(client.commissionGrossPercent) !== 100 ? `${Number(client.commissionGrossPercent)}% do bruto × ` : ""}${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% FortGrow${
+      ? `Comissão sobre vendas — receita real × ${Number(client.commissionShare)}% FortGrow${
           Number(client.monthlyValue) > 0 ? ` + ${brl(client.monthlyValue)}/mês` : ""
         }`
       : `Mensalidade fixa — ${brl(client.monthlyValue)}/mês`;
