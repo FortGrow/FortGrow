@@ -320,7 +320,11 @@ model Contract {
   startDate    DateTime
   endDate      DateTime?
   status       ContractStatus @default(ATIVO)
+  /// PDF gerado do contrato — o que o cliente baixa para assinar no gov.br
   fileUrl      String?
+  /// PDF assinado devolvido pelo cliente; null = aguardando assinatura
+  signedFileUrl String?
+  signedAt      DateTime?
   autoRenew    Boolean        @default(false)
   createdAt    DateTime       @default(now())
 }

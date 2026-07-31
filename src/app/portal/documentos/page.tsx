@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { PageHeader } from "@/components/ui/page-header";
+import { Badge } from "@/components/ui/badge";
 import { fullDate } from "@/lib/utils";
-import { FileText, Film, Image as ImageIcon, Presentation, FileBadge, Paintbrush, FileBarChart, File } from "lucide-react";
+import { FileText, Film, Image as ImageIcon, Presentation, FileBadge, Paintbrush, FileBarChart, File, FileDown, FileSignature, FileCheck2 } from "lucide-react";
+import { SignUpload } from "./sign-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -21,16 +23,101 @@ const TYPE_META: Record<string, { label: string; icon: React.ReactNode; tone: st
 
 export default async function DocumentosPage() {
   const session = (await getSession())!;
-  const docs = await prisma.document.findMany({
-    where: { clientId: session.clientId! },
-    orderBy: { createdAt: "desc" },
-  });
+  const [docs, contratos] = await Promise.all([
+    prisma.document.findMany({
+      where: { clientId: session.clientId! },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.contract.findMany({
+      where: { clientId: session.clientId!, fileUrl: { not: null } },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
+  const paraAssinar = contratos.filter((c) => !c.signedFileUrl);
+  const assinados = contratos.filter((c) => c.signedFileUrl);
   const types = [...new Set(docs.map((d) => d.type))];
 
   return (
     <>
       <PageHeader title="Documentos" subtitle="Todos os arquivos compartilhados com a sua empresa" />
+
+      {/* Contratos aguardando a assinatura eletrônica do cliente (gov.br) */}
+      {paraAssinar.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-warn">
+            <FileSignature size={16} /> Contratos aguardando sua assinatura
+          </h2>
+          <div className="space-y-3">
+            {paraAssinar.map((c) => (
+              <div key={c.id} className="card border-warn/30 p-5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-slate-100">{c.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      vigência a partir de {fullDate(c.startDate)}
+                      {c.endDate ? ` até ${fullDate(c.endDate)}` : " (prazo indeterminado)"}
+                    </p>
+                  </div>
+                  <a href={c.fileUrl!} target="_blank" rel="noreferrer" className="btn-ghost !px-3.5 !py-2 text-xs">
+                    <FileDown size={14} /> Baixar contrato (PDF)
+                  </a>
+                </div>
+                <ol className="mt-3 list-inside list-decimal space-y-1 rounded-xl border border-line/60 bg-ink-900/40 px-4 py-3 text-xs leading-relaxed text-slate-400">
+                  <li>Baixe o PDF do contrato no botão acima.</li>
+                  <li>
+                    Acesse{" "}
+                    <a
+                      href="https://assinador.iti.br"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold text-brand-400 hover:text-brand-300"
+                    >
+                      assinador.iti.br
+                    </a>{" "}
+                    e assine o arquivo com a sua conta gov.br (validade jurídica — Lei nº 14.063/2020).
+                  </li>
+                  <li>Envie aqui o PDF assinado que o gov.br gerar:</li>
+                </ol>
+                <div className="mt-3">
+                  <SignUpload contractId={c.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Contratos já assinados */}
+      {assinados.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-300">
+            <FileCheck2 size={16} className="text-grow-400" /> Contratos assinados
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {assinados.map((c) => (
+              <a
+                key={c.id}
+                href={c.signedFileUrl!}
+                target="_blank"
+                rel="noreferrer"
+                className="card flex items-center gap-3 p-4 transition hover:border-line-strong"
+              >
+                <span className="rounded-xl bg-grow-500/10 p-2.5 text-grow-400">
+                  <FileCheck2 size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-200">{c.title}</p>
+                  <p className="text-xs text-slate-500">
+                    assinado {c.signedAt ? `em ${fullDate(c.signedAt)}` : ""}
+                  </p>
+                </div>
+                <Badge tone="grow">assinado</Badge>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       {types.length === 0 && (
         <div className="card p-10 text-center text-sm text-slate-500">Nenhum documento disponível ainda.</div>
       )}

@@ -12,6 +12,7 @@
  */
 
 const A4 = { w: 842, h: 595 }; // paisagem — tabela de CRM tem muitas colunas
+const RETRATO = { w: 595, h: 842 }; // documentos de texto (contratos)
 const MARGEM = 32;
 const LINHA = 16;
 
@@ -125,23 +126,28 @@ export function tablePdf(
     return concat(ops);
   });
 
-  // ── Montagem dos objetos ──
+  return montarPdf(streams, A4);
+}
+
+/** Junta os streams de página no arquivo final (catálogo, fontes, xref).
+    Sem anotação de retorno de propósito: herda o Uint8Array<ArrayBuffer>
+    do concat(), que é o que Blob/NextResponse aceitam. */
+function montarPdf(streams: Uint8Array[], box: { w: number; h: number }) {
   const objs: Uint8Array[] = [];
   const add = (body: Uint8Array | string) =>
     objs.push(typeof body === "string" ? ascii(body) : body);
 
-  const nPages = paginas.length;
-  const kids = paginas.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
+  const kids = streams.map((_, i) => `${4 + i * 2} 0 R`).join(" ");
 
   add(`<< /Type /Catalog /Pages 2 0 R >>`);
-  add(`<< /Type /Pages /Count ${nPages} /Kids [${kids}] >>`);
+  add(`<< /Type /Pages /Count ${streams.length} /Kids [${kids}] >>`);
   add(
     `<< /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> ` +
       `/F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> >> >>`
   );
   streams.forEach((stream, i) => {
     add(
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4.w} ${A4.h}] /Resources 3 0 R /Contents ${5 + i * 2} 0 R >>`
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${box.w} ${box.h}] /Resources 3 0 R /Contents ${5 + i * 2} 0 R >>`
     );
     add(concat([ascii(`<< /Length ${stream.length} >>\nstream\n`), stream, ascii(`\nendstream`)]));
   });
@@ -163,4 +169,101 @@ export function tablePdf(
   partes.push(ascii(xref));
 
   return concat(partes);
+}
+
+/* ————— Documento de texto (contratos) ————— */
+
+export type DocBloco =
+  | { tipo: "titulo"; texto: string }
+  | { tipo: "paragrafo"; texto: string }
+  /** Linha de assinatura: régua com o nome/qualificação embaixo */
+  | { tipo: "assinatura"; texto: string };
+
+/** Quebra o texto em linhas de até maxChars, sem partir palavras. */
+function wrapTexto(texto: string, maxChars: number): string[] {
+  const palavras = texto.split(/\s+/).filter(Boolean);
+  const linhas: string[] = [];
+  let atual = "";
+  for (const p of palavras) {
+    const cand = atual ? `${atual} ${p}` : p;
+    if (cand.length > maxChars && atual) {
+      linhas.push(atual);
+      atual = p;
+    } else {
+      atual = cand;
+    }
+  }
+  if (atual) linhas.push(atual);
+  return linhas.length ? linhas : [""];
+}
+
+/**
+ * PDF de documento em retrato (A4) com título, seções e parágrafos com
+ * quebra de linha — usado para gerar o contrato que o cliente assina no
+ * gov.br. Mesma base minimalista do gerador de tabelas.
+ */
+export function docPdf(titulo: string, subtitulo: string, blocos: DocBloco[]) {
+  const M = 56;
+  const corpo = 10.5;
+  const charsPorLinha = Math.floor((RETRATO.w - M * 2) / (corpo * 0.5));
+  const alturaLinha = (size: number) => size * 1.45;
+
+  type L = { texto: string; size: number; bold: boolean; gap: number; regua?: boolean };
+  const linhas: L[] = [];
+  for (const b of blocos) {
+    if (b.tipo === "titulo") {
+      linhas.push({ texto: b.texto, size: 11.5, bold: true, gap: 18 });
+    } else if (b.tipo === "assinatura") {
+      linhas.push({ texto: b.texto, size: corpo, bold: false, gap: 48, regua: true });
+    } else {
+      wrapTexto(b.texto, charsPorLinha).forEach((w, i) =>
+        linhas.push({ texto: w, size: corpo, bold: false, gap: i === 0 ? 12 : 0 })
+      );
+    }
+  }
+
+  // Pagina calculando a posição de cada linha
+  const topo = RETRATO.h - M;
+  type Pos = { l: L; y: number };
+  const paginas: Pos[][] = [];
+  let pagina: Pos[] = [];
+  let y = topo - 64; // 1ª página desconta o cabeçalho
+  for (const l of linhas) {
+    y -= l.gap;
+    const lh = alturaLinha(l.size);
+    if (y - lh < M + 20) {
+      paginas.push(pagina);
+      pagina = [];
+      y = topo - 24;
+    }
+    y -= lh;
+    pagina.push({ l, y });
+  }
+  paginas.push(pagina);
+
+  const streams = paginas.map((ps, idx) => {
+    const ops: Uint8Array[] = [];
+    const push = (s: string) => ops.push(ascii(s));
+    const texto = (x: number, yy: number, s: string, size: number, bold = false) => {
+      push(`BT /${bold ? "F2" : "F1"} ${size} Tf ${x} ${yy} Td (`);
+      ops.push(pdfText(s));
+      push(") Tj ET\n");
+    };
+
+    if (idx === 0) {
+      texto(M, topo - 6, titulo, 14, true);
+      texto(M, topo - 24, subtitulo, 9);
+      push(`0.8 0.8 0.8 RG 0.6 w ${M} ${topo - 34} m ${RETRATO.w - M} ${topo - 34} l S\n0 0 0 RG\n`);
+    }
+    for (const { l, y: yy } of ps) {
+      if (l.regua) {
+        push(`0.25 0.25 0.25 RG 0.7 w ${M} ${yy + l.size + 5} m ${M + 250} ${yy + l.size + 5} l S\n0 0 0 RG\n`);
+      }
+      texto(M, yy, l.texto, l.size, l.bold);
+    }
+    texto(M, M - 18, `Página ${idx + 1} de ${paginas.length}`, 7.5);
+    return concat(ops);
+  });
+
+  return montarPdf(streams, RETRATO);
 }
