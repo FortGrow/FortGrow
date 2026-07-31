@@ -186,9 +186,9 @@ export function gerarContratoPdf(
   let valorTexto: string;
   if (isComissao) {
     valorTexto =
-      `Pelos serviços prestados, a CONTRATANTE repassará à CONTRATADA ${cliente.commissionShare}% ` +
-      `da receita real apurada no período (valor bruto das vendas ajustado pela base de cálculo ` +
-      `acordada entre as partes)` +
+      `Pelos serviços prestados, a CONTRATANTE pagará à CONTRATADA remuneração variável de ` +
+      `${cliente.commissionShare}% sobre ${cliente.commissionBase}% da receita base apurada no período ` +
+      `(valor bruto das vendas ajustado pela base de cálculo acordada entre as partes)` +
       (cliente.monthlyValue > 0 ? `, acrescida de mensalidade fixa de ${brl(cliente.monthlyValue)}` : "") +
       (cliente.closingDay
         ? `. O período de apuração encerra no dia ${cliente.closingDay} de cada mês — a competência apura as vendas do dia ${cliente.closingDay + 1} do mês anterior ao dia ${cliente.closingDay} do mês corrente.`

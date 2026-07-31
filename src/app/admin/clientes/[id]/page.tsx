@@ -130,17 +130,19 @@ export default async function ClienteDetalhe({
       select: { revenue: true, convPercent: true, commissionPercent: true },
     }),
   ]);
-  const somaJanela = (list: { revenue: unknown; convPercent: unknown; commissionPercent: unknown }[]) =>
+  /* Receita BASE = bruta × % de conversão (com ajuste por linha). É a base
+     comum: o cliente fatura base × % dele; a FortGrow recebe base × base do
+     cliente % × repasse %. */
+  const somaJanela = (list: { revenue: unknown; convPercent: unknown }[]) =>
     list.reduce(
       (t, e) => {
         const conv = Number(e.convPercent ?? client.perfConvPercent);
-        const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
         return {
           bruto: t.bruto + Number(e.revenue),
-          real: t.real + Number(e.revenue) * (conv / 100) * (comm / 100),
+          base: t.base + Number(e.revenue) * (conv / 100),
         };
       },
-      { bruto: 0, real: 0 }
+      { bruto: 0, base: 0 }
     );
   const perfEntries90 = perfEntries;
 
@@ -203,16 +205,17 @@ export default async function ClienteDetalhe({
      × base% × repasse%. Fechamento dia 20 → julho apura 21/06 a 20/07.
      Atualiza sozinha conforme as vendas do período são lançadas. */
   const isCommissionClient = client.billingType === "COMISSAO";
-  /* Comissão FortGrow = receita REAL da janela × repasse %. A receita real
-     vem da base de cálculo do cliente (Performance), então a base é uma só
-     — não existe percentual duplicado do lado da comissão. */
+  /* Comissão FortGrow = Receita BASE × Base do Cliente % × Percentual
+     FortGrow %. Ex. Axton: base (bruto × 50%) × 3% × 10%. */
+  const basePct = Number(client.commissionBase);
   const share = Number(client.commissionShare);
-  const formulaLabel = `receita real × ${share}%`;
+  const taxaSobreBase = (basePct / 100) * (share / 100);
+  const formulaLabel = `receita base × ${basePct}% × ${share}%`;
   const janAtual = somaJanela(entriesJanelaAtual);
   const janFechada = somaJanela(entriesJanelaFechada);
-  const comissaoCompetenciaAtual = isCommissionClient ? Math.round(janAtual.real * (share / 100) * 100) / 100 : 0;
+  const comissaoCompetenciaAtual = isCommissionClient ? Math.round(janAtual.base * taxaSobreBase * 100) / 100 : 0;
   const comissaoCompetenciaFechada = isCommissionClient
-    ? Math.round(janFechada.real * (share / 100) * 100) / 100
+    ? Math.round(janFechada.base * taxaSobreBase * 100) / 100
     : 0;
 
   /* Painel de 90 dias: quando há lançamentos de Performance, eles são a fonte
@@ -337,7 +340,7 @@ export default async function ClienteDetalhe({
             value={brl(isCommissionClient ? comissaoCompetenciaFechada : comissaoPaga)}
             hint={
               isCommissionClient
-                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(janFechada.bruto)} brutos → receita real ${brl(janFechada.real)} × ${share}% · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
+                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(janFechada.bruto)} brutos → receita base ${brl(janFechada.base)} × ${basePct}% × ${share}% · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
                 : comissaoTotal > 0
                   ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"

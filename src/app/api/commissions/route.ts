@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   const client = await prisma.client.findUnique({
     where: { id: clientId },
-    select: { closingDay: true, perfConvPercent: true, perfCommissionPercent: true },
+    select: { closingDay: true, perfConvPercent: true },
   });
   if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
 
@@ -41,21 +41,20 @@ export async function GET(req: NextRequest) {
 
   const lancs = await prisma.performanceEntry.findMany({
     where: { clientId, date: { gte: from, lte: to } },
-    select: { revenue: true, sales: true, convPercent: true, commissionPercent: true },
+    select: { revenue: true, sales: true, convPercent: true },
   });
-  // Receita REAL = bruta × base de cálculo do cliente (com ajuste por linha):
-  // é sobre ela que a comissão da FortGrow incide.
+  // Receita BASE = bruta × % de conversão (com ajuste por linha): é sobre
+  // ela que incidem a base do cliente e o percentual da FortGrow.
   const soma = lancs.reduce(
     (t, e) => {
       const conv = Number(e.convPercent ?? client.perfConvPercent);
-      const comm = Number(e.commissionPercent ?? client.perfCommissionPercent);
       return {
         bruto: t.bruto + Number(e.revenue),
-        real: t.real + Number(e.revenue) * (conv / 100) * (comm / 100),
+        base: t.base + Number(e.revenue) * (conv / 100),
         vendas: t.vendas + e.sales,
       };
     },
-    { bruto: 0, real: 0, vendas: 0 }
+    { bruto: 0, base: 0, vendas: 0 }
   );
 
   return NextResponse.json({
@@ -63,7 +62,7 @@ export async function GET(req: NextRequest) {
     to: to.toISOString().slice(0, 10),
     closingDay: client.closingDay,
     volume: soma.bruto,
-    real: Math.round(soma.real * 100) / 100,
+    base: Math.round(soma.base * 100) / 100,
     vendas: soma.vendas,
     lancamentos: lancs.length,
   });
@@ -73,9 +72,11 @@ const schema = z.object({
   clientId: z.string().min(1),
   /// Volume BRUTO vendido no período — referência no texto da fatura
   salesVolume: z.coerce.number().positive(),
-  /// Receita REAL do período (bruta × base de cálculo) — a base da comissão
-  realValue: z.coerce.number().positive(),
-  /// % da FortGrow sobre a receita real (ex.: 10)
+  /// Receita BASE do período (bruta × % de conversão) — a base da comissão
+  baseValue: z.coerce.number().positive(),
+  /// % da base que é a comissão do cliente (ex.: 3)
+  basePercent: z.coerce.number().positive().max(100),
+  /// % da FortGrow (ex.: 10)
   sharePercent: z.coerce.number().positive().max(100),
   /// Competência do lançamento, ex.: "julho/2026"
   reference: z.string().min(2).max(40),
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { clientId, salesVolume, realValue, sharePercent, reference, dueDate, periodStart, periodEnd } = parsed.data;
+  const { clientId, salesVolume, baseValue, basePercent, sharePercent, reference, dueDate, periodStart, periodEnd } = parsed.data;
 
   const client = await prisma.client.findUnique({ where: { id: clientId } });
   if (!client) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
@@ -107,7 +108,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Este cliente não tem contrato por comissão." }, { status: 400 });
   }
 
-  const amount = Math.round(realValue * (sharePercent / 100) * 100) / 100;
+  // Receita Base × Base do Cliente % × Percentual FortGrow %
+  const amount = Math.round(baseValue * (basePercent / 100) * (sharePercent / 100) * 100) / 100;
 
   const inicio = periodStart ? new Date(`${periodStart}T12:00:00`) : null;
   const fim = periodEnd ? new Date(`${periodEnd}T12:00:00`) : null;
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
   const invoice = await prisma.invoice.create({
     data: {
       clientId,
-      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita real ${fmt(realValue)} × ${sharePercent}%`,
+      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita base ${fmt(baseValue)} × ${basePercent}% × ${sharePercent}%`,
       amount,
       dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 86400000),
       status: "EM_ABERTO",
@@ -139,7 +141,8 @@ export async function POST(req: NextRequest) {
 const patchSchema = z.object({
   invoiceId: z.string().min(1),
   salesVolume: z.coerce.number().positive(),
-  realValue: z.coerce.number().positive(),
+  baseValue: z.coerce.number().positive(),
+  basePercent: z.coerce.number().positive().max(100),
   sharePercent: z.coerce.number().positive().max(100),
   reference: z.string().min(2).max(40),
   periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -157,11 +160,11 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { invoiceId, salesVolume, realValue, sharePercent, reference, periodStart, periodEnd } = parsed.data;
+  const { invoiceId, salesVolume, baseValue, basePercent, sharePercent, reference, periodStart, periodEnd } = parsed.data;
   const existing = await prisma.invoice.findUnique({ where: { id: invoiceId } });
   if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
 
-  const amount = Math.round(realValue * (sharePercent / 100) * 100) / 100;
+  const amount = Math.round(baseValue * (basePercent / 100) * (sharePercent / 100) * 100) / 100;
 
   const inicio = periodStart ? new Date(`${periodStart}T12:00:00`) : existing.periodStart;
   const fim = periodEnd ? new Date(`${periodEnd}T12:00:00`) : existing.periodEnd;
@@ -170,7 +173,7 @@ export async function PATCH(req: NextRequest) {
   const invoice = await prisma.invoice.update({
     where: { id: invoiceId },
     data: {
-      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita real ${fmt(realValue)} × ${sharePercent}%`,
+      description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita base ${fmt(baseValue)} × ${basePercent}% × ${sharePercent}%`,
       amount,
       periodStart: inicio,
       periodEnd: fim,

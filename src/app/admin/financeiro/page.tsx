@@ -159,6 +159,7 @@ export default async function FinanceiroPage({
             clients={commissionClients.map((c) => ({
               id: c.id,
               name: c.companyName,
+              base: Number(c.commissionBase),
               share: Number(c.commissionShare),
               closingDay: c.closingDay,
             }))}

@@ -42,9 +42,9 @@ export async function POST(req: NextRequest) {
 
   const { email, contractStart, monthlyValue, billingType, commissionGrossPercent, commissionBase, commissionShare, closingDay, ...rest } = parsed.data;
 
-  if (billingType === "COMISSAO" && !commissionShare) {
+  if (billingType === "COMISSAO" && (!commissionBase || !commissionShare)) {
     return NextResponse.json(
-      { error: "Contratos por comissão precisam do repasse da FortGrow (%)." },
+      { error: "Contratos por comissão precisam da base do cliente e do percentual da FortGrow." },
       { status: 400 }
     );
   }
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       // Comissão também pode ter mensalidade fixa (contrato híbrido)
       monthlyValue: monthlyValue ?? 0,
       commissionGrossPercent: billingType === "COMISSAO" ? commissionGrossPercent ?? 100 : 100,
-      commissionBase: billingType === "COMISSAO" ? commissionBase ?? 0 : 0,
+      commissionBase: billingType === "COMISSAO" ? commissionBase! : 0,
       commissionShare: billingType === "COMISSAO" ? commissionShare! : 0,
       closingDay: billingType === "COMISSAO" ? closingDay ?? null : null,
       contractStart: contractStart ? new Date(contractStart) : new Date(),

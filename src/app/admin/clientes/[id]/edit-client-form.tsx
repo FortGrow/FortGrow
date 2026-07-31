@@ -164,13 +164,20 @@ export function EditClientForm({ client, plans = [] }: { client: EditableClient;
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="ec-commissionShare">Repasse FortGrow (%)</label>
+                    <label className="label" htmlFor="ec-commissionBase">Base do cliente (%)</label>
+                    <input id="ec-commissionBase" name="commissionBase" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionBase} className="input" />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="ec-commissionShare">Percentual FortGrow (%)</label>
                     <input id="ec-commissionShare" name="commissionShare" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionShare} className="input" />
                   </div>
                   <p className="col-span-full rounded-xl border border-line/60 bg-ink-900/40 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
-                    <b className="text-slate-300">Comissão da FortGrow = receita REAL × repasse %</b>. A receita
-                    real vem da base de cálculo do cliente (Performance → Base de cálculo: bruto × % conversão ×
-                    % do cliente — ex. Axton: 50% × 3%). Assim a base é uma só: mudou lá, a comissão acompanha.
+                    <b className="text-slate-300">
+                      Comissão FortGrow = Receita Base × Base do Cliente % × Percentual FortGrow %
+                    </b>{" "}
+                    (ex. Axton: base × 3% × 10%). A Receita Base = vendas brutas × % de conversão, configurada em
+                    Performance → Base de cálculo — a mesma base do faturamento do cliente, cada um com seus
+                    percentuais.
                   </p>
                   <div>
                     <label className="label" htmlFor="ec-closingDay">Dia de fechamento</label>

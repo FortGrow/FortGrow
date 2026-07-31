@@ -152,7 +152,21 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                 />
               </div>
               <div>
-                <label className="label" htmlFor="nc-commissionShare">Repasse da FortGrow (%) *</label>
+                <label className="label" htmlFor="nc-commissionBase">Base do cliente (%) *</label>
+                <input
+                  id="nc-commissionBase"
+                  name="commissionBase"
+                  type="number"
+                  min="0.001"
+                  max="100"
+                  step="0.001"
+                  required
+                  className="input"
+                  placeholder="ex.: 3"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="nc-commissionShare">Percentual da FortGrow (%) *</label>
                 <input
                   id="nc-commissionShare"
                   name="commissionShare"
@@ -165,8 +179,8 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   placeholder="ex.: 10"
                 />
                 <p className="mt-1 text-xs text-slate-600">
-                  Comissão = receita REAL × este % (ex.: Axton 10%). A receita real nasce da base de cálculo do
-                  cliente, em Performance → Base de cálculo (ex.: bruto × 50% × 3%).
+                  Comissão FortGrow = Receita Base × base do cliente % × este % (ex. Axton: base × 3% × 10%). A
+                  Receita Base = bruto × % de conversão, em Performance → Base de cálculo.
                 </p>
               </div>
               <div>
