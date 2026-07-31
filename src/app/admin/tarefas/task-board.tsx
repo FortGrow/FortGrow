@@ -78,6 +78,8 @@ export function TaskBoard({
               badge: t.priority,
               badgeTone: t.priority === "URGENTE" ? "danger" : t.priority === "ALTA" ? "warn" : "slate",
               color: t.color,
+              // Tingimento pela cor da coluna: quanto maior a prioridade, mais forte
+              intensity: ({ BAIXA: 0, MEDIA: 1, ALTA: 2, URGENTE: 3 } as Record<string, number>)[t.priority] ?? 1,
             };
           }),
       })),
@@ -201,6 +203,7 @@ export function TaskBoard({
         columns={kanbanColumns}
         endpoint="/api/tasks"
         colorable
+        tintByColumn
         onEdit={(id) => {
           const t = tasks.find((t) => t.id === id);
           if (t) setEditing(t);

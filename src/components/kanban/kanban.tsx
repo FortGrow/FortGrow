@@ -14,6 +14,8 @@ export type KanbanCard = {
   badgeTone?: string;
   /// Chave da paleta de cores do cartão (CARD_COLORS)
   color?: string | null;
+  /// Com `tintByColumn`: intensidade do tingimento (0 fraca → 3 máxima)
+  intensity?: number;
 };
 
 export type KanbanColumn = {
@@ -80,6 +82,23 @@ function cardStyle(color?: string | null): React.CSSProperties | undefined {
 }
 
 /**
+ * Cartão tingido pela cor da COLUNA, com intensidade crescente: nível 0
+ * (prioridade baixa) é um véu discreto; nível 3 (urgente) satura o fundo,
+ * engrossa a barra lateral e ganha um brilho — o olho acha o urgente antes
+ * de ler qualquer texto.
+ */
+function tintStyle(accent: string, nivel = 0): React.CSSProperties {
+  const bg = ["0d", "1f", "33", "4d"][nivel] ?? "0d";
+  const borda = ["38", "55", "80", "b3"][nivel] ?? "38";
+  return {
+    background: `${accent}${bg}`,
+    borderColor: `${accent}${borda}`,
+    borderLeft: `${nivel >= 3 ? 4 : 3}px solid ${nivel === 0 ? `${accent}99` : accent}`,
+    ...(nivel >= 2 ? { boxShadow: `0 0 18px -8px ${accent}${nivel >= 3 ? "cc" : "66"}` } : {}),
+  };
+}
+
+/**
  * Quadro Kanban com drag & drop nativo.
  * Ao soltar um cartão, envia PATCH para `endpoint` com { id, stage }.
  * Com `colorable`, cada cartão ganha uma paleta de cores (PATCH { id, color }).
@@ -88,11 +107,15 @@ export function KanbanBoard({
   columns,
   endpoint,
   colorable = false,
+  tintByColumn = false,
   onEdit,
 }: {
   columns: KanbanColumn[];
   endpoint: string;
   colorable?: boolean;
+  /// Cartões seguem a cor da coluna, com intensidade por card.intensity;
+  /// uma cor manual escolhida na paleta continua tendo prioridade
+  tintByColumn?: boolean;
   /// Quando definido, cada cartão ganha um botão de edição (lápis)
   onEdit?: (cardId: string) => void;
 }) {
@@ -187,7 +210,10 @@ export function KanbanBoard({
                   setDragging(card.id);
                 }}
                 onDragEnd={() => setDragging(null)}
-                style={cardStyle(card.color)}
+                style={
+                  cardStyle(card.color) ??
+                  (tintByColumn ? tintStyle(col.accent ?? "#64748b", card.intensity ?? 0) : undefined)
+                }
                 className={cn(
                   "group cursor-grab rounded-xl border border-line bg-ink-850 p-3.5 shadow-card transition hover:border-line-strong active:cursor-grabbing",
                   dragging === card.id && "opacity-50"
