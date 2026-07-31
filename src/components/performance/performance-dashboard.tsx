@@ -258,6 +258,13 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
      — permite lançar métricas de meses anteriores. */
   const [entryMonth, setEntryMonth] = useState(() => iso(new Date()).slice(0, 7));
   const [monthScope, setMonthScope] = useState(true);
+  /* Filtro local da tabela de Lançamentos — mexe só nas linhas exibidas,
+     sem tocar nos KPIs/gráficos (que seguem os filtros do topo). */
+  const [tblSearch, setTblSearch] = useState("");
+  const [tblSource, setTblSource] = useState("");
+  const [tblType, setTblType] = useState("");
+  const [tblFrom, setTblFrom] = useState("");
+  const [tblTo, setTblTo] = useState("");
   /* Modal de vendas detalhadas + contador de versão por linha: os inputs da
      tabela são não-controlados, então quando o modal re-sincroniza Vendas e
      Receita bruta a linha precisa remontar para exibir os novos valores. */
@@ -466,16 +473,25 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       });
   }, [current, cfg]);
 
-  /* Tabela: mostra todo o histórico, respeitando só o filtro de origem */
+  /* Tabela: todo o histórico, respeitando os filtros do topo + o filtro local
+     da seção. Um intervalo de datas local suspende o recorte por mês (senão
+     as duas janelas brigariam). */
+  const tblDateActive = Boolean(tblFrom || tblTo);
+  const tblFilterActive = Boolean(tblSearch || tblSource || tblType || tblDateActive);
   const table = useMemo(
     () =>
       [...(rows ?? [])]
         .filter((r) => source === "TODAS" || r.source === source)
         .filter((r) => campaigns.length === 0 || campaigns.includes(r.campaign ?? ""))
         .filter((r) => !campaignType || (r.campaignType ?? "") === campaignType)
-        .filter((r) => !(editable && monthScope) || r.date.slice(0, 7) === entryMonth)
+        .filter((r) => !(editable && monthScope && !tblDateActive) || r.date.slice(0, 7) === entryMonth)
+        .filter((r) => !tblSearch || (r.campaign ?? "").toLowerCase().includes(tblSearch.trim().toLowerCase()))
+        .filter((r) => !tblSource || r.source === tblSource)
+        .filter((r) => !tblType || (r.campaignType ?? "") === tblType)
+        .filter((r) => !tblFrom || r.date >= tblFrom)
+        .filter((r) => !tblTo || r.date <= tblTo)
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [rows, source, campaigns, campaignType, editable, monthScope, entryMonth]
+    [rows, source, campaigns, campaignType, editable, monthScope, entryMonth, tblSearch, tblSource, tblType, tblFrom, tblTo, tblDateActive]
   );
 
   const entryMonthLabel = useMemo(
@@ -880,7 +896,14 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
         <h2 className="mb-3 text-sm font-bold text-slate-200">Resultados — resumo consolidado</h2>
 
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Performance</p>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <StatCard
+            label="Leads gerados"
+            value={num(t.leads)}
+            delta={delta(t.leads, pt.leads)}
+            hint={`${num(t.sales)} viraram vendas no período`}
+            accent="grow"
+          />
           <StatCard
             label="CAC"
             value={fmtBrl(k.cac)}
@@ -1255,13 +1278,72 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
           )}
         </div>
 
+        {/* Filtro da tabela: busca, origem, tipo e intervalo de datas */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <SlidersHorizontal size={12} /> Filtrar:
+          </span>
+          <input
+            type="search"
+            value={tblSearch}
+            onChange={(e) => setTblSearch(e.target.value)}
+            placeholder="Buscar campanha…"
+            className="input !w-44 !py-1.5 text-xs"
+          />
+          <select
+            value={tblSource}
+            onChange={(e) => setTblSource(e.target.value)}
+            className="input !w-auto cursor-pointer !py-1.5 text-xs"
+          >
+            <option value="">Todas as origens</option>
+            {SOURCES.map((s) => (
+              <option key={s.key} value={s.key}>{s.label}</option>
+            ))}
+          </select>
+          <select
+            value={tblType}
+            onChange={(e) => setTblType(e.target.value)}
+            className="input !w-auto cursor-pointer !py-1.5 text-xs"
+          >
+            <option value="">Todos os tipos</option>
+            {CAMPAIGN_TYPES.map((t) => (
+              <option key={t.key} value={t.key}>{t.label}</option>
+            ))}
+          </select>
+          <span className="flex items-center gap-1.5 text-xs text-slate-400">
+            <input type="date" value={tblFrom} onChange={(e) => setTblFrom(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
+            até
+            <input type="date" value={tblTo} onChange={(e) => setTblTo(e.target.value)} className="input !w-auto !py-1.5 text-xs" />
+          </span>
+          {tblFilterActive && (
+            <button
+              onClick={() => {
+                setTblSearch("");
+                setTblSource("");
+                setTblType("");
+                setTblFrom("");
+                setTblTo("");
+              }}
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-slate-400 transition hover:border-line-strong hover:text-slate-200"
+            >
+              Limpar
+            </button>
+          )}
+          <span className="ml-auto text-xs text-slate-500">
+            {num(table.length)} {table.length === 1 ? "lançamento" : "lançamentos"}
+            {tblDateActive && editable && monthScope ? " · intervalo de datas ativo (recorte por mês suspenso)" : ""}
+          </span>
+        </div>
+
         {table.length === 0 ? (
           <p className="py-10 text-center text-sm text-slate-500">
-            {!editable
-              ? "Nenhum dado de performance lançado ainda."
-              : editable && monthScope
-                ? `Nenhum lançamento em ${entryMonthLabel}. Clique em “Adicionar linha” para lançar neste mês.`
-                : "Nenhum lançamento ainda. Clique em “Adicionar linha” para começar."}
+            {tblFilterActive
+              ? "Nenhum lançamento com os filtros aplicados — ajuste ou limpe o filtro."
+              : !editable
+                ? "Nenhum dado de performance lançado ainda."
+                : editable && monthScope
+                  ? `Nenhum lançamento em ${entryMonthLabel}. Clique em “Adicionar linha” para lançar neste mês.`
+                  : "Nenhum lançamento ainda. Clique em “Adicionar linha” para começar."}
           </p>
         ) : (
           <>
