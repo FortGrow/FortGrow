@@ -11,6 +11,7 @@ export const TEMPLATE_PLACEHOLDERS: { chave: string; descricao: string }[] = [
   { chave: "CIDADE_UF", descricao: "cidade/UF do cliente" },
   { chave: "PLANO", descricao: "plano contratado" },
   { chave: "VALOR", descricao: "valor mensal (R$)" },
+  { chave: "COMISSAO_BRUTO", descricao: "% do valor bruto que entra na base" },
   { chave: "COMISSAO_BASE", descricao: "% base de comissão" },
   { chave: "COMISSAO_REPASSE", descricao: "% de repasse FortGrow" },
   { chave: "DIA_FECHAMENTO", descricao: "dia de fechamento da apuração" },

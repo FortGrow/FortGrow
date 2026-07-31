@@ -9,6 +9,7 @@ import { closingPeriod, competenciaLabel, MONTH_NAMES_PT } from "@/lib/closing-p
 export type CommissionClient = {
   id: string;
   name: string;
+  gross: number; // % do valor bruto que entra na base (100 = bruto inteiro)
   base: number; // % de comissão do cliente
   share: number; // % da FortGrow
   /// Dia de fechamento do período de apuração (null = mês civil)
@@ -37,6 +38,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
   const [error, setError] = useState<string | null>(null);
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
   const [volume, setVolume] = useState("");
+  const [gross, setGross] = useState(String(clients[0]?.gross ?? "100"));
   const [base, setBase] = useState(String(clients[0]?.base ?? ""));
   const [share, setShare] = useState(String(clients[0]?.share ?? ""));
 
@@ -81,12 +83,14 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
 
   const preview = useMemo(() => {
     const v = Number(volume);
+    const g = Number(gross);
     const b = Number(base);
     const s = Number(share);
-    if (!(v > 0 && b > 0 && s > 0)) return null;
-    const clientCommission = v * (b / 100);
+    if (!(v > 0 && g > 0 && b > 0 && s > 0)) return null;
+    // Comissão em três fatores: bruto × % do valor bruto × base % × repasse %
+    const clientCommission = v * (g / 100) * (b / 100);
     return { clientCommission, amount: clientCommission * (s / 100) };
-  }, [volume, base, share]);
+  }, [volume, gross, base, share]);
 
   function selectClient(id: string) {
     // Reselecionar o mesmo cliente não pode limpar o volume: o período não
@@ -97,6 +101,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
     setApuracao(null);
     const c = clients.find((c) => c.id === id);
     if (c) {
+      setGross(String(c.gross));
       setBase(String(c.base));
       setShare(String(c.share));
     }
@@ -114,6 +119,7 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
         body: JSON.stringify({
           clientId,
           salesVolume: volume,
+          grossPercent: gross,
           basePercent: base,
           sharePercent: share,
           reference: competenciaLabel(ano, mes),
@@ -261,7 +267,22 @@ export function CommissionForm({ clients }: { clients: CommissionClient[] }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="label" htmlFor="cf-gross">% do valor bruto</label>
+              <input
+                id="cf-gross"
+                type="number"
+                min="0.001"
+                max="100"
+                step="0.001"
+                required
+                value={gross}
+                onChange={(e) => setGross(e.target.value)}
+                className="input"
+              />
+              <p className="mt-1 text-[11px] text-slate-600">ex.: Axton 50 · sem base intermediária = 100</p>
+            </div>
             <div>
               <label className="label" htmlFor="cf-base">Base do cliente (%)</label>
               <input

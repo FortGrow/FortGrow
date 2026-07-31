@@ -13,6 +13,7 @@ export type ClientCardDto = {
   plan: string | null;
   billingType: string;
   monthlyValue: number;
+  commissionGrossPercent: number;
   commissionBase: number;
   commissionShare: number;
   city: string | null;
@@ -139,7 +140,7 @@ export function ClientsBoard({ clients: initial }: { clients: ClientCardDto[] })
                 <div className="mt-2.5 space-y-1 text-xs text-white/85">
                   <p className="font-semibold text-white">
                     {c.billingType === "COMISSAO"
-                      ? `Comissão ${c.commissionBase}% × ${c.commissionShare}%${c.monthlyValue > 0 ? ` + ${brl(c.monthlyValue)}/mês` : ""}`
+                      ? `Comissão ${c.commissionGrossPercent !== 100 ? `${c.commissionGrossPercent}% × ` : ""}${c.commissionBase}% × ${c.commissionShare}%${c.monthlyValue > 0 ? ` + ${brl(c.monthlyValue)}/mês` : ""}`
                       : `${brl(c.monthlyValue)}/mês`}
                   </p>
                   {c.plan && <p className="truncate">{c.plan}</p>}

@@ -13,6 +13,8 @@ const createSchema = z.object({
   plan: z.string().max(80).optional(),
   billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
   monthlyValue: z.coerce.number().min(0).optional(),
+  /// % do valor bruto que entra na base (ex.: Axton 50); 100 = bruto inteiro
+  commissionGrossPercent: z.coerce.number().min(0.001).max(100).optional(),
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
   /// Dia de fechamento da apuração (1–28); vazio = mês civil
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { email, contractStart, monthlyValue, billingType, commissionBase, commissionShare, closingDay, ...rest } = parsed.data;
+  const { email, contractStart, monthlyValue, billingType, commissionGrossPercent, commissionBase, commissionShare, closingDay, ...rest } = parsed.data;
 
   if (billingType === "COMISSAO" && (!commissionBase || !commissionShare)) {
     return NextResponse.json(
@@ -54,6 +56,7 @@ export async function POST(req: NextRequest) {
       billingType: billingType ?? "FIXO",
       // Comissão também pode ter mensalidade fixa (contrato híbrido)
       monthlyValue: monthlyValue ?? 0,
+      commissionGrossPercent: billingType === "COMISSAO" ? commissionGrossPercent ?? 100 : 100,
       commissionBase: billingType === "COMISSAO" ? commissionBase! : 0,
       commissionShare: billingType === "COMISSAO" ? commissionShare! : 0,
       closingDay: billingType === "COMISSAO" ? closingDay ?? null : null,
@@ -155,6 +158,7 @@ const updateSchema = z.object({
   plan: nullableStr(120),
   billingType: z.enum(["FIXO", "COMISSAO"]).optional(),
   monthlyValue: z.coerce.number().min(0).optional(),
+  commissionGrossPercent: z.coerce.number().min(0.001).max(100).optional(),
   commissionBase: z.coerce.number().min(0).max(100).optional(),
   commissionShare: z.coerce.number().min(0).max(100).optional(),
   closingDay: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(28).nullish()),

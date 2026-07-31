@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
     plan: client.plan,
     billingType: client.billingType,
     monthlyValue: Number(client.monthlyValue),
+    commissionGrossPercent: Number(client.commissionGrossPercent),
     commissionBase: Number(client.commissionBase),
     commissionShare: Number(client.commissionShare),
     closingDay: client.closingDay,

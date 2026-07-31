@@ -188,7 +188,11 @@ export default async function ClienteDetalhe({
      × base% × repasse%. Fechamento dia 20 → julho apura 21/06 a 20/07.
      Atualiza sozinha conforme as vendas do período são lançadas. */
   const isCommissionClient = client.billingType === "COMISSAO";
-  const taxa = (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100);
+  /* Três fatores: % do valor bruto que entra na base (ex.: Axton 50%) ×
+     base % × repasse FortGrow %. Clientes de dois fatores ficam com 100. */
+  const grossPct = Number(client.commissionGrossPercent);
+  const taxa = (grossPct / 100) * (Number(client.commissionBase) / 100) * (Number(client.commissionShare) / 100);
+  const formulaLabel = `${grossPct !== 100 ? `${grossPct}% × ` : ""}${Number(client.commissionBase)}% × ${Number(client.commissionShare)}%`;
   const volumeAtual = Number(receitaAtualAgg._sum.revenue ?? 0);
   const volumeFechado = Number(receitaFechadaAgg._sum.revenue ?? 0);
   const comissaoCompetenciaAtual = isCommissionClient ? Math.round(volumeAtual * taxa * 100) / 100 : 0;
@@ -242,7 +246,7 @@ export default async function ClienteDetalhe({
         title={client.companyName}
         subtitle={
           client.billingType === "COMISSAO"
-            ? `${client.plan ?? "Contrato por comissão"} · comissão ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% FortGrow${Number(client.monthlyValue) > 0 ? ` + ${brl(client.monthlyValue)}/mês` : ""} · desde ${fullDate(client.contractStart)}`
+            ? `${client.plan ?? "Contrato por comissão"} · comissão ${formulaLabel} FortGrow${Number(client.monthlyValue) > 0 ? ` + ${brl(client.monthlyValue)}/mês` : ""} · desde ${fullDate(client.contractStart)}`
             : `${client.plan ?? "Sem plano"} · ${brl(client.monthlyValue)}/mês · desde ${fullDate(client.contractStart)}`
         }
       >
@@ -270,6 +274,7 @@ export default async function ClienteDetalhe({
             plan: client.plan,
             billingType: client.billingType,
             monthlyValue: Number(client.monthlyValue),
+            commissionGrossPercent: Number(client.commissionGrossPercent),
             commissionBase: Number(client.commissionBase),
             commissionShare: Number(client.commissionShare),
             closingDay: client.closingDay,
@@ -315,7 +320,7 @@ export default async function ClienteDetalhe({
             value={brl(isCommissionClient ? comissaoCompetenciaFechada : comissaoPaga)}
             hint={
               isCommissionClient
-                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(volumeFechado)} × ${Number(client.commissionBase)}% × ${Number(client.commissionShare)}% · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
+                ? `vendas de ${periodoLabel(janelaFechada)}: ${brl(volumeFechado)} × ${formulaLabel} · ${competenciaLabel(compAtual.year, compAtual.month)} em andamento: ${brl(comissaoCompetenciaAtual)}`
                 : comissaoTotal > 0
                   ? `recebida · ${brl(comissaoTotal)} em lançamentos`
                   : "cliente sem contrato por comissão"

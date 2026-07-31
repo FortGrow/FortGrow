@@ -58,7 +58,7 @@ export default async function FinanceiroPage({
       costReport(year, month),
       prisma.client.findMany({
         where: { billingType: "COMISSAO", status: { in: ["ATIVO", "ONBOARDING"] } },
-        select: { id: true, companyName: true, commissionBase: true, commissionShare: true, closingDay: true },
+        select: { id: true, companyName: true, commissionGrossPercent: true, commissionBase: true, commissionShare: true, closingDay: true },
         orderBy: { companyName: "asc" },
       }),
       prisma.expense.findMany({ where: { status: { not: "CANCELADO" } }, orderBy: { date: "desc" }, take: 10 }),
@@ -159,6 +159,7 @@ export default async function FinanceiroPage({
             clients={commissionClients.map((c) => ({
               id: c.id,
               name: c.companyName,
+              gross: Number(c.commissionGrossPercent),
               base: Number(c.commissionBase),
               share: Number(c.commissionShare),
               closingDay: c.closingDay,

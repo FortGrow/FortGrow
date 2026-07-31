@@ -152,6 +152,22 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                 />
               </div>
               <div>
+                <label className="label" htmlFor="nc-commissionGross">% do valor bruto (base)</label>
+                <input
+                  id="nc-commissionGross"
+                  name="commissionGrossPercent"
+                  type="number"
+                  min="0.001"
+                  max="100"
+                  step="0.001"
+                  defaultValue={100}
+                  className="input"
+                />
+                <p className="mt-1 text-xs text-slate-600">
+                  Quanto do valor bruto entra na conta (ex.: Axton 50). Sem base intermediária, deixe 100.
+                </p>
+              </div>
+              <div>
                 <label className="label" htmlFor="nc-commissionBase">Base de comissão do cliente (%) *</label>
                 <input
                   id="nc-commissionBase"
@@ -180,8 +196,8 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   placeholder="ex.: 10"
                 />
                 <p className="mt-1 text-xs text-slate-600">
-                  % da FortGrow sobre a base (ex.: 50% × 3%). Conta separada do faturamento do cliente, que usa
-                  os percentuais próprios em Performance → Base de cálculo (ex.: 50% × 1,5%).
+                  Comissão = bruto × % do valor bruto × base % × este % (ex. Axton: 50% × 3% × 10%). Conta
+                  separada do faturamento do cliente (Performance → Base de cálculo).
                 </p>
               </div>
               <div>

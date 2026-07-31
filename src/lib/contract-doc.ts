@@ -22,6 +22,7 @@ export type DadosContratada = {
 
 export type DadosCliente = {
   companyName: string;
+  commissionGrossPercent?: number;
   cnpj?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -94,6 +95,7 @@ export function valoresDoContrato(cliente: DadosCliente, contrato: DadosContrato
     CIDADE_UF: [cliente.city, cliente.state].filter(Boolean).join("/") || "—",
     PLANO: cliente.plan ?? "—",
     VALOR: brl(contrato.value || cliente.monthlyValue),
+    COMISSAO_BRUTO: `${cliente.commissionGrossPercent ?? 100}%`,
     COMISSAO_BASE: `${cliente.commissionBase}%`,
     COMISSAO_REPASSE: `${cliente.commissionShare}%`,
     DIA_FECHAMENTO: cliente.closingDay ? String(cliente.closingDay) : "—",
@@ -185,7 +187,8 @@ export function gerarContratoPdf(
   if (isComissao) {
     valorTexto =
       `Pelos serviços prestados, a CONTRATANTE pagará à CONTRATADA remuneração variável de ` +
-      `${cliente.commissionBase}% (base de comissão) sobre as vendas apuradas, com repasse de ` +
+      `${cliente.commissionBase}% (base de comissão) sobre ` +
+      `${cliente.commissionGrossPercent && cliente.commissionGrossPercent !== 100 ? `${cliente.commissionGrossPercent}% do valor bruto das` : "as"} vendas apuradas, com repasse de ` +
       `${cliente.commissionShare}% à CONTRATADA` +
       (cliente.monthlyValue > 0 ? `, acrescida de mensalidade fixa de ${brl(cliente.monthlyValue)}` : "") +
       (cliente.closingDay

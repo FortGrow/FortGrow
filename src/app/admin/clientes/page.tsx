@@ -51,6 +51,7 @@ export default async function ClientesPage() {
           plan: c.plan,
           billingType: c.billingType,
           monthlyValue: Number(c.monthlyValue),
+          commissionGrossPercent: Number(c.commissionGrossPercent),
           commissionBase: Number(c.commissionBase),
           commissionShare: Number(c.commissionShare),
           city: c.city,

@@ -37,6 +37,7 @@ const FIELD_LABELS: Record<string, string> = {
   status: "Status",
   billingType: "Tipo de contrato",
   monthlyValue: "Valor mensal",
+  commissionGrossPercent: "% do valor bruto (base)",
   commissionBase: "Base de comissão",
   commissionShare: "Percentual FortGrow",
   contractStart: "Início do contrato",
