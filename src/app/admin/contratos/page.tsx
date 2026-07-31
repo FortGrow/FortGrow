@@ -80,6 +80,8 @@ export default async function ContratosPage() {
             id: t.id,
             name: t.name,
             body: t.body,
+            kind: t.kind,
+            filePath: t.filePath,
             updatedAt: t.updatedAt.toISOString(),
           }))}
         />

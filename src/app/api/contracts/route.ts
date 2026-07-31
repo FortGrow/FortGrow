@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { invalidResponse } from "@/lib/validation";
-import { gerarContratoDeTemplate, gerarContratoPdf, type DadosContratada } from "@/lib/contract-doc";
+import {
+  gerarContratoDeTemplate,
+  gerarContratoPdf,
+  valoresDoContrato,
+  type DadosContratada,
+} from "@/lib/contract-doc";
+import { preencherDocx } from "@/lib/docx-fill";
 
 export const dynamic = "force-dynamic";
 
@@ -85,15 +91,35 @@ export async function POST(req: NextRequest) {
     closingDay: client.closingDay,
   };
 
-  // Estrutura própria da FortGrow quando escolhida; senão o texto padrão
-  const pdf = template
-    ? gerarContratoDeTemplate(title, dadosCliente, contrato, template.body)
-    : gerarContratoPdf(dadosCliente, contrato, await dadosContratada());
+  /* Documento do contrato:
+     — Modelo Word (kind DOCX): EDITA o arquivo original do admin — os
+       marcadores são preenchidos dentro do próprio .docx, preservando o
+       layout dele por completo. Nada é reformatado.
+     — Modelo de texto: PDF gerado com a estrutura do modelo.
+     — Sem modelo: PDF com o texto padrão do sistema. */
+  let arquivo: Buffer;
+  let extensao = "pdf";
+  if (template?.kind === "DOCX" && template.filePath) {
+    const original = await readFile(path.join(process.cwd(), "uploads", template.filePath)).catch(() => null);
+    const preenchido = original ? preencherDocx(original, valoresDoContrato(dadosCliente, contrato)) : null;
+    if (!preenchido) {
+      return NextResponse.json(
+        { error: "O arquivo Word deste modelo não pôde ser lido — importe-o novamente em Modelos de contrato." },
+        { status: 422 }
+      );
+    }
+    arquivo = preenchido;
+    extensao = "docx";
+  } else if (template) {
+    arquivo = Buffer.from(gerarContratoDeTemplate(title, dadosCliente, contrato, template.body));
+  } else {
+    arquivo = Buffer.from(gerarContratoPdf(dadosCliente, contrato, await dadosContratada()));
+  }
 
-  const fileName = `contrato-${Date.now()}.pdf`;
+  const fileName = `contrato-${Date.now()}.${extensao}`;
   const dir = path.join(process.cwd(), "uploads", clientId);
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, fileName), Buffer.from(pdf));
+  await writeFile(path.join(dir, fileName), arquivo);
   const fileUrl = `/api/files/${clientId}/${fileName}`;
 
   const created = await prisma.contract.create({
@@ -104,10 +130,10 @@ export async function POST(req: NextRequest) {
   await prisma.document.create({
     data: {
       clientId,
-      name: `${title}.pdf`,
+      name: `${title}.${extensao}`,
       type: "CONTRATO",
       url: fileUrl,
-      sizeKb: Math.round(pdf.length / 1024),
+      sizeKb: Math.round(arquivo.length / 1024),
       uploadedBy: session.name,
     },
   });

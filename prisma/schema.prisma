@@ -306,10 +306,16 @@ model ClientService {
 
 /// Estrutura de contrato da própria FortGrow: o texto colado pelo admin com
 /// marcadores ({{EMPRESA}}, {{CNPJ}}, {{VALOR}}...) preenchidos na geração.
+/// kind DOCX: o arquivo Word original fica guardado e a geração EDITA esse
+/// arquivo (preenche os marcadores dentro dele), preservando o layout —
+/// body vira só a prévia em texto.
 model ContractTemplate {
   id        String   @id @default(cuid())
   name      String
   body      String   @db.Text
+  kind      String   @default("TEXTO") // TEXTO | DOCX
+  /// Caminho do .docx original em uploads/contract-templates
+  filePath  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

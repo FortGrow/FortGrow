@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { extrairTextoDocx } from "@/lib/docx-text";
 
@@ -38,14 +40,24 @@ export async function POST(req: NextRequest) {
   }
 
   let texto = "";
+  let docxPath: string | null = null;
   if (ehDocx) {
-    texto = extrairTextoDocx(Buffer.from(await file.arrayBuffer())) ?? "";
+    const bytes = Buffer.from(await file.arrayBuffer());
+    texto = extrairTextoDocx(bytes) ?? "";
     if (!texto) {
       return NextResponse.json(
         { error: "Não consegui ler este .docx — confira se o arquivo abre no Word e tente de novo." },
         { status: 422 }
       );
     }
+    // Guarda o ARQUIVO original: com ele, a geração do contrato edita o
+    // próprio Word (marcadores preenchidos em-place, layout intacto) em vez
+    // de montar um documento novo a partir do texto.
+    const nome = `${Date.now()}-${(file.name || "modelo.docx").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80)}`;
+    const dir = path.join(process.cwd(), "uploads", "contract-templates");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, nome), bytes);
+    docxPath = `contract-templates/${nome}`;
   } else {
     try {
       const { extractText, getDocumentProxy } = await import("unpdf");
@@ -74,5 +86,5 @@ export async function POST(req: NextRequest) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return NextResponse.json({ text: limpo });
+  return NextResponse.json({ text: limpo, docxPath });
 }

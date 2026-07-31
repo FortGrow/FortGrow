@@ -60,11 +60,18 @@ export default async function DocumentosPage() {
                     </p>
                   </div>
                   <a href={c.fileUrl!} target="_blank" rel="noreferrer" className="btn-ghost !px-3.5 !py-2 text-xs">
-                    <FileDown size={14} /> Baixar contrato (PDF)
+                    <FileDown size={14} /> Baixar contrato {c.fileUrl!.endsWith(".docx") ? "(Word)" : "(PDF)"}
                   </a>
                 </div>
                 <ol className="mt-3 list-inside list-decimal space-y-1 rounded-xl border border-line/60 bg-ink-900/40 px-4 py-3 text-xs leading-relaxed text-slate-400">
-                  <li>Baixe o PDF do contrato no botão acima.</li>
+                  {c.fileUrl!.endsWith(".docx") ? (
+                    <>
+                      <li>Baixe o contrato no botão acima e confira o conteúdo.</li>
+                      <li>Abra o arquivo e salve em PDF (Arquivo → Salvar como/Exportar → PDF).</li>
+                    </>
+                  ) : (
+                    <li>Baixe o PDF do contrato no botão acima.</li>
+                  )}
                   <li>
                     Acesse{" "}
                     <a
@@ -75,7 +82,7 @@ export default async function DocumentosPage() {
                     >
                       assinador.iti.br
                     </a>{" "}
-                    e assine o arquivo com a sua conta gov.br (validade jurídica — Lei nº 14.063/2020).
+                    e assine o PDF com a sua conta gov.br (validade jurídica — Lei nº 14.063/2020).
                   </li>
                   <li>Envie aqui o PDF assinado que o gov.br gerar:</li>
                 </ol>

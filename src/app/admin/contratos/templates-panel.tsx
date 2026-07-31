@@ -6,7 +6,17 @@ import { FileStack, FileUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Overlay } from "@/components/ui/overlay";
 import { TEMPLATE_PLACEHOLDERS } from "@/lib/contract-placeholders";
 
-export type TemplateRow = { id: string; name: string; body: string; updatedAt: string };
+const cnBody = (soLeitura: boolean) =>
+  `input mb-2 font-mono text-xs leading-relaxed${soLeitura ? " opacity-60" : ""}`;
+
+export type TemplateRow = {
+  id: string;
+  name: string;
+  body: string;
+  kind: string;
+  filePath: string | null;
+  updatedAt: string;
+};
 
 /**
  * Modelos de contrato da FortGrow: o admin cola a estrutura que já usa,
@@ -19,6 +29,10 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
   const [editing, setEditing] = useState<TemplateRow | null>(null);
   const [name, setName] = useState("");
   const [body, setBody] = useState("");
+  /* Modo Word: o arquivo .docx original fica guardado e a geração do
+     contrato EDITA esse arquivo (marcadores preenchidos em-place) — o texto
+     vira só prévia. null = modelo de texto normal. */
+  const [docxPath, setDocxPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +55,7 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
         return;
       }
       setBody(d.text);
+      setDocxPath(d.docxPath ?? null);
       if (!name.trim()) setName(file.name.replace(/\.(pdf|docx)$/i, ""));
     } finally {
       setImporting(false);
@@ -51,6 +66,7 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
     setEditing(null);
     setName("");
     setBody("");
+    setDocxPath(null);
     setError(null);
     setOpen(true);
   }
@@ -59,6 +75,7 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
     setEditing(t);
     setName(t.name);
     setBody(t.body);
+    setDocxPath(t.kind === "DOCX" ? t.filePath : null);
     setError(null);
     setOpen(true);
   }
@@ -68,10 +85,11 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
     setError(null);
     setLoading(true);
     try {
+      const payload: Record<string, unknown> = { name, body, filePath: docxPath };
       const res = await fetch("/api/contract-templates", {
         method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing ? { id: editing.id, name, body } : { name, body }),
+        body: JSON.stringify(editing ? { id: editing.id, ...payload } : payload),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -120,7 +138,14 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {templates.map((t) => (
             <div key={t.id} className="rounded-xl border border-line/60 bg-ink-900/40 p-4">
-              <p className="truncate text-sm font-semibold text-slate-200">{t.name}</p>
+              <p className="flex items-center gap-2 truncate text-sm font-semibold text-slate-200">
+                {t.name}
+                {t.kind === "DOCX" && (
+                  <span className="rounded-full bg-grow-500/15 px-2 py-0.5 text-[10px] font-bold text-grow-400">
+                    Word — edita seu arquivo
+                  </span>
+                )}
+              </p>
               <p className="mt-1 line-clamp-2 text-xs text-slate-500">{t.body.slice(0, 160)}</p>
               <div className="mt-3 flex items-center gap-2">
                 <button onClick={() => abrirEdicao(t)} className="btn-ghost !px-3 !py-1.5 text-xs">
@@ -175,14 +200,26 @@ export function TemplatesPanel({ templates }: { templates: TemplateRow[] }) {
                 />
               </label>
             </div>
+            {docxPath && (
+              <div className="mb-2 rounded-xl border border-grow-500/40 bg-grow-500/10 px-4 py-3 text-xs leading-relaxed text-grow-400">
+                <b>Modo Word ativo:</b> o arquivo .docx original fica guardado e cada contrato é gerado{" "}
+                <b>editando esse arquivo</b> — os marcadores {"{{...}}"} são preenchidos dentro dele e o layout
+                (fontes, logo, formatação) permanece exatamente como você fez no Word. O texto abaixo é só uma
+                prévia; para alterar o contrato, edite o Word e importe de novo.{" "}
+                <button type="button" onClick={() => setDocxPath(null)} className="font-semibold underline">
+                  Desativar e usar como texto
+                </button>
+              </div>
+            )}
             <textarea
               id="tpl-body"
               required
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              readOnly={Boolean(docxPath)}
               rows={14}
               placeholder={"CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\nCONTRATANTE: {{EMPRESA}}, CNPJ {{CNPJ}}...\n\nCLÁUSULA 1ª — DO OBJETO\n..."}
-              className="input mb-2 font-mono text-xs leading-relaxed"
+              className={cnBody(Boolean(docxPath))}
             />
 
             <details className="mb-4 rounded-xl border border-line/60 bg-ink-900/40 px-4 py-3">

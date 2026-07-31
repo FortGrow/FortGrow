@@ -14,9 +14,17 @@ export async function GET() {
   return NextResponse.json({ templates });
 }
 
+/** Caminho gravado pelo /extract — só aceitamos o que ele gera. */
+const docxPath = z
+  .string()
+  .regex(/^contract-templates\/[a-zA-Z0-9._-]+\.docx$/)
+  .nullish();
+
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
   body: z.string().trim().min(20).max(120_000),
+  /** Presente = modo Word: a geração edita esse arquivo em vez de recriar */
+  filePath: docxPath,
 });
 
 export async function POST(req: NextRequest) {
@@ -26,7 +34,10 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const template = await prisma.contractTemplate.create({ data: parsed.data });
+  const { filePath, ...rest } = parsed.data;
+  const template = await prisma.contractTemplate.create({
+    data: { ...rest, filePath: filePath ?? null, kind: filePath ? "DOCX" : "TEXTO" },
+  });
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "contract-template.create", entity: "ContractTemplate", entityId: template.id },
   });
@@ -37,6 +48,7 @@ const patchSchema = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(2).max(120).optional(),
   body: z.string().trim().min(20).max(120_000).optional(),
+  filePath: docxPath,
 });
 
 export async function PATCH(req: NextRequest) {
@@ -45,12 +57,16 @@ export async function PATCH(req: NextRequest) {
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
-  const { id, ...data } = parsed.data;
+  const { id, filePath, ...data } = parsed.data;
 
   const existing = await prisma.contractTemplate.findUnique({ where: { id }, select: { id: true } });
   if (!existing) return NextResponse.json({ error: "Modelo não encontrado." }, { status: 404 });
 
-  const template = await prisma.contractTemplate.update({ where: { id }, data });
+  const template = await prisma.contractTemplate.update({
+    where: { id },
+    // filePath só muda quando um novo arquivo é importado (undefined = mantém)
+    data: filePath !== undefined ? { ...data, filePath, kind: filePath ? "DOCX" : "TEXTO" } : data,
+  });
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "contract-template.update", entity: "ContractTemplate", entityId: id },
   });
