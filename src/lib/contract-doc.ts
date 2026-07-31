@@ -43,6 +43,91 @@ export type DadosContrato = {
 
 const data = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 
+/* ————— Estrutura própria (modelo colado pelo admin) ————— */
+
+/** Marcadores aceitos no modelo — mostrados na legenda da tela. */
+export const TEMPLATE_PLACEHOLDERS: { chave: string; descricao: string }[] = [
+  { chave: "EMPRESA", descricao: "razão social do cliente" },
+  { chave: "CNPJ", descricao: "CNPJ do cliente" },
+  { chave: "EMAIL", descricao: "e-mail do cliente" },
+  { chave: "TELEFONE", descricao: "telefone do cliente" },
+  { chave: "CIDADE_UF", descricao: "cidade/UF do cliente" },
+  { chave: "PLANO", descricao: "plano contratado" },
+  { chave: "VALOR", descricao: "valor mensal (R$)" },
+  { chave: "COMISSAO_BASE", descricao: "% base de comissão" },
+  { chave: "COMISSAO_REPASSE", descricao: "% de repasse FortGrow" },
+  { chave: "DIA_FECHAMENTO", descricao: "dia de fechamento da apuração" },
+  { chave: "INICIO", descricao: "data de início da vigência" },
+  { chave: "TERMINO", descricao: "data de término (ou prazo indeterminado)" },
+  { chave: "DATA_HOJE", descricao: "data da geração do contrato" },
+];
+
+/** Os valores de cada marcador para um cliente/contrato. */
+export function valoresDoContrato(cliente: DadosCliente, contrato: DadosContrato): Record<string, string> {
+  return {
+    EMPRESA: cliente.companyName,
+    CNPJ: cliente.cnpj ?? "____________________",
+    EMAIL: cliente.email ?? "—",
+    TELEFONE: cliente.phone ?? "—",
+    CIDADE_UF: [cliente.city, cliente.state].filter(Boolean).join("/") || "—",
+    PLANO: cliente.plan ?? "—",
+    VALOR: brl(contrato.value || cliente.monthlyValue),
+    COMISSAO_BASE: `${cliente.commissionBase}%`,
+    COMISSAO_REPASSE: `${cliente.commissionShare}%`,
+    DIA_FECHAMENTO: cliente.closingDay ? String(cliente.closingDay) : "—",
+    INICIO: data(contrato.startDate),
+    TERMINO: contrato.endDate ? data(contrato.endDate) : "prazo indeterminado",
+    DATA_HOJE: data(new Date()),
+  };
+}
+
+/** Troca {{MARCADOR}} pelos valores; marcador desconhecido fica como está. */
+export function preencherTemplate(body: string, valores: Record<string, string>): string {
+  return body.replace(/\{\{\s*([A-Za-z_]+)\s*\}\}/g, (m, k: string) => valores[k.toUpperCase()] ?? m);
+}
+
+/**
+ * Gera o PDF a partir da estrutura colada pelo admin. Parágrafos separam-se
+ * por linha em branco; uma linha sozinha em CAIXA-ALTA (ou começando com
+ * "CLÁUSULA") vira título de seção; "ASSINATURA:" no começo da linha vira
+ * linha de assinatura com régua.
+ */
+export function gerarContratoDeTemplate(
+  titulo: string,
+  cliente: DadosCliente,
+  contrato: DadosContrato,
+  body: string
+) {
+  const texto = preencherTemplate(body, valoresDoContrato(cliente, contrato));
+  const ehTitulo = (linha: string) =>
+    /^cl[áa]usula/i.test(linha) ||
+    (linha === linha.toUpperCase() && /[A-ZÀ-Ü]{3,}/.test(linha) && linha.length <= 90);
+
+  const blocos: DocBloco[] = [];
+  for (const par of texto.split(/\r?\n\s*\r?\n/)) {
+    const linhas = par.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (linhas.length === 0) continue;
+    let corpo: string[] = [];
+    const fechaCorpo = () => {
+      if (corpo.length) blocos.push({ tipo: "paragrafo", texto: corpo.join(" ") });
+      corpo = [];
+    };
+    for (const linha of linhas) {
+      if (/^assinatura\s*:/i.test(linha)) {
+        fechaCorpo();
+        blocos.push({ tipo: "assinatura", texto: linha.replace(/^assinatura\s*:\s*/i, "") });
+      } else if (ehTitulo(linha)) {
+        fechaCorpo();
+        blocos.push({ tipo: "titulo", texto: linha });
+      } else {
+        corpo.push(linha);
+      }
+    }
+    fechaCorpo();
+  }
+  return docPdf(titulo, `Contrato · ${cliente.companyName} · FortGrow`, blocos);
+}
+
 export function gerarContratoPdf(
   cliente: DadosCliente,
   contrato: DadosContrato,

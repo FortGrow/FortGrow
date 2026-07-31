@@ -5,7 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaff, isResponse } from "@/lib/api-guard";
 import { invalidResponse } from "@/lib/validation";
-import { gerarContratoPdf, type DadosContratada } from "@/lib/contract-doc";
+import { gerarContratoDeTemplate, gerarContratoPdf, type DadosContratada } from "@/lib/contract-doc";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,8 @@ const createSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
   autoRenew: z.boolean().default(false),
+  /** Estrutura própria (ContractTemplate); null = texto padrão gerado */
+  templateId: z.string().nullish(),
 });
 
 /** Dados da FortGrow para o texto do contrato (chaves contratada* em Setting). */
@@ -46,11 +48,18 @@ export async function POST(req: NextRequest) {
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
-  const { clientId, title, value, startDate, endDate, autoRenew } = parsed.data;
+  const { clientId, title, value, startDate, endDate, autoRenew, templateId } = parsed.data;
 
   const client = await prisma.client.findUnique({ where: { id: clientId } });
   if (!client || client.archivedAt) {
     return NextResponse.json({ error: "Cliente não encontrado (ou na Lixeira)." }, { status: 404 });
+  }
+
+  const template = templateId
+    ? await prisma.contractTemplate.findUnique({ where: { id: templateId } })
+    : null;
+  if (templateId && !template) {
+    return NextResponse.json({ error: "Modelo de contrato não encontrado." }, { status: 404 });
   }
 
   const contrato = {
@@ -61,24 +70,25 @@ export async function POST(req: NextRequest) {
     autoRenew,
   };
 
-  const pdf = gerarContratoPdf(
-    {
-      companyName: client.companyName,
-      cnpj: client.cnpj,
-      email: client.email,
-      phone: client.phone,
-      city: client.city,
-      state: client.state,
-      plan: client.plan,
-      billingType: client.billingType,
-      monthlyValue: Number(client.monthlyValue),
-      commissionBase: Number(client.commissionBase),
-      commissionShare: Number(client.commissionShare),
-      closingDay: client.closingDay,
-    },
-    contrato,
-    await dadosContratada()
-  );
+  const dadosCliente = {
+    companyName: client.companyName,
+    cnpj: client.cnpj,
+    email: client.email,
+    phone: client.phone,
+    city: client.city,
+    state: client.state,
+    plan: client.plan,
+    billingType: client.billingType,
+    monthlyValue: Number(client.monthlyValue),
+    commissionBase: Number(client.commissionBase),
+    commissionShare: Number(client.commissionShare),
+    closingDay: client.closingDay,
+  };
+
+  // Estrutura própria da FortGrow quando escolhida; senão o texto padrão
+  const pdf = template
+    ? gerarContratoDeTemplate(title, dadosCliente, contrato, template.body)
+    : gerarContratoPdf(dadosCliente, contrato, await dadosContratada());
 
   const fileName = `contrato-${Date.now()}.pdf`;
   const dir = path.join(process.cwd(), "uploads", clientId);

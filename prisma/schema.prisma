@@ -304,6 +304,16 @@ model ClientService {
   createdAt   DateTime      @default(now())
 }
 
+/// Estrutura de contrato da própria FortGrow: o texto colado pelo admin com
+/// marcadores ({{EMPRESA}}, {{CNPJ}}, {{VALOR}}...) preenchidos na geração.
+model ContractTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum ContractStatus {
   ATIVO
   ENCERRADO

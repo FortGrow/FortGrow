@@ -37,7 +37,15 @@ function somarMeses(inicio: string, meses: number): string {
  * hora e salva no cliente. O PDF é gerado no ato e aparece no portal do
  * cliente para assinatura eletrônica no gov.br.
  */
-export function NewContractForm({ clients }: { clients: ContractClient[] }) {
+export type TemplateOption = { id: string; name: string };
+
+export function NewContractForm({
+  clients,
+  templates = [],
+}: {
+  clients: ContractClient[];
+  templates?: TemplateOption[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,6 +57,8 @@ export function NewContractForm({ clients }: { clients: ContractClient[] }) {
   const [startDate, setStartDate] = useState(hoje());
   const [endDate, setEndDate] = useState("");
   const [autoRenew, setAutoRenew] = useState(false);
+  // Estrutura do texto: modelo próprio (preferido quando existir) ou padrão
+  const [templateId, setTemplateId] = useState("");
   // Dados faltantes do cliente, pedidos na hora
   const [fixCnpj, setFixCnpj] = useState("");
   const [fixEmail, setFixEmail] = useState("");
@@ -120,6 +130,7 @@ export function NewContractForm({ clients }: { clients: ContractClient[] }) {
           startDate,
           endDate: endDate || null,
           autoRenew,
+          templateId: templateId || null,
         }),
       });
       if (!res.ok) {
@@ -137,7 +148,13 @@ export function NewContractForm({ clients }: { clients: ContractClient[] }) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn-primary">
+      <button
+        onClick={() => {
+          setTemplateId(templates[0]?.id ?? "");
+          setOpen(true);
+        }}
+        className="btn-primary"
+      >
         <FilePlus2 size={15} /> Novo contrato
       </button>
 
@@ -170,6 +187,24 @@ export function NewContractForm({ clients }: { clients: ContractClient[] }) {
                 </option>
               ))}
             </select>
+
+            <label className="label" htmlFor="nc-modelo">Estrutura do contrato</label>
+            <select
+              id="nc-modelo"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+              className="input mb-1"
+            >
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} (seu modelo)</option>
+              ))}
+              <option value="">Texto padrão gerado pelo sistema</option>
+            </select>
+            <p className="mb-3 text-[11px] text-slate-500">
+              {templates.length === 0
+                ? "Você ainda não tem modelo próprio — cadastre um em “Modelos de contrato”, nesta mesma tela."
+                : "O PDF sai com o texto do modelo escolhido, com os dados do cliente preenchidos nos marcadores."}
+            </p>
 
             {cliente && (
               <>

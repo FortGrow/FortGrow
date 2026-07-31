@@ -7,12 +7,14 @@ import { StatusBadge, Badge } from "@/components/ui/badge";
 import { brl, fullDate } from "@/lib/utils";
 import { FileDown, FileCheck2 } from "lucide-react";
 import { NewContractForm } from "./new-contract-form";
+import { TemplatesPanel } from "./templates-panel";
+import { ContractRowActions } from "./contract-row-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContratosPage() {
   const session = (await getSession())!;
-  const [contracts, clients] = await Promise.all([
+  const [contracts, clients, templates] = await Promise.all([
     prisma.contract.findMany({
       orderBy: { startDate: "desc" },
       include: { client: { select: { companyName: true } } },
@@ -35,7 +37,9 @@ export default async function ContratosPage() {
         contractMonths: true,
       },
     }),
+    prisma.contractTemplate.findMany({ orderBy: { name: "asc" } }),
   ]);
+  const canEdit = can(session, "contratos", "edit");
 
   const soon = new Date(Date.now() + 30 * 86400000);
   const aguardando = contracts.filter((c) => c.fileUrl && !c.signedFileUrl).length;
@@ -48,8 +52,9 @@ export default async function ContratosPage() {
           aguardando > 0 ? ` · ${aguardando} aguardando assinatura` : ""
         }`}
       >
-        {can(session, "contratos", "edit") && (
+        {canEdit && (
           <NewContractForm
+            templates={templates.map((t) => ({ id: t.id, name: t.name }))}
             clients={clients.map((c) => ({
               id: c.id,
               companyName: c.companyName,
@@ -68,7 +73,19 @@ export default async function ContratosPage() {
         )}
       </PageHeader>
 
-      <DataTable headers={["Cliente", "Contrato", "Valor", "Início", "Término", "Renovação", "Status", "Assinatura", "Arquivos"]}>
+      {/* Estrutura própria de contrato — adicionar, editar e excluir modelos */}
+      {canEdit && (
+        <TemplatesPanel
+          templates={templates.map((t) => ({
+            id: t.id,
+            name: t.name,
+            body: t.body,
+            updatedAt: t.updatedAt.toISOString(),
+          }))}
+        />
+      )}
+
+      <DataTable headers={["Cliente", "Contrato", "Valor", "Início", "Término", "Renovação", "Status", "Assinatura", "Arquivos", ...(canEdit ? [""] : [])]}>
         {contracts.map((c) => (
           <tr key={c.id} className="transition hover:bg-ink-800/50">
             <Td className="font-semibold text-slate-200">{c.client.companyName}</Td>
@@ -119,6 +136,11 @@ export default async function ContratosPage() {
                 {!c.fileUrl && !c.signedFileUrl && <span className="text-xs text-slate-600">—</span>}
               </span>
             </Td>
+            {canEdit && (
+              <Td>
+                <ContractRowActions contractId={c.id} title={c.title} />
+              </Td>
+            )}
           </tr>
         ))}
       </DataTable>
