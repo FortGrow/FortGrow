@@ -179,7 +179,10 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   className="input"
                   placeholder="ex.: 10"
                 />
-                <p className="mt-1 text-xs text-slate-600">% da FortGrow sobre a comissão do cliente.</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  % da FortGrow sobre a base (ex.: 50% × 3%). Conta separada do faturamento do cliente, que usa
+                  os percentuais próprios em Performance → Base de cálculo (ex.: 50% × 1,5%).
+                </p>
               </div>
               <div>
                 <label className="label" htmlFor="nc-closingDay">Dia de fechamento</label>

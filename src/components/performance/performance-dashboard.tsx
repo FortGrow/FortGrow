@@ -1180,8 +1180,11 @@ export function PerformanceDashboard({ clientId, editable }: { clientId: string;
       <div className="card p-5">
         <div className="mb-3 flex items-center gap-2">
           <SlidersHorizontal size={16} className="text-warn" />
-          <h2 className="text-sm font-bold text-slate-200">Base de cálculo</h2>
-          <span className="text-xs text-slate-500">define como a receita bruta vira receita real</span>
+          <h2 className="text-sm font-bold text-slate-200">Base de cálculo — faturamento do cliente</h2>
+          <span className="text-xs text-slate-500">
+            receita bruta × % conversão × % do cliente = o que o CLIENTE fatura. A comissão da FortGrow é outra
+            conta, no cadastro do cliente (base % × percentual FortGrow %).
+          </span>
         </div>
         <div className="flex flex-wrap items-end gap-5">
           <div>

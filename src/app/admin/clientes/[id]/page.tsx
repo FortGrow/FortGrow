@@ -323,9 +323,13 @@ export default async function ClienteDetalhe({
             accent="violet"
           />
           <StatCard
-            label={`Receita real gerada (${periodoTag})`}
+            label={`Faturamento do cliente (${periodoTag})`}
             value={hasPerf ? brl(perf.real) : "—"}
-            hint={hasPerf ? `bruta ${brl(perf.revenue)} × base de cálculo` : "sem lançamentos de performance no período"}
+            hint={
+              hasPerf
+                ? `bruta ${brl(perf.revenue)} × ${Number(client.perfConvPercent)}% × ${Number(client.perfCommissionPercent)}% (base de cálculo dele)`
+                : "sem lançamentos de performance no período"
+            }
             accent="grow"
           />
           <StatCard

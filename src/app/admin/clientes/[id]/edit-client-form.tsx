@@ -170,6 +170,12 @@ export function EditClientForm({ client, plans = [] }: { client: EditableClient;
                     <label className="label" htmlFor="ec-commissionShare">Percentual FortGrow (%)</label>
                     <input id="ec-commissionShare" name="commissionShare" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionShare} className="input" />
                   </div>
+                  <p className="col-span-full rounded-xl border border-line/60 bg-ink-900/40 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
+                    Esta é a conta da <b className="text-slate-300">COMISSÃO DA FORTGROW</b>: vendas × base % ×
+                    percentual FortGrow % (ex.: 50% × 3%). O <b className="text-slate-300">faturamento do próprio
+                    cliente</b> é outra conta, com percentuais próprios (ex.: 50% × 1,5%) — configure em
+                    Performance → Base de cálculo.
+                  </p>
                   <div>
                     <label className="label" htmlFor="ec-closingDay">Dia de fechamento</label>
                     <input
