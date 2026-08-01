@@ -135,68 +135,60 @@ export function EditClientForm({ client, plans = [] }: { client: EditableClient;
                   ))}
                 </div>
               </div>
-              {billingType === "FIXO" ? (
-                <div>
-                  <label className="label" htmlFor="ec-monthlyValue">Valor mensal (R$)</label>
-                  <input
-                    id="ec-monthlyValue"
-                    name="monthlyValue"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    defaultValue={client.monthlyValue}
-                    className="input"
-                  />
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="label" htmlFor="ec-monthlyValue-com">Mensalidade fixa (R$) — opcional</label>
-                    <input
-                      id="ec-monthlyValue-com"
-                      name="monthlyValue"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      defaultValue={client.monthlyValue}
-                      className="input"
-                      placeholder="0,00 se o contrato for só comissão"
-                    />
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="ec-commissionBase">Base do cliente (%)</label>
-                    <input id="ec-commissionBase" name="commissionBase" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionBase} className="input" />
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="ec-commissionShare">Percentual FortGrow (%)</label>
-                    <input id="ec-commissionShare" name="commissionShare" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionShare} className="input" />
-                  </div>
-                  <p className="col-span-full rounded-xl border border-line/60 bg-ink-900/40 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
-                    <b className="text-slate-300">
-                      Comissão FortGrow = Receita Base × Base do Cliente % × Percentual FortGrow %
-                    </b>{" "}
-                    (ex. Axton: base × 3% × 10%). A Receita Base = vendas brutas × % de conversão, configurada em
-                    Performance → Base de cálculo — a mesma base do faturamento do cliente, cada um com seus
-                    percentuais.
-                  </p>
-                  <div>
-                    <label className="label" htmlFor="ec-closingDay">Dia de fechamento</label>
-                    <input
-                      id="ec-closingDay"
-                      name="closingDay"
-                      type="number"
-                      min="1"
-                      max="28"
-                      defaultValue={client.closingDay ?? ""}
-                      placeholder="vazio = mês civil (01 ao fim do mês)"
-                      className="input"
-                    />
-                    <p className="mt-1 text-[11px] text-slate-600">
-                      Ex.: 20 → a comissão de julho apura as vendas de 21/06 a 20/07.
-                    </p>
-                  </div>
-                </>
-              )}
+              {/* Campos completos para TODOS os clientes, independente do tipo
+                  de contrato — cada um configurável no próprio cliente. O tipo
+                  define qual conta a FortGrow cobra (mensalidade ou comissão),
+                  não quais campos existem. */}
+              <div>
+                <label className="label" htmlFor="ec-monthlyValue">
+                  {billingType === "FIXO" ? "Valor mensal (R$)" : "Mensalidade fixa (R$) — opcional"}
+                </label>
+                <input
+                  id="ec-monthlyValue"
+                  name="monthlyValue"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={client.monthlyValue}
+                  className="input"
+                  placeholder={billingType === "FIXO" ? undefined : "0,00 se o contrato for só comissão"}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="ec-commissionBase">Base do cliente (%)</label>
+                <input id="ec-commissionBase" name="commissionBase" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionBase} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="ec-commissionShare">Percentual FortGrow (%)</label>
+                <input id="ec-commissionShare" name="commissionShare" type="number" min="0" max="100" step="0.001" defaultValue={client.commissionShare} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="ec-closingDay">Dia de fechamento</label>
+                <input
+                  id="ec-closingDay"
+                  name="closingDay"
+                  type="number"
+                  min="1"
+                  max="28"
+                  defaultValue={client.closingDay ?? ""}
+                  placeholder="vazio = mês civil (01 ao fim do mês)"
+                  className="input"
+                />
+                <p className="mt-1 text-[11px] text-slate-600">
+                  Ex.: 20 → a comissão de julho apura as vendas de 21/06 a 20/07.
+                </p>
+              </div>
+              <p className="col-span-full rounded-xl border border-line/60 bg-ink-900/40 px-3.5 py-2.5 text-[11px] leading-relaxed text-slate-500">
+                <b className="text-slate-300">
+                  Comissão FortGrow = Receita Base × Base do Cliente % × Percentual FortGrow %
+                </b>{" "}
+                (ex. Axton: base × 3% × 10%). A Receita Base = vendas brutas × % de conversão, configurada em
+                Performance → Base de cálculo — a mesma base do faturamento do cliente, cada um com seus
+                percentuais.
+                {billingType === "FIXO" && (
+                  <> No contrato fixo esses percentuais ficam guardados e passam a valer se o contrato virar comissão.</>
+                )}
+              </p>
             </div>
 
             <div className="mb-4">

@@ -120,39 +120,30 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
             </p>
           </div>
 
-          {billingType === "FIXO" ? (
-            <div className="mt-4">
-              <label className="label" htmlFor="nc-monthlyValue">Valor mensal (R$) *</label>
-              <input
-                id="nc-monthlyValue"
-                name="monthlyValue"
-                type="number"
-                min="0"
-                step="0.01"
-                required
-                value={monthly}
-                onChange={(e) => setMonthly(e.target.value)}
-                className="input"
-              />
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {/* Campos completos para TODO cliente novo, seja fixo ou comissão —
+              a configuração inteira nasce junto com o cadastro. */}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="label" htmlFor="nc-monthlyValue-com">Mensalidade fixa (R$) — opcional</label>
+                <label className="label" htmlFor="nc-monthlyValue">
+                  {billingType === "FIXO" ? "Valor mensal (R$) *" : "Mensalidade fixa (R$) — opcional"}
+                </label>
                 <input
-                  id="nc-monthlyValue-com"
+                  id="nc-monthlyValue"
                   name="monthlyValue"
                   type="number"
                   min="0"
                   step="0.01"
+                  required={billingType === "FIXO"}
                   value={monthly}
                   onChange={(e) => setMonthly(e.target.value)}
                   className="input"
-                  placeholder="0,00 — deixe vazio se o contrato for só comissão"
+                  placeholder={billingType === "FIXO" ? undefined : "0,00 — deixe vazio se o contrato for só comissão"}
                 />
               </div>
               <div>
-                <label className="label" htmlFor="nc-commissionBase">Base do cliente (%) *</label>
+                <label className="label" htmlFor="nc-commissionBase">
+                  Base do cliente (%){billingType === "COMISSAO" ? " *" : ""}
+                </label>
                 <input
                   id="nc-commissionBase"
                   name="commissionBase"
@@ -160,13 +151,15 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   min="0.001"
                   max="100"
                   step="0.001"
-                  required
+                  required={billingType === "COMISSAO"}
                   className="input"
                   placeholder="ex.: 3"
                 />
               </div>
               <div>
-                <label className="label" htmlFor="nc-commissionShare">Percentual da FortGrow (%) *</label>
+                <label className="label" htmlFor="nc-commissionShare">
+                  Percentual da FortGrow (%){billingType === "COMISSAO" ? " *" : ""}
+                </label>
                 <input
                   id="nc-commissionShare"
                   name="commissionShare"
@@ -174,7 +167,7 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                   min="0.001"
                   max="100"
                   step="0.001"
-                  required
+                  required={billingType === "COMISSAO"}
                   className="input"
                   placeholder="ex.: 10"
                 />
@@ -199,12 +192,11 @@ export function NewClientForm({ plans = [] }: { plans?: PlanOption[] }) {
                 </p>
               </div>
               <p className="text-xs leading-relaxed text-slate-500 sm:col-span-2">
-                Exemplo: R$ 1.000.000 vendidos × 3% = R$ 30.000 de comissão do cliente → FortGrow recebe 10% = R$ 3.000.
-                Se a base variar no mês (ex.: parcela fechada em 50% → 1,5%), ajuste na hora de lançar o faturamento em
+                Exemplo: receita base R$ 500.000 × 3% × 10% = R$ 1.500 de comissão FortGrow. Se algo variar no
+                mês, ajuste na hora de lançar em
                 <span className="font-semibold text-slate-400"> Faturamento → Lançar comissão</span>.
               </p>
-            </div>
-          )}
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
