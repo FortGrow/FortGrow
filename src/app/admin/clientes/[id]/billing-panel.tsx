@@ -43,15 +43,35 @@ const METHOD_LABELS: Record<string, string> = { PIX: "PIX", BOLETO: "Boleto", CA
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dt = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
-/** Reconhece um lançamento de comissão pela descrição gerada pelo sistema. */
-function parseCommission(description: string): { reference: string; volume: number; base: number; share: number } | null {
-  const m = description.match(/^Comissão (.+) — (.+?) vendidos × ([\d.,]+)% × ([\d.,]+)%$/);
-  if (!m) return null;
-  const volume = Number(m[2].replace(/[^\d,]/g, "").replace(",", "."));
-  const base = Number(m[3].replace(",", "."));
-  const share = Number(m[4].replace(",", "."));
-  if (!(volume > 0 && base > 0 && share > 0)) return null;
-  return { reference: m[1], volume, base, share };
+/** Reconhece um lançamento de comissão pela descrição gerada pelo sistema —
+    formato atual ("→ receita base R$Y × b% × s%") e o antigo ("× b% × s%"),
+    para TODO cliente ter o mesmo editor, com recálculo e vencimento. */
+function parseCommission(
+  description: string
+): { reference: string; volume: number; baseValue: number; base: number; share: number } | null {
+  const num = (s: string) => Number(s.replace(/[^\d,]/g, "").replace(",", "."));
+  const pct = (s: string) => Number(s.replace(",", "."));
+
+  let m = description.match(
+    /^Comissão (.+?)(?: · vendas de [^—]+)? — (.+?) vendidos → receita base (.+?) × ([\d.,]+)% × ([\d.,]+)%$/
+  );
+  if (m) {
+    const volume = num(m[2]);
+    const baseValue = num(m[3]);
+    const base = pct(m[4]);
+    const share = pct(m[5]);
+    if (volume > 0 && baseValue > 0 && base > 0 && share > 0) return { reference: m[1], volume, baseValue, base, share };
+  }
+
+  m = description.match(/^Comissão (.+?)(?: · vendas de [^—]+)? — (.+?) vendidos × ([\d.,]+)% × ([\d.,]+)%$/);
+  if (m) {
+    const volume = num(m[2]);
+    const base = pct(m[3]);
+    const share = pct(m[4]);
+    // Formato antigo aplicava os % direto no volume → receita base = volume
+    if (volume > 0 && base > 0 && share > 0) return { reference: m[1], volume, baseValue: volume, base, share };
+  }
+  return null;
 }
 
 function dueBadge(c: ChargeDto) {
@@ -185,6 +205,7 @@ function SubscriptionForm({
 function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => void }) {
   const commission = parseCommission(charge.description);
   const [volume, setVolume] = useState(commission ? String(commission.volume) : "");
+  const [baseValue, setBaseValue] = useState(commission ? String(commission.baseValue) : "");
   const [base, setBase] = useState(commission ? String(commission.base) : "");
   const [share, setShare] = useState(commission ? String(commission.share) : "");
   const [loading, setLoading] = useState(false);
@@ -193,11 +214,12 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
   const router = useRouter();
 
   const preview = (() => {
-    const v = Number(volume);
+    const bv = Number(baseValue);
     const b = Number(base);
     const s = Number(share);
-    if (!(v > 0 && b > 0 && s > 0)) return null;
-    const clientCommission = v * (b / 100);
+    if (!(bv > 0 && b > 0 && s > 0)) return null;
+    // Receita Base × Base do Cliente % × Percentual FortGrow %
+    const clientCommission = bv * (b / 100);
     return { clientCommission, amount: clientCommission * (s / 100) };
   })();
 
@@ -214,9 +236,11 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
             body: JSON.stringify({
               invoiceId: charge.id,
               salesVolume: volume,
+              baseValue,
               basePercent: base,
               sharePercent: share,
               reference: form.get("reference"),
+              dueDate: form.get("dueDate") || undefined,
             }),
           })
         : await fetch("/api/invoices", {
@@ -259,20 +283,35 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
                 <label className="label" htmlFor={`ce-ref-${charge.id}`}>Competência</label>
                 <input id={`ce-ref-${charge.id}`} name="reference" required minLength={2} defaultValue={commission.reference} className="input" />
               </div>
-              <div>
-                <label className="label" htmlFor={`ce-vol-${charge.id}`}>Valor vendido no período (R$) *</label>
-                <input
-                  id={`ce-vol-${charge.id}`}
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  required
-                  value={volume}
-                  onChange={(e) => setVolume(e.target.value)}
-                  className="input"
-                />
-              </div>
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label" htmlFor={`ce-vol-${charge.id}`}>Valor vendido (R$) *</label>
+                  <input
+                    id={`ce-vol-${charge.id}`}
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    required
+                    value={volume}
+                    onChange={(e) => setVolume(e.target.value)}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor={`ce-bval-${charge.id}`}>Receita base (R$) *</label>
+                  <input
+                    id={`ce-bval-${charge.id}`}
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    required
+                    value={baseValue}
+                    onChange={(e) => setBaseValue(e.target.value)}
+                    className="input"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label" htmlFor={`ce-base-${charge.id}`}>Base do cliente (%)</label>
                   <input id={`ce-base-${charge.id}`} type="number" min="0.001" max="100" step="0.001" required value={base} onChange={(e) => setBase(e.target.value)} className="input" />
@@ -280,6 +319,16 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
                 <div>
                   <label className="label" htmlFor={`ce-share-${charge.id}`}>FortGrow (%)</label>
                   <input id={`ce-share-${charge.id}`} type="number" min="0.001" max="100" step="0.001" required value={share} onChange={(e) => setShare(e.target.value)} className="input" />
+                </div>
+                <div>
+                  <label className="label" htmlFor={`ce-cdue-${charge.id}`}>Vencimento</label>
+                  <input
+                    id={`ce-cdue-${charge.id}`}
+                    name="dueDate"
+                    type="date"
+                    defaultValue={charge.dueDate.slice(0, 10)}
+                    className="input"
+                  />
                 </div>
               </div>
               {preview && (
