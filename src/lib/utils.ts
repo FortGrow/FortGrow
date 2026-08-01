@@ -13,6 +13,12 @@ export function brl(value: Numeric) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: n >= 1000 ? 0 : 2 });
 }
 
+/** BRL sempre com centavos — para listas financeiras, onde linhas lado a
+    lado precisam do MESMO formato (o brl() compacta valores >= 1000). */
+export function brlExato(value: Numeric) {
+  return Number(value ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export function num(value: Numeric) {
   return Number(value ?? 0).toLocaleString("pt-BR");
 }

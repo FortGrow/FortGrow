@@ -76,7 +76,9 @@ function parseCommission(
 
 function dueBadge(c: ChargeDto) {
   if (c.status !== "EM_ABERTO") return null;
-  const days = Math.ceil((new Date(c.dueDate).getTime() - Date.now()) / 86400000);
+  // Dias por CALENDÁRIO (não por horário) — mesmo selo para o mesmo dia
+  const inicioDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((inicioDia(new Date(c.dueDate)) - inicioDia(new Date())) / 86400000);
   if (days < 0) return <Badge tone="danger">vencida</Badge>;
   if (days <= 5) return <Badge tone="warn">vence em {days === 0 ? "hoje" : `${days}d`}</Badge>;
   return null;

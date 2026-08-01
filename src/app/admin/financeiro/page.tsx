@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { BarsChart } from "@/components/charts/bars-chart";
 import { PeriodSelect } from "@/components/ui/period-select";
-import { brl, fullDate, num, pct } from "@/lib/utils";
+import { brl, brlExato, fullDate, num, pct } from "@/lib/utils";
 import { ltv, paybackMonths } from "@/lib/metrics";
 import { commissionReport, costReport } from "@/lib/commissions";
 import { currentMrr, generateSubscriptionCharges } from "@/lib/billing";
@@ -147,7 +147,10 @@ export default async function FinanceiroPage({
 
   // Tabela de cobranças com filtro por status
   const chargeRows = (statusFilter ? invoices.filter((i) => i.status === statusFilter) : invoices).slice(0, 20);
-  const daysTo = (d: Date) => Math.ceil((d.getTime() - Date.now()) / 86400000);
+  /* Dias por CALENDÁRIO, não por horário: cobranças gravadas em horas
+     diferentes do mesmo dia (mensalidade × comissão) ganham o mesmo selo. */
+  const inicioDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysTo = (d: Date) => Math.round((inicioDia(d) - inicioDia(new Date())) / 86400000);
 
   return (
     <>
@@ -318,7 +321,7 @@ export default async function FinanceiroPage({
                   <p className="font-medium text-slate-200">{i.client.companyName}</p>
                   <p className="max-w-52 truncate text-xs text-slate-500">{i.description}</p>
                 </Td>
-                <Td className="font-semibold">{brl(i.amount)}</Td>
+                <Td className="font-semibold">{brlExato(i.amount)}</Td>
                 <Td className="text-slate-500">{fullDate(i.dueDate)}</Td>
                 <Td>
                   <span className="flex items-center gap-1.5">
@@ -345,7 +348,7 @@ export default async function FinanceiroPage({
               <tr key={e.id} className="transition hover:bg-ink-800/50">
                 <Td className="font-medium text-slate-200">{e.description}</Td>
                 <Td className="capitalize">{e.category.replaceAll("_", " ")}</Td>
-                <Td>{brl(e.amount)}</Td>
+                <Td>{brlExato(e.amount)}</Td>
                 <Td className="text-slate-500">{fullDate(e.date)}</Td>
               </tr>
             ))}

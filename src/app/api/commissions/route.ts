@@ -124,7 +124,12 @@ export async function POST(req: NextRequest) {
       clientId,
       description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita base ${fmt(baseValue)} × ${basePercent}% × ${sharePercent}%`,
       amount,
-      dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 7 * 86400000),
+      // Sempre ao meio-dia do dia escolhido: vencimentos do mesmo dia ficam
+      // com o mesmo carimbo, e os selos "vence hoje" batem entre cobranças
+      dueDate: (() => {
+        const d = dueDate ? new Date(`${dueDate.slice(0, 10)}T12:00:00`) : new Date(Date.now() + 7 * 86400000);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+      })(),
       status: "EM_ABERTO",
       periodStart: inicio,
       periodEnd: fim,
