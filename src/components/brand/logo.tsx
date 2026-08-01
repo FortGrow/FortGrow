@@ -1,14 +1,19 @@
+import { MARK_DATA_URI } from "./mark-data";
+
 /**
  * Marca FortGrow — arte oficial enviada pela agência.
  * Os arquivos em /public/brand são recortes do PNG original (sem redesenho):
  *   mark.png   → monograma FG (fundo transparente)
  *   lockup.png → logo completa (monograma + FORTGROW), para fundos claros
+ *
+ * O monograma usa a versão EMBUTIDA (data URI): sem requisição de rede, a
+ * logo não pisca nem some por falha de carregamento/cache em produção.
  */
 /* eslint-disable @next/next/no-img-element */
 export function FgMark({ size = 36, className }: { size?: number; className?: string }) {
   return (
     <img
-      src="/brand/mark.png"
+      src={MARK_DATA_URI}
       alt="FortGrow"
       width={size}
       height={size}
