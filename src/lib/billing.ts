@@ -48,10 +48,16 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
 
   const subs = await prisma.subscription.findMany({
     where: { status: "ATIVA", ...(subscriptionId ? { id: subscriptionId } : {}), client: { archivedAt: null } },
+    include: { client: { select: { billingType: true } } },
   });
 
   let created = 0;
   for (const sub of subs) {
+    /* Cliente com pagamento VARIÁVEL (comissão): o valor do mês oscila com
+       as vendas, então a mensalidade NÃO replica cobrança como se fosse
+       fixa — o lançamento mensal sai de Faturamento → Lançar comissão,
+       calculado das vendas do período. */
+    if (sub.client.billingType === "COMISSAO") continue;
     if (!chargesInMonth(sub.startDate, sub.frequency, year, month0)) continue;
     const exists = await prisma.invoice.findFirst({
       where: { subscriptionId: sub.id, dueDate: { gte: monthStart, lt: monthEnd } },

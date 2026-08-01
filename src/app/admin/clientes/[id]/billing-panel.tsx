@@ -383,12 +383,15 @@ export function BillingPanel({
   charges,
   totalPaid,
   totalPending,
+  variableClient = false,
 }: {
   clientId: string;
   subscriptions: SubscriptionDto[];
   charges: ChargeDto[];
   totalPaid: number;
   totalPending: number;
+  /// Cliente por comissão: mensalidades não geram cobrança automática
+  variableClient?: boolean;
 }) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<SubscriptionDto | null>(null);
@@ -452,6 +455,14 @@ export function BillingPanel({
           <Plus size={13} /> Nova mensalidade
         </button>
       </div>
+
+      {variableClient && (
+        <p className="mb-4 rounded-xl border border-warn/30 bg-warn/10 px-3.5 py-2.5 text-[11px] leading-relaxed text-warn">
+          Cliente com pagamento <b>variável</b>: mensalidades aqui NÃO geram cobrança automática todo mês — o
+          valor oscila com as vendas e é lançado em <b>Faturamento → Lançar comissão</b>, calculado do período
+          apurado. Use mensalidade apenas para uma parte fixa do contrato, gerando a cobrança manualmente.
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-grow-500/5 p-3 ring-1 ring-inset ring-grow-500/15">

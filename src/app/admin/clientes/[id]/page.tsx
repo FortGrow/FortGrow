@@ -493,6 +493,7 @@ export default async function ClienteDetalhe({
         />
         <BillingPanel
           clientId={client.id}
+          variableClient={isCommissionClient}
           subscriptions={client.subscriptions.map((s) => ({
             id: s.id,
             description: s.description,
