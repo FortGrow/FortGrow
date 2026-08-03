@@ -76,7 +76,29 @@ export default async function FinanceiroPage({
 
   // ── Receita ────────────────────────────────────────────────────────
   const paid = invoices.filter((i) => i.status === "PAGO");
-  const monthOf = (i: (typeof invoices)[number]) => (i.paidAt ?? i.dueDate).getMonth();
+  /* Receita entra no mês da COMPETÊNCIA, não do pagamento: a comissão de
+     julho recebida em agosto é faturamento de julho. A competência vem do
+     período apurado (comissões), do "· MM/AAAA" (mensalidades) ou do nome
+     do mês na descrição; sem nada disso, vale o pagamento/vencimento. */
+  const MES_NOME: Record<string, number> = {
+    janeiro: 0, fevereiro: 1, ["março"]: 2, abril: 3, maio: 4, junho: 5,
+    julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
+  };
+  const competenciaDe = (i: (typeof invoices)[number]): { y: number; m: number } | null => {
+    if (i.periodEnd) return { y: i.periodEnd.getFullYear(), m: i.periodEnd.getMonth() };
+    const mm = i.description.match(/·\s*(\d{2})\/(\d{4})\b/);
+    if (mm) return { y: Number(mm[2]), m: Number(mm[1]) - 1 };
+    const nome = i.description.match(/^Comissão\s+([a-zç]+)\/(\d{4})/i);
+    if (nome && MES_NOME[nome[1].toLowerCase()] !== undefined) {
+      return { y: Number(nome[2]), m: MES_NOME[nome[1].toLowerCase()] };
+    }
+    return null;
+  };
+  const monthOf = (i: (typeof invoices)[number]) => {
+    const comp = competenciaDe(i);
+    if (comp && comp.y === year) return comp.m;
+    return (i.paidAt ?? i.dueDate).getMonth();
+  };
   const revenueByMonth = Array(12).fill(0);
   const clientsByMonth: Set<string>[] = Array.from({ length: 12 }, () => new Set());
   for (const i of paid) {

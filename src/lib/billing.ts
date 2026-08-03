@@ -44,7 +44,6 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
   const year = now.getFullYear();
   const month0 = now.getMonth();
   const monthStart = new Date(year, month0, 1);
-  const monthEnd = new Date(year, month0 + 1, 1);
 
   const subs = await prisma.subscription.findMany({
     where: { status: "ATIVA", ...(subscriptionId ? { id: subscriptionId } : {}), client: { archivedAt: null } },
@@ -58,25 +57,40 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
        fixa — o lançamento mensal sai de Faturamento → Lançar comissão,
        calculado das vendas do período. */
     if (sub.client.billingType === "COMISSAO") continue;
-    if (!chargesInMonth(sub.startDate, sub.frequency, year, month0)) continue;
-    const exists = await prisma.invoice.findFirst({
-      where: { subscriptionId: sub.id, dueDate: { gte: monthStart, lt: monthEnd } },
-      select: { id: true },
-    });
-    if (exists) continue;
-    const label = FREQUENCIES[sub.frequency as Frequency]?.label ?? "Mensal";
-    await prisma.invoice.create({
-      data: {
-        clientId: sub.clientId,
-        subscriptionId: sub.id,
-        description: `${sub.description} (${label.toLowerCase()}) · ${String(month0 + 1).padStart(2, "0")}/${year}`,
-        amount: sub.amount,
-        dueDate: dueDateFor(year, month0, sub.dueDay),
-        method: sub.paymentMethod,
-        status: "EM_ABERTO",
-      },
-    });
-    created++;
+
+    /* Rotina geral: só o mês corrente. Ao criar/editar UMA mensalidade
+       (subscriptionId presente), gera também os meses desde o início dela
+       (até 12 para trás): cadastrar em agosto uma mensalidade que começou
+       em julho cria a cobrança de julho na hora. */
+    const inicioSub = new Date(sub.startDate.getFullYear(), sub.startDate.getMonth(), 1);
+    const piso = new Date(year, month0 - 11, 1);
+    const primeiro = subscriptionId
+      ? new Date(Math.max(inicioSub.getTime(), piso.getTime()))
+      : monthStart;
+
+    for (let cursor = new Date(primeiro); cursor <= monthStart; cursor.setMonth(cursor.getMonth() + 1)) {
+      const cy = cursor.getFullYear();
+      const cm = cursor.getMonth();
+      if (!chargesInMonth(sub.startDate, sub.frequency, cy, cm)) continue;
+      const exists = await prisma.invoice.findFirst({
+        where: { subscriptionId: sub.id, dueDate: { gte: new Date(cy, cm, 1), lt: new Date(cy, cm + 1, 1) } },
+        select: { id: true },
+      });
+      if (exists) continue;
+      const label = FREQUENCIES[sub.frequency as Frequency]?.label ?? "Mensal";
+      await prisma.invoice.create({
+        data: {
+          clientId: sub.clientId,
+          subscriptionId: sub.id,
+          description: `${sub.description} (${label.toLowerCase()}) · ${String(cm + 1).padStart(2, "0")}/${cy}`,
+          amount: sub.amount,
+          dueDate: dueDateFor(cy, cm, sub.dueDay),
+          method: sub.paymentMethod,
+          status: "EM_ABERTO",
+        },
+      });
+      created++;
+    }
   }
   return created;
 }
