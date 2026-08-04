@@ -458,9 +458,9 @@ export function BillingPanel({
 
       {variableClient && (
         <p className="mb-4 rounded-xl border border-warn/30 bg-warn/10 px-3.5 py-2.5 text-[11px] leading-relaxed text-warn">
-          Cliente com pagamento <b>variável</b>: mensalidades aqui NÃO geram cobrança automática todo mês — o
-          valor oscila com as vendas e é lançado em <b>Faturamento → Lançar comissão</b>, calculado do período
-          apurado. Use mensalidade apenas para uma parte fixa do contrato, gerando a cobrança manualmente.
+          Cliente com parte <b>variável</b>: cadastre como mensalidade apenas a <b>parte FIXA</b> do contrato —
+          ela gera cobrança normal todo mês. A parte variável (comissão) NUNCA entra como mensalidade, porque o
+          valor oscila: lance todo mês em <b>Faturamento → Lançar comissão</b>, calculado do período apurado.
         </p>
       )}
 

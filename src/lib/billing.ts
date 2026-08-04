@@ -47,16 +47,15 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
 
   const subs = await prisma.subscription.findMany({
     where: { status: "ATIVA", ...(subscriptionId ? { id: subscriptionId } : {}), client: { archivedAt: null } },
-    include: { client: { select: { billingType: true } } },
   });
 
   let created = 0;
   for (const sub of subs) {
-    /* Cliente com pagamento VARIÁVEL (comissão): o valor do mês oscila com
-       as vendas, então a mensalidade NÃO replica cobrança como se fosse
-       fixa — o lançamento mensal sai de Faturamento → Lançar comissão,
-       calculado das vendas do período. */
-    if (sub.client.billingType === "COMISSAO") continue;
+    /* A mensalidade é sempre a parte FIXA do contrato — replica normal em
+       qualquer cliente, inclusive nos híbridos (fixo + comissão), que têm
+       as duas pontas: a fixa daqui e a variável do Lançar comissão. O que
+       não pode é cadastrar o valor VARIÁVEL como mensalidade (o painel do
+       cliente variável avisa). */
 
     /* Rotina geral: só o mês corrente. Ao criar/editar UMA mensalidade
        (subscriptionId presente), gera também os meses desde o início dela
