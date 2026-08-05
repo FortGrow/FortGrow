@@ -61,7 +61,14 @@ export default async function FinanceiroPage({
         select: { id: true, companyName: true, commissionGrossPercent: true, commissionBase: true, commissionShare: true, closingDay: true },
         orderBy: { companyName: "asc" },
       }),
-      prisma.expense.findMany({ where: { status: { not: "CANCELADO" } }, orderBy: { date: "desc" }, take: 10 }),
+      prisma.expense.findMany({
+        where: {
+          status: { not: "CANCELADO" },
+          date: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) },
+        },
+        orderBy: { date: "desc" },
+        take: 20,
+      }),
       prisma.client.findMany({
         where: { archivedAt: null },
         select: {
@@ -225,8 +232,11 @@ export default async function FinanceiroPage({
   const outros = sortedClients.slice(9).reduce((s, [, v]) => s + v, 0);
   const participation = outros > 0 ? [...participationTop, { label: "Outros", value: Math.round(outros * 100) / 100 }] : participationTop;
 
-  // Tabela de cobranças com filtro por status
-  const chargeRows = (statusFilter ? invoices.filter((i) => i.status === statusFilter) : invoices).slice(0, 20);
+  // Tabela de cobranças: SÓ o mês selecionado (mesma competência dos cards),
+  // com o filtro por status por cima
+  const chargeRows = (statusFilter ? invoices.filter((i) => i.status === statusFilter) : invoices)
+    .filter((i) => monthOf(i) === m)
+    .slice(0, 20);
   /* Dias por CALENDÁRIO, não por horário: cobranças gravadas em horas
      diferentes do mesmo dia (mensalidade × comissão) ganham o mesmo selo. */
   const inicioDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -402,7 +412,7 @@ export default async function FinanceiroPage({
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold text-slate-300">Mensalidades e cobranças · {year}</h2>
+            <h2 className="text-sm font-bold text-slate-300">Mensalidades e cobranças · {MONTHS_PT[m]}/{year}</h2>
             <div className="flex gap-1.5">
               {[
                 [undefined, "Todas"],
@@ -451,7 +461,7 @@ export default async function FinanceiroPage({
         </div>
         <div>
           <h2 className="mb-3 text-sm font-bold text-slate-300">
-            Custos recentes · <a href="/admin/custos" className="text-brand-400 hover:text-brand-300">abrir central de custos →</a>
+            Custos de {MONTHS_PT[m]}/{year} · <a href="/admin/custos" className="text-brand-400 hover:text-brand-300">abrir central de custos →</a>
           </h2>
           <DataTable headers={["Custo", "Categoria", "Valor", "Vencimento"]}>
             {recentCosts.map((e) => (
