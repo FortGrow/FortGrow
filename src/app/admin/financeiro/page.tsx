@@ -128,12 +128,11 @@ export default async function FinanceiroPage({
   type TipoContrato = "fixo" | "hibrido" | "variavel";
   const tipoDoCliente = new Map<string, TipoContrato>();
   for (const c of allClientsTipo) {
+    /* Híbrido = comissão COM mensalidade fixa ativa (replicando). O valor
+       mensal solto no cadastro não classifica: sem mensalidade ativa, o
+       cliente por comissão é VARIÁVEL. */
     const tipo: TipoContrato =
-      c.billingType !== "COMISSAO"
-        ? "fixo"
-        : Number(c.monthlyValue) > 0 || c.subscriptions.length > 0
-          ? "hibrido"
-          : "variavel";
+      c.billingType !== "COMISSAO" ? "fixo" : c.subscriptions.length > 0 ? "hibrido" : "variavel";
     tipoDoCliente.set(c.id, tipo);
   }
   const porTipoMes: Record<TipoContrato, number[]> = {
@@ -151,6 +150,14 @@ export default async function FinanceiroPage({
     porTipoMes[tipo][monthOf(i)] += Number(i.amount);
     clientesPorTipo[tipo].add(i.clientId);
   }
+  /* O que o mês ainda tem A RECEBER por tipo — cobrança em aberto some dos
+     números de pagas e precisa aparecer em algum lugar */
+  const aReceberTipoMes: Record<TipoContrato, number> = { fixo: 0, hibrido: 0, variavel: 0 };
+  for (const i of invoices) {
+    if (i.status !== "EM_ABERTO" && i.status !== "ATRASADO") continue;
+    if (monthOf(i) !== m) continue;
+    aReceberTipoMes[tipoDoCliente.get(i.clientId) ?? "fixo"] += Number(i.amount);
+  }
   const tipoCards = (
     [
       ["fixo", "Fixo"],
@@ -163,6 +170,7 @@ export default async function FinanceiroPage({
     mes: porTipoMes[key][m],
     ano: porTipoMes[key].reduce((a, b) => a + b, 0),
     clientes: clientesPorTipo[key].size,
+    aReceber: aReceberTipoMes[key],
   }));
   const tipoEvolution = MONTHS_SHORT.map((label, i) => ({
     label,
@@ -334,7 +342,7 @@ export default async function FinanceiroPage({
               key={t.key}
               label={t.label}
               value={brl(t.mes)}
-              hint={`ano: ${brl(t.ano)} · ${num(t.clientes)} cliente${t.clientes === 1 ? "" : "s"} pagante${t.clientes === 1 ? "" : "s"}`}
+              hint={`ano: ${brl(t.ano)} · ${num(t.clientes)} cliente${t.clientes === 1 ? "" : "s"}${t.aReceber > 0 ? ` · a receber no mês: ${brl(t.aReceber)}` : ""}`}
               accent={t.key === "fixo" ? "brand" : t.key === "hibrido" ? "violet" : "grow"}
             />
           ))}
