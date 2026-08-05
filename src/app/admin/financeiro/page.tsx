@@ -38,7 +38,7 @@ export default async function FinanceiroPage({
   const yearEnd = new Date(year + 1, 0, 1);
   const prevYearStart = new Date(year - 1, 0, 1);
 
-  const [invoices, prevYearPaid, activeClients, adSpend, commissions, costs, commissionClients, recentCosts] =
+  const [invoices, prevYearPaid, activeClients, adSpend, commissions, costs, commissionClients, recentCosts, allClientsTipo] =
     await Promise.all([
       prisma.invoice.findMany({
         where: { dueDate: { gte: yearStart, lt: yearEnd } },
@@ -62,6 +62,15 @@ export default async function FinanceiroPage({
         orderBy: { companyName: "asc" },
       }),
       prisma.expense.findMany({ where: { status: { not: "CANCELADO" } }, orderBy: { date: "desc" }, take: 10 }),
+      prisma.client.findMany({
+        where: { archivedAt: null },
+        select: {
+          id: true,
+          billingType: true,
+          monthlyValue: true,
+          subscriptions: { where: { status: "ATIVA", autoGenerate: true }, select: { id: true }, take: 1 },
+        },
+      }),
     ]);
 
   const [mrrInfo, allActiveClients, taxPercent] = await Promise.all([
@@ -105,6 +114,55 @@ export default async function FinanceiroPage({
     revenueByMonth[monthOf(i)] += Number(i.amount);
     clientsByMonth[monthOf(i)].add(i.clientId);
   }
+
+  /* Receita por TIPO de contrato: fixo, fixo + variável (híbrido) e
+     variável. Híbrido = cliente por comissão com parte fixa (mensalidade
+     replicante ou valor mensal no contrato). */
+  type TipoContrato = "fixo" | "hibrido" | "variavel";
+  const tipoDoCliente = new Map<string, TipoContrato>();
+  for (const c of allClientsTipo) {
+    const tipo: TipoContrato =
+      c.billingType !== "COMISSAO"
+        ? "fixo"
+        : Number(c.monthlyValue) > 0 || c.subscriptions.length > 0
+          ? "hibrido"
+          : "variavel";
+    tipoDoCliente.set(c.id, tipo);
+  }
+  const porTipoMes: Record<TipoContrato, number[]> = {
+    fixo: Array(12).fill(0),
+    hibrido: Array(12).fill(0),
+    variavel: Array(12).fill(0),
+  };
+  const clientesPorTipo: Record<TipoContrato, Set<string>> = {
+    fixo: new Set(),
+    hibrido: new Set(),
+    variavel: new Set(),
+  };
+  for (const i of paid) {
+    const tipo = tipoDoCliente.get(i.clientId) ?? "fixo";
+    porTipoMes[tipo][monthOf(i)] += Number(i.amount);
+    clientesPorTipo[tipo].add(i.clientId);
+  }
+  const tipoCards = (
+    [
+      ["fixo", "Fixo"],
+      ["hibrido", "Fixo + variável"],
+      ["variavel", "Variável"],
+    ] as const
+  ).map(([key, label]) => ({
+    key,
+    label,
+    mes: porTipoMes[key][m],
+    ano: porTipoMes[key].reduce((a, b) => a + b, 0),
+    clientes: clientesPorTipo[key].size,
+  }));
+  const tipoEvolution = MONTHS_SHORT.map((label, i) => ({
+    label,
+    fixo: Math.round(porTipoMes.fixo[i]),
+    hibrido: Math.round(porTipoMes.hibrido[i]),
+    variavel: Math.round(porTipoMes.variavel[i]),
+  }));
 
   const yearRevenue = revenueByMonth.reduce((a, b) => a + b, 0);
   const monthRevenue = revenueByMonth[m];
@@ -251,6 +309,36 @@ export default async function FinanceiroPage({
             value={brl(netProfit)}
             hint={`bruto ${brl(grossProfit)} · margem ${margin.toFixed(1)}%`}
             accent={netProfit >= 0 ? "grow" : "danger"}
+          />
+        </div>
+      </div>
+
+      {/* Receita por tipo de contrato: fixo × fixo+variável × variável */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-bold text-slate-300">
+          Receita por tipo de contrato · {MONTHS_PT[m]}/{year}
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {tipoCards.map((t) => (
+            <StatCard
+              key={t.key}
+              label={t.label}
+              value={brl(t.mes)}
+              hint={`ano: ${brl(t.ano)} · ${num(t.clientes)} cliente${t.clientes === 1 ? "" : "s"} pagante${t.clientes === 1 ? "" : "s"}`}
+              accent={t.key === "fixo" ? "brand" : t.key === "hibrido" ? "violet" : "grow"}
+            />
+          ))}
+        </div>
+        <div className="card mt-4 p-5">
+          <h3 className="mb-4 text-sm font-bold text-slate-300">Comparação mês a mês · {year}</h3>
+          <TrendChart
+            data={tipoEvolution}
+            series={[
+              { key: "fixo", label: "Fixo" },
+              { key: "hibrido", label: "Fixo + variável" },
+              { key: "variavel", label: "Variável" },
+            ]}
+            format="brl"
           />
         </div>
       </div>
