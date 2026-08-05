@@ -3,8 +3,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { DataTable, Td } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { costReport } from "@/lib/commissions";
-import { brl, fullDate } from "@/lib/utils";
+import { commissionReport, costReport } from "@/lib/commissions";
+import { brl, brlExato, fullDate } from "@/lib/utils";
 import { NewCostForm, CostRowActions } from "./cost-actions";
 import { COST_CATEGORY_LABELS } from "@/lib/cost-categories";
 
@@ -12,9 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function CustosPage() {
   const now = new Date();
-  const [costs, totals] = await Promise.all([
+  const [costs, totals, comissoes] = await Promise.all([
     prisma.expense.findMany({ orderBy: [{ recurring: "desc" }, { date: "desc" }], take: 200 }),
     costReport(now.getFullYear(), now.getMonth() + 1),
+    commissionReport(now.getFullYear(), now.getMonth() + 1),
   ]);
 
   const active = costs.filter((c) => c.status !== "CANCELADO");
@@ -50,8 +51,37 @@ export default async function CustosPage() {
         <StatCard label="Custo mensal" value={brl(totals.monthly)} hint="recorrentes + únicos do mês" accent="warn" />
         <StatCard label="Custo anual (projeção)" value={brl(totals.yearly)} accent="danger" />
         <StatCard label="Recorrência mensal" value={brl(recurringMonthly)} hint="assinaturas e fixos" accent="brand" />
-        <StatCard label="Custos cadastrados" value={String(active.length)} accent="violet" />
+        <StatCard
+          label="Comissões do mês (automático)"
+          value={brl(comissoes.monthTotal)}
+          hint="calculadas das comissões configuradas nos clientes"
+          accent="violet"
+        />
       </div>
+
+      {comissoes.collaborators.length > 0 && (
+        <div className="card mt-6 p-5">
+          <h2 className="mb-1 text-sm font-bold text-slate-300">Comissões de colaboradores — mês atual</h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Calculadas automaticamente a partir das comissões configuradas na ficha de cada cliente
+            (percentual sobre a receita do mês por competência, ou valor fixo). Mudou a configuração
+            ou entrou receita nova? Este quadro atualiza sozinho — nada precisa ser cadastrado aqui.
+          </p>
+          <DataTable headers={["Colaborador", "Cliente", "Regra", "Receita do mês", "Comissão"]}>
+            {comissoes.collaborators.flatMap((col) =>
+              col.rows.map((r) => (
+                <tr key={`${col.userId}-${r.clientId}`} className="transition hover:bg-ink-800/50">
+                  <Td className="font-medium text-slate-200">{col.userName}</Td>
+                  <Td>{r.clientName}</Td>
+                  <Td>{r.type === "PERCENTUAL" ? `${r.value}% da receita` : `fixo ${brlExato(r.value)}`}</Td>
+                  <Td>{brlExato(r.revenue)}</Td>
+                  <Td className="font-semibold text-slate-200">{brlExato(r.commission)}</Td>
+                </tr>
+              ))
+            )}
+          </DataTable>
+        </div>
+      )}
 
       {topCategories.length > 0 && (
         <div className="card mt-6 p-5">

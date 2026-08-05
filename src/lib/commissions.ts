@@ -7,6 +7,7 @@
  * Lucro restante do cliente = receita do mês − soma das comissões do mês.
  */
 import { prisma } from "@/lib/prisma";
+import { mesDaFatura } from "@/lib/competencia";
 
 export type CommissionRow = {
   clientId: string;
@@ -37,10 +38,6 @@ export type CommissionSummary = {
   byMonth: number[];
 };
 
-function monthOf(inv: { paidAt: Date | null; dueDate: Date }) {
-  return (inv.paidAt ?? inv.dueDate).getMonth();
-}
-
 export async function commissionReport(year: number, month: number): Promise<CommissionSummary> {
   const start = new Date(year, 0, 1);
   const end = new Date(year + 1, 0, 1);
@@ -48,7 +45,7 @@ export async function commissionReport(year: number, month: number): Promise<Com
   const [invoices, assignments] = await Promise.all([
     prisma.invoice.findMany({
       where: { status: "PAGO", OR: [{ paidAt: { gte: start, lt: end } }, { paidAt: null, dueDate: { gte: start, lt: end } }] },
-      select: { clientId: true, amount: true, paidAt: true, dueDate: true },
+      select: { clientId: true, amount: true, paidAt: true, dueDate: true, description: true, periodEnd: true },
     }),
     prisma.staffCommission.findMany({
       include: {
@@ -58,11 +55,11 @@ export async function commissionReport(year: number, month: number): Promise<Com
     }),
   ]);
 
-  // receita[clientId][mes 0-11]
+  // receita[clientId][mes 0-11] — mesma competência do painel de Faturamento
   const revenue = new Map<string, number[]>();
   for (const inv of invoices) {
     const arr = revenue.get(inv.clientId) ?? Array(12).fill(0);
-    arr[monthOf(inv)] += Number(inv.amount);
+    arr[mesDaFatura(inv, year)] += Number(inv.amount);
     revenue.set(inv.clientId, arr);
   }
 

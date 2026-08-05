@@ -11,6 +11,7 @@ import { ltv, paybackMonths } from "@/lib/metrics";
 import { commissionReport, costReport } from "@/lib/commissions";
 import { currentMrr, generateSubscriptionCharges } from "@/lib/billing";
 import { parsePeriod, MONTHS_PT, MONTHS_SHORT } from "@/lib/period";
+import { mesDaFatura } from "@/lib/competencia";
 import { getTaxPercent } from "@/lib/settings";
 import { CommissionForm } from "./commission-form";
 import { TaxPercentForm } from "./tax-form";
@@ -62,11 +63,16 @@ export default async function FinanceiroPage({
         orderBy: { companyName: "asc" },
       }),
       prisma.expense.findMany({
+        // Recorrentes mensais valem TODO mês, não só no mês em que foram
+        // cadastrados; anuais e únicos entram pela data
         where: {
           status: { not: "CANCELADO" },
-          date: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) },
+          OR: [
+            { recurring: true, frequency: "mensal" },
+            { date: { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) } },
+          ],
         },
-        orderBy: { date: "desc" },
+        orderBy: [{ recurring: "desc" }, { date: "desc" }],
         take: 20,
       }),
       prisma.client.findMany({
@@ -92,33 +98,9 @@ export default async function FinanceiroPage({
 
   // ── Receita ────────────────────────────────────────────────────────
   const paid = invoices.filter((i) => i.status === "PAGO");
-  /* Receita entra no mês da COMPETÊNCIA, não do pagamento: a comissão de
-     julho recebida em agosto é faturamento de julho. A competência vem do
-     período apurado (comissões), do "· MM/AAAA" (mensalidades) ou do nome
-     do mês na descrição; sem nada disso, vale o pagamento/vencimento. */
-  const MES_NOME: Record<string, number> = {
-    janeiro: 0, fevereiro: 1, ["março"]: 2, abril: 3, maio: 4, junho: 5,
-    julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
-  };
-  const competenciaDe = (i: (typeof invoices)[number]): { y: number; m: number } | null => {
-    if (i.periodEnd) return { y: i.periodEnd.getFullYear(), m: i.periodEnd.getMonth() };
-    const mm = i.description.match(/·\s*(\d{2})\/(\d{4})\b/);
-    if (mm) return { y: Number(mm[2]), m: Number(mm[1]) - 1 };
-    const nome = i.description.match(/^Comissão\s+([a-zç]+)\/(\d{4})/i);
-    if (nome && MES_NOME[nome[1].toLowerCase()] !== undefined) {
-      return { y: Number(nome[2]), m: MES_NOME[nome[1].toLowerCase()] };
-    }
-    const num = i.description.match(/^Comissão\s+(\d{1,2})\/(\d{4})/i);
-    if (num && Number(num[1]) >= 1 && Number(num[1]) <= 12) {
-      return { y: Number(num[2]), m: Number(num[1]) - 1 };
-    }
-    return null;
-  };
-  const monthOf = (i: (typeof invoices)[number]) => {
-    const comp = competenciaDe(i);
-    if (comp && comp.y === year) return comp.m;
-    return (i.paidAt ?? i.dueDate).getMonth();
-  };
+  /* Receita entra no mês da COMPETÊNCIA, não do pagamento — regra única em
+     src/lib/competencia.ts, compartilhada com o cálculo de comissões. */
+  const monthOf = (i: (typeof invoices)[number]) => mesDaFatura(i, year);
   const revenueByMonth = Array(12).fill(0);
   const clientsByMonth: Set<string>[] = Array.from({ length: 12 }, () => new Set());
   for (const i of paid) {
@@ -487,12 +469,34 @@ export default async function FinanceiroPage({
           <DataTable headers={["Custo", "Categoria", "Valor", "Vencimento"]}>
             {recentCosts.map((e) => (
               <tr key={e.id} className="transition hover:bg-ink-800/50">
-                <Td className="font-medium text-slate-200">{e.description}</Td>
+                <Td className="font-medium text-slate-200">
+                  <span className="inline-flex items-center gap-1.5">
+                    {e.description}
+                    {e.recurring && e.frequency === "mensal" && <Badge tone="brand">mensal</Badge>}
+                  </span>
+                </Td>
                 <Td className="capitalize">{e.category.replaceAll("_", " ")}</Td>
                 <Td>{brlExato(e.amount)}</Td>
-                <Td className="text-slate-500">{fullDate(e.date)}</Td>
+                <Td className="text-slate-500">
+                  {e.recurring && e.frequency === "mensal" ? `todo dia ${String(e.date.getDate()).padStart(2, "0")}` : fullDate(e.date)}
+                </Td>
               </tr>
             ))}
+            {commissions.collaborators.map((c) =>
+              c.monthTotal > 0 ? (
+                <tr key={`auto-${c.userId}`} className="transition hover:bg-ink-800/50">
+                  <Td className="font-medium text-slate-200">
+                    <span className="inline-flex items-center gap-1.5">
+                      Comissão · {c.userName}
+                      <Badge tone="violet">automática</Badge>
+                    </span>
+                  </Td>
+                  <Td>Comissões</Td>
+                  <Td>{brlExato(c.monthTotal)}</Td>
+                  <Td className="text-slate-500">{MONTHS_PT[m]}/{year}</Td>
+                </tr>
+              ) : null
+            )}
           </DataTable>
         </div>
       </div>
