@@ -214,9 +214,11 @@ export default async function FinanceiroPage({
   }));
   const comparison = MONTHS_SHORT.map((label, i) => ({ label, receita: Math.round(revenueByMonth[i]) }));
 
-  // Receita por cliente (pagas no ano) — top 10
+  // Receita por cliente (pagas, competência do MÊS selecionado) — top 10.
+  // Quem só entrou em agosto não pode aparecer na roda de julho.
   const byClient = new Map<string, number>();
   for (const i of paid) {
+    if (monthOf(i) !== m) continue;
     byClient.set(i.client.companyName, (byClient.get(i.client.companyName) ?? 0) + Number(i.amount));
   }
   const sortedClients = [...byClient.entries()].sort(([, a], [, b]) => b - a);
@@ -401,11 +403,11 @@ export default async function FinanceiroPage({
       {revenuePerClient.length > 0 && (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="card p-5">
-            <h2 className="mb-4 text-sm font-bold text-slate-300">Participação no faturamento · {year}</h2>
+            <h2 className="mb-4 text-sm font-bold text-slate-300">Participação no faturamento · {MONTHS_PT[m]}/{year}</h2>
             <DonutChart data={participation} />
           </div>
           <div className="card p-5">
-            <h2 className="mb-4 text-sm font-bold text-slate-300">Receita por cliente · {year} (top 10, pagas)</h2>
+            <h2 className="mb-4 text-sm font-bold text-slate-300">Receita por cliente · {MONTHS_PT[m]}/{year} (top 10, pagas)</h2>
             <BarsChart data={revenuePerClient} series={[{ key: "receita", label: "Receita" }]} format="brl" />
           </div>
         </div>
