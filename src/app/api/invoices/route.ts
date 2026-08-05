@@ -41,6 +41,9 @@ const updateSchema = z.object({
   method: z.enum(PAYMENT_METHODS).nullish().or(z.literal("")),
   amount: z.coerce.number().min(0.01).optional(),
   dueDate: z.string().min(4).optional(),
+  /// Data REAL do pagamento (editável): quem paga em 31/07 e é marcado em
+  /// agosto precisa contar no mês certo do faturamento
+  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
   description: z.string().min(2).max(160).optional(),
 });
 
@@ -52,7 +55,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, status, method, dueDate, ...rest } = parsed.data;
+  const { id, status, method, dueDate, paidAt, ...rest } = parsed.data;
   const data: Record<string, unknown> = { ...rest };
   if (status) {
     data.status = status;
@@ -61,6 +64,8 @@ export async function PATCH(req: NextRequest) {
   }
   if (method !== undefined) data.method = method || null;
   if (dueDate !== undefined) data.dueDate = new Date(dueDate);
+  // Data explícita de pagamento vence o carimbo automático do clique
+  if (paidAt !== undefined) data.paidAt = paidAt ? new Date(`${paidAt}T12:00:00`) : null;
 
   const invoice = await prisma.invoice.update({ where: { id }, data }).catch(() => null);
   if (!invoice) return NextResponse.json({ error: "Cobrança não encontrada." }, { status: 404 });

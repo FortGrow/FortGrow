@@ -276,6 +276,7 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
               description: form.get("description"),
               amount: form.get("amount"),
               dueDate: form.get("dueDate"),
+              ...(form.get("paidAt") ? { paidAt: form.get("paidAt") } : {}),
             }),
           });
       if (!res.ok) {
@@ -379,6 +380,21 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
                 <label className="label" htmlFor={`ce-due-${charge.id}`}>Vencimento</label>
                 <input id={`ce-due-${charge.id}`} name="dueDate" type="date" required defaultValue={charge.dueDate.slice(0, 10)} className="input" />
               </div>
+              {charge.status === "PAGO" && (
+                <div className="col-span-2">
+                  <label className="label" htmlFor={`ce-paid-${charge.id}`}>Pago em</label>
+                  <input
+                    id={`ce-paid-${charge.id}`}
+                    name="paidAt"
+                    type="date"
+                    defaultValue={(charge.paidAt ?? "").slice(0, 10)}
+                    className="input"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    A data REAL do pagamento — é ela que define o mês do faturamento (ex.: pago 31/07 conta em julho).
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
