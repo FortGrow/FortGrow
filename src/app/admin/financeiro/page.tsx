@@ -206,6 +206,9 @@ export default async function FinanceiroPage({
   const grossProfit = monthRevenue - monthCosts;
   const netProfit = grossProfit - monthCommissions - monthTax;
   const margin = monthRevenue > 0 ? (netProfit / monthRevenue) * 100 : 0;
+  // Margem da empresa no ano inteiro, com as mesmas deduções do mês
+  const yearNetProfit = yearRevenue - yearCosts - commissions.yearTotal - yearTax;
+  const yearMargin = yearRevenue > 0 ? (yearNetProfit / yearRevenue) * 100 : 0;
 
   // ── Unidade econômica (ano) ────────────────────────────────────────
   const avgTicket = activeClients.length ? mrr / activeClients.length : 0;
@@ -316,7 +319,7 @@ export default async function FinanceiroPage({
           <h2 className="text-sm font-bold text-slate-300">Resultado de {MONTHS_PT[m]} — visão 360°</h2>
           <TaxPercentForm current={taxPercent} />
         </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <StatCard label="Receita do mês" value={brl(monthRevenue)} accent="grow" />
           <StatCard
             label={`Impostos (${taxPercent}%)`}
@@ -329,8 +332,14 @@ export default async function FinanceiroPage({
           <StatCard
             label="Lucro líquido"
             value={brl(netProfit)}
-            hint={`bruto ${brl(grossProfit)} · margem ${margin.toFixed(1)}%`}
+            hint={`bruto ${brl(grossProfit)} · ano: ${brl(yearNetProfit)}`}
             accent={netProfit >= 0 ? "grow" : "danger"}
+          />
+          <StatCard
+            label="Margem da empresa"
+            value={`${margin.toFixed(1)}%`}
+            hint={`quanto sobra de cada R$ faturado no mês · ano: ${yearMargin.toFixed(1)}%`}
+            accent={margin >= 20 ? "grow" : margin >= 0 ? "warn" : "danger"}
           />
         </div>
       </div>

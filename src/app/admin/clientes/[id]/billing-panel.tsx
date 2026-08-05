@@ -278,6 +278,7 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
               amount: form.get("amount"),
               dueDate: form.get("dueDate"),
               ...(form.get("paidAt") ? { paidAt: form.get("paidAt") } : {}),
+              ...(form.get("competencia") ? { competencia: form.get("competencia") } : {}),
             }),
           });
       if (!res.ok) {
@@ -412,6 +413,24 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
                   </p>
                 </div>
               )}
+              <div className="col-span-2">
+                <label className="label" htmlFor={`ce-comp-${charge.id}`}>Competência (mês do faturamento)</label>
+                <input
+                  id={`ce-comp-${charge.id}`}
+                  name="competencia"
+                  type="month"
+                  defaultValue={(() => {
+                    const marca = charge.description.match(/·\s*(\d{2})\/(\d{4})\b/);
+                    if (marca) return `${marca[2]}-${marca[1]}`;
+                    return (charge.paidAt ?? charge.dueDate).slice(0, 7);
+                  })()}
+                  className="input"
+                />
+                <p className="mt-1 text-[11px] text-slate-600">
+                  Manda em TUDO: a cobrança conta neste mês no Faturamento, não importa quando foi paga
+                  ou vence (ex.: paga em agosto mas referente a julho → escolha julho).
+                </p>
+              </div>
             </div>
           </div>
         )}

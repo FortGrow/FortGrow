@@ -44,6 +44,10 @@ const updateSchema = z.object({
   /// Data REAL do pagamento (editável): quem paga em 31/07 e é marcado em
   /// agosto precisa contar no mês certo do faturamento
   paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  /// Competência: em que mês/ano esta cobrança conta no Faturamento
+  /// (ex.: "2026-07"). Reescreve a marca "· MM/AAAA" da descrição e grava
+  /// o período — tem prioridade sobre data de pagamento e vencimento.
+  competencia: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   description: z.string().min(2).max(160).optional(),
 });
 
@@ -55,7 +59,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { id, status, method, dueDate, paidAt, ...rest } = parsed.data;
+  const { id, status, method, dueDate, paidAt, competencia, ...rest } = parsed.data;
   const data: Record<string, unknown> = { ...rest };
   if (status) {
     data.status = status;
@@ -66,6 +70,21 @@ export async function PATCH(req: NextRequest) {
   if (dueDate !== undefined) data.dueDate = new Date(dueDate);
   // Data explícita de pagamento vence o carimbo automático do clique
   if (paidAt !== undefined) data.paidAt = paidAt ? new Date(`${paidAt}T12:00:00`) : null;
+
+  if (competencia) {
+    const [ano, mes] = competencia.split("-").map(Number);
+    // O período gravado é o que o Faturamento olha primeiro — decide o mês
+    // mesmo que a descrição diga outra coisa
+    data.periodStart = new Date(ano, mes - 1, 1, 12);
+    data.periodEnd = new Date(ano, mes, 0, 12);
+    // E a marca "· MM/AAAA" da descrição acompanha, para a tela não mentir
+    const atual = await prisma.invoice.findUnique({ where: { id }, select: { description: true } });
+    const marca = `· ${String(mes).padStart(2, "0")}/${ano}`;
+    const base = (data.description as string | undefined) ?? atual?.description ?? "";
+    if (base) {
+      data.description = /·\s*\d{2}\/\d{4}\b/.test(base) ? base.replace(/·\s*\d{2}\/\d{4}\b/, marca) : `${base} ${marca}`;
+    }
+  }
 
   const invoice = await prisma.invoice.update({ where: { id }, data }).catch(() => null);
   if (!invoice) return NextResponse.json({ error: "Cobrança não encontrada." }, { status: 404 });
