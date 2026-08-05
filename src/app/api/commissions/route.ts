@@ -151,6 +151,9 @@ const patchSchema = z.object({
   sharePercent: z.coerce.number().positive().max(100),
   reference: z.string().min(2).max(40),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  /// Data REAL do pagamento — define o mês do faturamento quando o
+  /// lançamento não tem período de vendas gravado
+  paidAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
   periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
@@ -166,7 +169,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const { invoiceId, salesVolume, baseValue, basePercent, sharePercent, reference, dueDate, periodStart, periodEnd } = parsed.data;
+  const { invoiceId, salesVolume, baseValue, basePercent, sharePercent, reference, dueDate, paidAt, periodStart, periodEnd } = parsed.data;
   const existing = await prisma.invoice.findUnique({ where: { id: invoiceId } });
   if (!existing) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
 
@@ -182,6 +185,7 @@ export async function PATCH(req: NextRequest) {
       description: `Comissão ${reference}${janela} — ${fmt(salesVolume)} vendidos → receita base ${fmt(baseValue)} × ${basePercent}% × ${sharePercent}%`,
       amount,
       ...(dueDate ? { dueDate: new Date(`${dueDate}T12:00:00`) } : {}),
+      ...(paidAt !== undefined ? { paidAt: paidAt ? new Date(`${paidAt}T12:00:00`) : null } : {}),
       periodStart: inicio,
       periodEnd: fim,
     },

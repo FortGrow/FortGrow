@@ -108,6 +108,10 @@ export default async function FinanceiroPage({
     if (nome && MES_NOME[nome[1].toLowerCase()] !== undefined) {
       return { y: Number(nome[2]), m: MES_NOME[nome[1].toLowerCase()] };
     }
+    const num = i.description.match(/^Comissão\s+(\d{1,2})\/(\d{4})/i);
+    if (num && Number(num[1]) >= 1 && Number(num[1]) <= 12) {
+      return { y: Number(num[2]), m: Number(num[1]) - 1 };
+    }
     return null;
   };
   const monthOf = (i: (typeof invoices)[number]) => {

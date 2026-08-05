@@ -266,6 +266,7 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
               sharePercent: share,
               reference: form.get("reference"),
               dueDate: form.get("dueDate") || undefined,
+              ...(form.get("paidAt") ? { paidAt: form.get("paidAt") } : {}),
             }),
           })
         : await fetch("/api/invoices", {
@@ -357,6 +358,22 @@ function ChargeEditor({ charge, onClose }: { charge: ChargeDto; onClose: () => v
                   />
                 </div>
               </div>
+              {charge.status === "PAGO" && (
+                <div>
+                  <label className="label" htmlFor={`ce-cpaid-${charge.id}`}>Pago em</label>
+                  <input
+                    id={`ce-cpaid-${charge.id}`}
+                    name="paidAt"
+                    type="date"
+                    defaultValue={(charge.paidAt ?? "").slice(0, 10)}
+                    className="input"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-600">
+                    A data REAL do pagamento — sem período de vendas gravado, é ela que define o mês
+                    do faturamento (ex.: pago 31/07 conta em julho).
+                  </p>
+                </div>
+              )}
               {preview && (
                 <p className="rounded-xl bg-ink-900/60 p-3 text-xs text-slate-400">
                   Comissão do cliente: <span className="font-semibold text-slate-200">{brl(preview.clientCommission)}</span>
