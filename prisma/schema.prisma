@@ -529,6 +529,9 @@ model Subscription {
   dueDay        Int      @default(5)
   /// ATIVA | PAUSADA | CANCELADA
   status        String   @default("ATIVA")
+  /// Gera cobrança automática todo período (parte FIXA do contrato).
+  /// Em cliente variável nasce desligado: a comissão sai do Lançar comissão.
+  autoGenerate  Boolean  @default(true)
   paymentMethod PaymentMethod?
   notes         String?
   createdAt     DateTime @default(now())

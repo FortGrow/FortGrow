@@ -16,6 +16,8 @@ const createSchema = z.object({
   dueDay: z.preprocess(emptyToNull, z.coerce.number().int().min(1).max(31).nullish()),
   paymentMethod: z.enum(PAYMENT_METHODS).nullish().or(z.literal("")),
   notes: z.string().max(1000).nullish(),
+  /// Parte FIXA do contrato: gera cobrança automática todo período
+  autoGenerate: z.boolean().optional(),
 });
 
 /** Cria uma mensalidade e já gera a cobrança do período atual (se couber). */
@@ -26,8 +28,11 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return invalidResponse(parsed.error);
 
-  const { clientId, startDate, dueDay, paymentMethod, notes, ...rest } = parsed.data;
-  const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, archivedAt: true } });
+  const { clientId, startDate, dueDay, paymentMethod, notes, autoGenerate, ...rest } = parsed.data;
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { id: true, archivedAt: true, billingType: true },
+  });
   if (!client || client.archivedAt) {
     return NextResponse.json({ error: "Cliente não encontrado (ou na Lixeira)." }, { status: 404 });
   }
@@ -40,6 +45,9 @@ export async function POST(req: NextRequest) {
       dueDay: dueDay ?? 5,
       paymentMethod: paymentMethod || null,
       notes: notes || null,
+      // Cliente variável: mensalidade nasce SEM replicação automática — só a
+      // parte fixa marcada explicitamente replica
+      autoGenerate: autoGenerate ?? client.billingType !== "COMISSAO",
     },
   });
 
@@ -54,6 +62,7 @@ export async function POST(req: NextRequest) {
 
 const updateSchema = z.object({
   id: z.string().min(1),
+  autoGenerate: z.boolean().optional(),
   description: z.string().min(2).max(120).optional(),
   amount: z.coerce.number().min(0.01).optional(),
   frequency: z.enum(["MENSAL", "TRIMESTRAL", "ANUAL"]).optional(),
@@ -100,8 +109,16 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const sub = await prisma.subscription.delete({ where: { id } }).catch(() => null);
-  if (!sub) return NextResponse.json({ error: "Mensalidade não encontrada." }, { status: 404 });
+  // As cobranças em aberto/atrasadas da mensalidade saem junto — apagar uma
+  // mensalidade errada não pode deixá-la viva no Faturamento. Pagas ficam
+  // (histórico real de dinheiro recebido).
+  const existe = await prisma.subscription.findUnique({ where: { id }, select: { id: true } });
+  if (!existe) return NextResponse.json({ error: "Mensalidade não encontrada." }, { status: 404 });
+  const [removidas] = await prisma.$transaction([
+    prisma.invoice.deleteMany({ where: { subscriptionId: id, status: { in: ["EM_ABERTO", "ATRASADO"] } } }),
+    prisma.subscription.delete({ where: { id } }),
+  ]);
+  void removidas;
 
   await prisma.activityLog.create({
     data: { userId: session.sub, action: "subscription.delete", entity: "Subscription", entityId: id },

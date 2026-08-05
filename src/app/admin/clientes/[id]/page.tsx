@@ -502,6 +502,7 @@ export default async function ClienteDetalhe({
             startDate: s.startDate.toISOString(),
             dueDay: s.dueDay,
             status: s.status,
+            autoGenerate: s.autoGenerate,
             paymentMethod: s.paymentMethod,
             notes: s.notes,
           }))}

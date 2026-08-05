@@ -51,11 +51,12 @@ export async function generateSubscriptionCharges(subscriptionId?: string): Prom
 
   let created = 0;
   for (const sub of subs) {
-    /* A mensalidade é sempre a parte FIXA do contrato — replica normal em
-       qualquer cliente, inclusive nos híbridos (fixo + comissão), que têm
-       as duas pontas: a fixa daqui e a variável do Lançar comissão. O que
-       não pode é cadastrar o valor VARIÁVEL como mensalidade (o painel do
-       cliente variável avisa). */
+    /* Interruptor por mensalidade: só replica quem está marcado como parte
+       FIXA do contrato (autoGenerate). Em cliente variável a mensalidade
+       nasce desligada — a comissão sai do Lançar comissão, calculada das
+       vendas do período; o que foi gerado no período anterior não
+       representa o resultado atual. */
+    if (!sub.autoGenerate) continue;
 
     /* Rotina geral: só o mês corrente. Ao criar/editar UMA mensalidade
        (subscriptionId presente), gera também os meses desde o início dela

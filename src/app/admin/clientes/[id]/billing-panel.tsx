@@ -23,6 +23,8 @@ export type SubscriptionDto = {
   startDate: string;
   dueDay: number;
   status: string;
+  /// Parte FIXA do contrato: replica cobrança automática todo período
+  autoGenerate: boolean;
   paymentMethod: string | null;
   notes: string | null;
 };
@@ -88,10 +90,12 @@ function dueBadge(c: ChargeDto) {
 function SubscriptionForm({
   clientId,
   initial,
+  variableClient = false,
   onClose,
 }: {
   clientId: string;
   initial?: SubscriptionDto;
+  variableClient?: boolean;
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -106,6 +110,8 @@ function SubscriptionForm({
     const form = new FormData(e.currentTarget);
     const payload: Record<string, unknown> = initial ? { id: initial.id } : { clientId };
     for (const [k, v] of form.entries()) payload[k] = v;
+    // Checkbox não vem no FormData quando desmarcado — manda booleano explícito
+    payload.autoGenerate = form.get("autoGenerate") === "on";
     try {
       const res = await fetch("/api/subscriptions", {
         method: initial ? "PATCH" : "POST",
@@ -178,6 +184,23 @@ function SubscriptionForm({
               </select>
             </div>
           )}
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-2.5 rounded-xl border border-line/60 bg-ink-900/40 px-3.5 py-3 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                name="autoGenerate"
+                defaultChecked={initial ? initial.autoGenerate : !variableClient}
+                className="mt-0.5 h-4 w-4 rounded border-line bg-ink-900 accent-brand-500"
+              />
+              <span>
+                <b>Parte fixa do contrato</b> — gerar cobrança automática todo período.
+                <span className="block text-[11px] text-slate-500">
+                  Desmarcado, nada é replicado: use para registrar valores variáveis (a comissão sai de
+                  Faturamento → Lançar comissão).
+                </span>
+              </span>
+            </label>
+          </div>
           <div className="sm:col-span-2">
             <label className="label" htmlFor="sb-notes">Observações</label>
             <textarea id="sb-notes" name="notes" rows={2} defaultValue={initial?.notes ?? ""} className="input" />
@@ -495,6 +518,11 @@ export function BillingPanel({
                 <p className="text-xs text-slate-500">desde {dt(s.startDate)}{s.notes ? ` — ${s.notes}` : ""}</p>
               </div>
               <span className="text-sm font-bold text-slate-100">{brl(s.amount)}</span>
+              {s.autoGenerate ? (
+                <Badge tone="grow">replica</Badge>
+              ) : (
+                <Badge tone="slate">sem cobrança automática</Badge>
+              )}
               <StatusBadge status={s.status} />
               <button
                 onClick={() => setEditing(s)}
@@ -506,7 +534,7 @@ export function BillingPanel({
               <button
                 onClick={() => deleteSub(s.id)}
                 disabled={busy === `del-${s.id}`}
-                title="Excluir mensalidade (o histórico de cobranças fica)"
+                title="Excluir mensalidade (cobranças não pagas dela saem junto; pagas ficam)"
                 className="rounded-lg p-1.5 text-slate-500 transition hover:bg-danger/10 hover:text-danger disabled:opacity-40"
               >
                 {busy === `del-${s.id}` ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -600,8 +628,12 @@ export function BillingPanel({
       )}
       {error && <p className="mt-3 text-sm font-medium text-danger">{error}</p>}
 
-      {creating && <SubscriptionForm clientId={clientId} onClose={() => setCreating(false)} />}
-      {editing && <SubscriptionForm clientId={clientId} initial={editing} onClose={() => setEditing(null)} />}
+      {creating && (
+        <SubscriptionForm clientId={clientId} variableClient={variableClient} onClose={() => setCreating(false)} />
+      )}
+      {editing && (
+        <SubscriptionForm clientId={clientId} initial={editing} variableClient={variableClient} onClose={() => setEditing(null)} />
+      )}
       {editingCharge && <ChargeEditor charge={editingCharge} onClose={() => setEditingCharge(null)} />}
     </section>
   );

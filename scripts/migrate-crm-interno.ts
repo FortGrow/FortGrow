@@ -214,10 +214,29 @@ export async function migrarCrmInterno(prisma: PrismaClient) {
   return { migrados, pulados };
 }
 
+/**
+ * Normalização ÚNICA: mensalidades de clientes variáveis (comissão) ficam
+ * sem replicação automática — a comissão sai do Lançar comissão, e só a
+ * parte fixa marcada à mão replica. Roda uma vez (flag em Setting) para não
+ * desfazer escolhas manuais em deploys futuros.
+ */
+async function normalizarMensalidadesVariaveis(prisma: PrismaClient) {
+  const FLAG = "normalizacaoAutoGenerateVariaveis";
+  const feita = await prisma.setting.findUnique({ where: { key: FLAG } }).catch(() => null);
+  if (feita) return;
+  const r = await prisma.subscription.updateMany({
+    where: { client: { billingType: "COMISSAO" } },
+    data: { autoGenerate: false },
+  });
+  await prisma.setting.create({ data: { key: FLAG, value: new Date().toISOString() } });
+  console.log(`✓ ${r.count} mensalidade(s) de clientes variáveis sem replicação automática`);
+}
+
 /** Execução direta (build do Render e linha de comando). */
 if (require.main === module) {
   const prisma = new PrismaClient();
   migrarCrmInterno(prisma)
+    .then(() => normalizarMensalidadesVariaveis(prisma))
     .catch((e) => {
       console.error("Falha na migração do CRM interno:", e);
       process.exit(1);
